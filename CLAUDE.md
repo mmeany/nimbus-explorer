@@ -670,3 +670,12 @@ charts; ECS Exec only as a command to copy (needs the Session Manager plugin).
   `sso_session`; the drop-down shows `<sso_session> (<profile>)` (plain name
   otherwise) and is sorted by that label (`profileLabel` / `sortProfiles` in
   `api/core.ts`). The value is still the profile name.
+- 10.3 ✅ Release workflow (`.github/workflows/release.yml`, steps in `docs/releasing.md`):
+  `on: create`, because a `push` trigger would also fire on later pushes; the
+  job checks the name is `release_x.y.z` and matches all three version files.
+  Windows only, NSIS + standalone exe, unsigned (SignPath considered and
+  dropped). Artifacts need a sign-in and expire, so winget and direct downloads
+  use the GitHub Release. Actions are pinned to commit SHAs; no build cache in
+  release builds. winget (`MarkMeany.NimbusExplorer`) is submitted by hand with
+  `wingetcreate`: agreed, so that no token with write access to the owner's public
+  repos is stored in GitHub. Don't add an automated winget job without asking.

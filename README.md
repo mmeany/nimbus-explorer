@@ -7,6 +7,13 @@ as LocalStack.
 Built with Tauri 2 (Rust backend), React and TypeScript. See `CLAUDE.md` for
 the design decisions and roadmap.
 
+## Disclaimer
+
+**Use at your own risk.** This software is provided "as is", without warranty of
+any kind (see [LICENSE](LICENSE)). It can change and delete real AWS resources
+and may incur charges. You are responsible for how you use it, so test against
+non-production accounts first.
+
 ## Prerequisites (developer machine only)
 
 - Node.js 20+ (LTS)
@@ -36,11 +43,11 @@ This makes an optimised release build (several minutes the first time). The
 first run downloads Tauri's installer tools (WiX for the MSI, NSIS for the
 setup program), so it needs internet access.
 
-| Output | Use |
-|---|---|
+| Output                                                                         | Use                                                                                            |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
 | `src-tauri\target\release\bundle\nsis\Nimbus Explorer_<version>_x64-setup.exe` | Installer for most people: Start menu entry and uninstaller; no admin rights needed by default |
-| `src-tauri\target\release\bundle\msi\Nimbus Explorer_<version>_x64_en-US.msi` | MSI installer, for IT / Group Policy deployment |
-| `src-tauri\target\release\nimbus-explorer.exe` | The app as a single file; runs without installing |
+| `src-tauri\target\release\bundle\msi\Nimbus Explorer_<version>_x64_en-US.msi`  | MSI installer, for IT / Group Policy deployment                                                |
+| `src-tauri\target\release\nimbus-explorer.exe`                                 | The app as a single file; runs without installing                                              |
 
 To build only the setup program: `npm run tauri build -- --bundles nsis`.
 
@@ -57,20 +64,26 @@ Notes:
 - **Before a release:** run `cargo audit` in `src-tauri`
   (`cargo install cargo-audit` once).
 
+## Releases
+
+Creating a `release_x.y.z` branch makes GitHub build the app and publish it as a
+GitHub Release. Each version is then submitted to winget by hand. See
+[docs/releasing.md](docs/releasing.md) for the steps.
+
 ## Services
 
-| Service | Guide |
-|---|---|
-| Amazon S3 | this README (below) |
-| Parameter Store | [docs/parameter-store.md](docs/parameter-store.md): folders, prefix filter with history, create/edit/delete, SecureString reveal, history/diff/labels/restore, tags/tier/policies, copy/move/rename, export/import |
-| DynamoDB | [docs/dynamodb.md](docs/dynamodb.md): tables with filter history, scan & query (filters, projection, paging), results grid, item editor (JSON / DynamoDB JSON), PartiQL, export / import, create / delete tables, indexes, settings, backups |
-| RDS | [docs/rds.md](docs/rds.md): instances and Aurora / Multi-AZ clusters with filter history, start / stop / reboot / fail over, modify (class, backups, deletion protection), delete with final snapshot, snapshots (create, copy, delete, restore, point in time), events, log files (tail, download), connection details and client commands, SQL on Aurora via the Data API (read-only runs rolled back, export) |
-| ECS | [docs/ecs.md](docs/ecs.md): clusters, services (counts, deployments and events, load balancing, network), tasks (containers, stop reasons), scale / redeploy / change revision / roll back, stop and run tasks with overrides, task definitions (details, JSON, compare, new revision from JSON, deregister), container logs, ECS Exec command |
-| Lambda | [docs/lambda.md](docs/lambda.md): functions (paged, filter history), details (environment variables revealed on demand, function URL, async settings, layers, VPC), invoke with saved test events and templates, logs, triggers (event sources on / off, resource-policy invokers), versions and aliases with traffic splits, settings (memory, timeout, env vars, concurrency), code download / upload, delete |
-| CloudWatch Logs | [docs/cloudwatch-logs.md](docs/cloudwatch-logs.md): log groups (paged, prefix filter with history), streams, events newest first for a time range with filter patterns, load older, follow live, full message view (JSON tree), download (read only) |
-| Secrets Manager | [docs/secrets-manager.md](docs/secrets-manager.md): folders, filter history, masked values with Reveal / Copy (key/value view), create / edit / delete / restore, versions and labels (compare, roll back), rotation, tags and resource policy |
-| SQS | [docs/sqs.md](docs/sqs.md): queues with live counts and filter history, create/edit/delete, purge, send (single or from a file), peek / receive & hold, delete/release/export messages, dead-letter redrive |
-| SNS | [docs/sns.md](docs/sns.md): topics and all subscriptions with filter history, create/edit/delete topics (FIFO, encryption, policies, tags), subscribe (any protocol, filter policies, DLQ, queue-policy helper), confirm/unsubscribe, publish (per-protocol messages, attributes, from a file), watch messages live via a temporary queue |
+| Service         | Guide                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Amazon S3       | this README (below)                                                                                                                                                                                                                                                                                                                                                                                              |
+| Parameter Store | [docs/parameter-store.md](docs/parameter-store.md): folders, prefix filter with history, create/edit/delete, SecureString reveal, history/diff/labels/restore, tags/tier/policies, copy/move/rename, export/import                                                                                                                                                                                               |
+| DynamoDB        | [docs/dynamodb.md](docs/dynamodb.md): tables with filter history, scan & query (filters, projection, paging), results grid, item editor (JSON / DynamoDB JSON), PartiQL, export / import, create / delete tables, indexes, settings, backups                                                                                                                                                                     |
+| RDS             | [docs/rds.md](docs/rds.md): instances and Aurora / Multi-AZ clusters with filter history, start / stop / reboot / fail over, modify (class, backups, deletion protection), delete with final snapshot, snapshots (create, copy, delete, restore, point in time), events, log files (tail, download), connection details and client commands, SQL on Aurora via the Data API (read-only runs rolled back, export) |
+| ECS             | [docs/ecs.md](docs/ecs.md): clusters, services (counts, deployments and events, load balancing, network), tasks (containers, stop reasons), scale / redeploy / change revision / roll back, stop and run tasks with overrides, task definitions (details, JSON, compare, new revision from JSON, deregister), container logs, ECS Exec command                                                                   |
+| Lambda          | [docs/lambda.md](docs/lambda.md): functions (paged, filter history), details (environment variables revealed on demand, function URL, async settings, layers, VPC), invoke with saved test events and templates, logs, triggers (event sources on / off, resource-policy invokers), versions and aliases with traffic splits, settings (memory, timeout, env vars, concurrency), code download / upload, delete  |
+| CloudWatch Logs | [docs/cloudwatch-logs.md](docs/cloudwatch-logs.md): log groups (paged, prefix filter with history), streams, events newest first for a time range with filter patterns, load older, follow live, full message view (JSON tree), download (read only)                                                                                                                                                             |
+| Secrets Manager | [docs/secrets-manager.md](docs/secrets-manager.md): folders, filter history, masked values with Reveal / Copy (key/value view), create / edit / delete / restore, versions and labels (compare, roll back), rotation, tags and resource policy                                                                                                                                                                   |
+| SQS             | [docs/sqs.md](docs/sqs.md): queues with live counts and filter history, create/edit/delete, purge, send (single or from a file), peek / receive & hold, delete/release/export messages, dead-letter redrive                                                                                                                                                                                                      |
+| SNS             | [docs/sns.md](docs/sns.md): topics and all subscriptions with filter history, create/edit/delete topics (FIFO, encryption, policies, tags), subscribe (any protocol, filter policies, DLQ, queue-policy helper), confirm/unsubscribe, publish (per-protocol messages, attributes, from a file), watch messages live via a temporary queue                                                                        |
 
 Each service is a node in the tree under the profile. Shared controls:
 
@@ -130,21 +143,21 @@ Each service is a node in the tree under the profile. Shared controls:
 
 Shortcuts for the other services are in their guides.
 
-| Keys | Action |
-|---|---|
-| Enter / double-click | Open folder, preview file |
-| Backspace, Alt+↑ | Up one level |
-| Alt+← / Alt+→ | Back / forward |
-| F5 | Refresh |
-| Ctrl+A | Select all (on this page) |
-| Ctrl+PgDn / Ctrl+PgUp | Next / previous page |
-| Ctrl+F | Search |
-| Ctrl+X / Ctrl+C / Ctrl+V | Cut / copy / paste files |
-| F2 | Rename file |
-| Del | Delete |
-| Ctrl+Shift+N | New folder |
-| Alt+Enter | Properties |
-| ← / → (in preview) | Previous / next file |
+| Keys                     | Action                    |
+| ------------------------ | ------------------------- |
+| Enter / double-click     | Open folder, preview file |
+| Backspace, Alt+↑         | Up one level              |
+| Alt+← / Alt+→            | Back / forward            |
+| F5                       | Refresh                   |
+| Ctrl+A                   | Select all (on this page) |
+| Ctrl+PgDn / Ctrl+PgUp    | Next / previous page      |
+| Ctrl+F                   | Search                    |
+| Ctrl+X / Ctrl+C / Ctrl+V | Cut / copy / paste files  |
+| F2                       | Rename file               |
+| Del                      | Delete                    |
+| Ctrl+Shift+N             | New folder                |
+| Alt+Enter                | Properties                |
+| ← / → (in preview)       | Previous / next file      |
 
 ## Profiles
 
