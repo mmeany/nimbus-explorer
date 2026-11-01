@@ -1,0 +1,61 @@
+[package]
+name = "nimbus-explorer"
+version = "0.1.0"
+description = "Explorer-style desktop app that works with Amazon Web Services: S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ECS, Lambda, CloudWatch Logs and Secrets Manager (and emulators such as LocalStack)"
+license = "MIT"
+edition = "2021"
+rust-version = "1.85"
+
+[lib]
+name = "nimbus_explorer_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1", features = ["sync", "fs", "io-util", "rt", "time"] }
+
+# AWS SDK with default features off so we can choose the TLS stack:
+# rustls + ring builds on Windows with only the MSVC Build Tools (no CMake/NASM).
+aws-config = { version = "1", default-features = false, features = [
+    "rt-tokio",
+    "credentials-process",
+    "sso",
+    "behavior-version-latest",
+] }
+aws-sdk-s3 = { version = "1", default-features = false, features = [
+    "rt-tokio",
+    "http-1x",
+    "behavior-version-latest",
+] }
+aws-smithy-http-client = { version = "1", default-features = false, features = ["rustls-ring"] }
+tauri-plugin-dialog = "2"
+aws-smithy-types = "1"
+# Already part of the SDK; used directly to fetch Lambda code download links with the SDK's own HTTP client.
+aws-smithy-runtime-api = { version = "1", default-features = false, features = ["client"] }
+aws-credential-types = "1"
+yaml-rust2 = { version = "0.13", default-features = false }
+aws-sdk-ssm = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-sqs = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-dynamodb = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-secretsmanager = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-sns = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-rds = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-rdsdata = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-cloudwatchlogs = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-lambda = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-ecs = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
