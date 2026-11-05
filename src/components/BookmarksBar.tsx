@@ -70,19 +70,22 @@ export function BookmarksBar({ file, profile, serviceRegion, icons, onOpen, onMa
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  // Runs after every render (a handful of items, cheap); the observer above
+  // only makes sure a resize causes a render. Same count = no re-render.
   useLayoutEffect(() => {
     const m = measureRef.current;
-    if (!m || !barWidth) return;
+    const width = barRef.current?.clientWidth || barWidth;
+    if (!m || !width) return;
     const widths = [...m.children].map((c) => (c as HTMLElement).offsetWidth + GAP);
     const total = widths.reduce((a, b) => a + b, 0);
     let n = widths.length;
-    if (total > barWidth - 8) {
+    if (total > width - 8) {
       let used = 0;
       n = 0;
-      while (n < widths.length && used + widths[n] <= barWidth - OVERFLOW_W - 8) used += widths[n++];
+      while (n < widths.length && used + widths[n] <= width - OVERFLOW_W - 8) used += widths[n++];
     }
     setVisibleCount(n);
-  }, [items, barWidth, file]);
+  });
 
   // --- Drop-down menus
   const [menu, setMenu] = useState<{ key: string; rect: DOMRect } | null>(null);
