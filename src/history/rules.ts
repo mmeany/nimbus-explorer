@@ -380,6 +380,14 @@ export const RULES: Record<string, Rule> = {
   // CloudWatch Logs
   logs_download: (a) => ({ service: "logs", action: "Download log events", target: a.request.group, place: { service: "logs", group: a.request.group }, detail: `to ${a.dest}` }),
 
+  // Bookmarks (local; only exporting and importing are recorded)
+  bookmarks_export: (a) => ({ service: "app", action: "Export bookmarks", target: a.dest, place: null, detail: plural(a.file?.bookmarks?.length ?? 0, "bookmark") }),
+  bookmarks_save: (a) => {
+    const r = typeof a.reason === "string" ? a.reason.split("|") : [];
+    if (r[0] !== "import") return null;
+    return { service: "app", action: "Import bookmarks", target: r.slice(3).join("|"), place: null, detail: `${plural(Number(r[1]) || 0, "bookmark")} added, ${Number(r[2]) || 0} duplicates skipped` };
+  },
+
   // Secrets Manager
   sm_create: (a) => ({ service: "secrets", action: "Create secret", target: a.name, place: secretFolder(a.name), select: a.name }),
   sm_put_value: (a) => ({ service: "secrets", action: "Update secret value", target: secretName(a.id), place: secretFolder(a.id), select: secretName(a.id) }),

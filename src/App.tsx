@@ -14,6 +14,7 @@ import { HistoryDialog } from "./components/HistoryDialog";
 import { BookmarkDialog, type BookmarkDraft } from "./components/BookmarkDialog";
 import { BookmarksBar } from "./components/BookmarksBar";
 import { BookmarkManager } from "./components/BookmarkManager";
+import { BookmarkImportDialog, exportBookmarks, pickImport } from "./components/BookmarkTransfer";
 import { bookmarksApi, type Bookmark } from "./api/bookmarks";
 import { currentBookmarks, findBookmark, isPlaceBookmarked, loadBookmarks, useBookmarks } from "./state/bookmarks";
 import { currentSelection } from "./state/selection";
@@ -415,6 +416,7 @@ export default function App() {
   }
 
   const [showManager, setShowManager] = useState(false);
+  const [importing, setImporting] = useState<{ path: string; file: import("./api/bookmarks").BookmarkFile } | null>(null);
   function manageBookmarks() {
     setShowManager(true);
   }
@@ -678,7 +680,30 @@ export default function App() {
           icons={SERVICE_ICONS}
           onOpen={(b) => void openLocation(b, "bookmark").then((ok) => ok && setShowManager(false))}
           onEdit={editBookmark}
+          transferButtons={({ checked, profile: only }) => (
+            <>
+              <button
+                className="btn"
+                title={checked.size ? "Export the ticked folders (and the profile filter)" : "Export everything (or tick folders first)"}
+                onClick={() => void exportBookmarks(shell, checked, only)}
+              >
+                {checked.size ? `Export ${checked.size} folder${checked.size === 1 ? "" : "s"}…` : "Export…"}
+              </button>
+              <button className="btn" onClick={() => void pickImport(shell).then((r) => r && setImporting(r))}>
+                Import…
+              </button>
+            </>
+          )}
           onClose={() => setShowManager(false)}
+        />
+      )}
+      {importing && (
+        <BookmarkImportDialog
+          shell={shell}
+          path={importing.path}
+          incoming={importing.file}
+          profiles={(profiles ?? []).map((p) => p.name)}
+          onClose={() => setImporting(null)}
         />
       )}
       {bookmarkEdit && (
