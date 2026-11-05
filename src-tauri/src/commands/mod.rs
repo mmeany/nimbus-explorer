@@ -2,6 +2,7 @@
 //! the service modules. App-level commands are here; each service has its own
 //! submodule (s3, …).
 
+pub mod bookmarks;
 pub mod dynamo;
 pub mod ecs;
 pub mod history;

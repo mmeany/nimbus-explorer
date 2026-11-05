@@ -1,3 +1,4 @@
+mod bookmarks;
 mod commands;
 mod ddb_io;
 mod ddb_items;
@@ -62,6 +63,11 @@ pub fn run() {
             commands::set_read_only,
             commands::remember_filter,
             commands::forget_filter,
+            commands::bookmarks::bookmarks_load,
+            commands::bookmarks::bookmarks_save,
+            commands::bookmarks::bookmarks_export,
+            commands::bookmarks::bookmarks_read_import,
+            commands::bookmarks::set_bookmarks_bar,
             commands::history::history_record,
             commands::history::history_page,
             commands::history::history_profiles,

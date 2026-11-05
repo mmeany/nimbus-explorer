@@ -37,6 +37,8 @@ pub struct Settings {
     pub filter_history: BTreeMap<String, Vec<String>>,
     /// Activity history: on/off, rollover period, file size limit, files kept.
     pub history: crate::history::HistorySettings,
+    /// The bookmarks bar is shown unless this is set (Ctrl+Shift+B).
+    pub hide_bookmarks_bar: bool,
 }
 
 /// Filters remembered per key.
