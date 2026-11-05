@@ -26,8 +26,16 @@ The **Region** list applies to every service except S3, whose buckets always use
 | Alt+← / Alt+→ | Back / forward |
 | F5 | Refresh |
 | F1 | Help for the current view or dialog |
+| Ctrl+H | History |
+| Ctrl+D | Bookmark this location (and the selected item) |
+| Ctrl+Shift+B | Show or hide the bookmarks bar |
+| Ctrl+Shift+O | Manage bookmarks |
 
 Click any part of the address bar to jump there. The button beside it copies the current location.
+
+### Bookmarks and history
+
+The **bookmarks bar** under the address bar holds pinned bookmarks, a folder per service and your own folders. The ☆ or Ctrl+D adds a bookmark, and clicking one goes there. **History** (the clock button, Ctrl+H) lists what you did, and an entry can take you back to where it happened. Neither ever re-runs anything.
 
 ### Long lists
 
@@ -59,11 +67,11 @@ Press **F1** anywhere for help with what's on screen. **General help** below cov
   },
   history: {
     title: "History",
-    body: `The app records what you do, per profile: changes (uploads, deletes, edits, invokes, purges…), downloads and exports, connecting, and unlocking or locking read-only mode. Open it with the clock button in the toolbar or **Ctrl+H**.
+    body: `The app records what you do, per profile: changes (uploads, deletes, edits, invokes, purges…), downloads and exports, connecting, unlocking or locking read-only mode, and exporting or importing bookmarks. Open it with the clock button in the toolbar or **Ctrl+H**.
 
 ### Going back to where it happened
 
-Double-click an entry, or select it and choose **Go to location**. The app opens the folder, queue, table, function or other place where it happened and selects the item when it's on the page. If the entry belongs to another profile, it asks before switching, and it switches region if needed. **Nothing is run again.**
+Double-click an entry, or select it and choose **Go to location**. **Bookmark…** saves that location as a bookmark, for the entry's profile and region. The app opens the folder, queue, table, function or other place where it happened and selects the item when it's on the page. If the entry belongs to another profile, it asks before switching, and it switches region if needed. **Nothing is run again.**
 
 After a delete, the location is the folder or list the item was in.
 

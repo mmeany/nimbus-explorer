@@ -90,6 +90,11 @@ Each service is a node in the tree under the profile. Shared controls:
 - **Help**: the **?** button at the end of the toolbar, or **F1**, explains the
   view and tab on screen. Larger dialogs have their own **?** in the title bar,
   and F1 works there too.
+- **Bookmarks**: a bar under the address bar (Ctrl+Shift+B) with pinned
+  bookmarks, a folder per service and your own folders, which can mix services
+  and have descriptions. Add with the ☆ / **Ctrl+D** or **Add bookmark…** in
+  right-click menus; clicking one goes there like a history entry. Manage,
+  export and import with **Ctrl+Shift+O**. See [docs/bookmarks.md](docs/bookmarks.md).
 - **History**: the clock button in the toolbar, or **Ctrl+H**, lists what you
   did per profile (changes, downloads, exports, connecting, the read-only lock),
   newest first, with filters. Double-click an entry to go back to where it
@@ -161,6 +166,9 @@ Shortcuts for the other services are in their guides.
 | F5                       | Refresh                   |
 | F1                       | Help for this view        |
 | Ctrl+H                   | History                   |
+| Ctrl+D                   | Bookmark this location    |
+| Ctrl+Shift+B             | Show / hide bookmarks bar |
+| Ctrl+Shift+O             | Manage bookmarks          |
 | Ctrl+A                   | Select all (on this page) |
 | Ctrl+PgDn / Ctrl+PgUp    | Next / previous page      |
 | Ctrl+F                   | Search                    |

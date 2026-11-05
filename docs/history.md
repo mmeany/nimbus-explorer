@@ -16,6 +16,8 @@ Open it with the clock button in the toolbar (next to help) or **Ctrl+H**.
   SQL results).
 - **App events**: connecting to a profile, and allowing changes or locking
   read-only mode again.
+- **Bookmarks**: exporting and importing them (other bookmark changes aren't
+  recorded).
 
 Not recorded:
 
@@ -43,6 +45,9 @@ Double-click an entry, or select it and click **Go to location**:
    page.
 
 Nothing is run again. History has no replay or undo.
+
+**Bookmark…** next to it bookmarks the entry's location, for the entry's profile
+and region (see [bookmarks.md](bookmarks.md)).
 
 After a delete, the location is the folder or list the item was in. If a place
 no longer exists, the view shows it empty or with its usual "not found"

@@ -89,10 +89,16 @@ src-tauri/src/commands/mod.rs  AppState + app-level commands (profiles, settings
 src-tauri/src/commands/<svc>.rs  one module per service
 src-tauri/src/history.rs       activity history files (see Phase 11)
 src/history/rules.ts           one history rule per recorded command
+src-tauri/src/bookmarks.rs     bookmarks.json (see Phase 12)
+src/state/bookmarks.ts         bookmarks store; components/Bookmark*.tsx UI
 ```
 **Every write command (one that calls `ensure_writable`) needs a rule in
 `src/history/rules.ts`** (names and locations only, never values); a Rust test
 fails otherwise. Local writes (downloads, exports) should get one too.
+
+Services offer **Add bookmark…** in their row / tree menus via
+`shell.addBookmark(place, select, label)`; a new view with a list or tree
+should too.
 
 Adding a service: extend `ServiceId`/`Place`/`SERVICES` and the place helpers,
 write `api/<svc>.ts`, `services/<svc>/use<Svc>Service.tsx`, register it in
@@ -728,3 +734,53 @@ where it happened and never re-runs anything.
   `FileList` that lists it). The dialog renders before the shared confirm
   dialogs so they appear on top of it.
 - 11.4 ✅ Docs (`docs/history.md`, README).
+
+### Phase 12: Bookmarks (agreed 2026-11-05)
+Agreed in a Q&A with the owner: one global set, each bookmark remembering
+its profile and region; feature folders automatic (every bookmark is in its
+service's folder) plus one level of user folders that mix services;
+descriptions on bookmarks and on every folder; no new dependencies.
+- 12.1 ✅ (`src-tauri/src/bookmarks.rs`, `commands/bookmarks.rs`)
+  `<settings dir>/bookmarks.json`: bookmarks {id, profile, region ("" for
+  S3), service, place, select, name, description, created}, folders {id,
+  name, description, items (ordered ids)} in bar order, pinned ids in bar
+  order, featureNotes by service. The UI saves the whole file; `normalise`
+  enforces limits (name 1–100, descriptions ≤ 200, folder names 1–40 and
+  unique ignoring case, ≤ 100 folders, ≤ 5,000 bookmarks), one bookmark per
+  profile + place + item (serde_json Value equality ignores key order) and
+  drops dangling ids. Atomic write under a lock; an unreadable file is an
+  error (the UI then refuses to save over it). `hideBookmarksBar` in
+  settings.json (`set_bookmarks_bar`). All allowed in read-only mode.
+- 12.2 ✅ (`components/BookmarksBar.tsx`, `BookmarkDialog.tsx`,
+  `state/bookmarks.ts`, `state/selection.ts`) Bar row under the address bar
+  (Toolbar `bookmarksBar` prop): pinned → feature folders (service order,
+  items by name) → your folders; current profile only; your empty folders
+  dimmed; drop-downs with description header, region tags, filter above 15
+  items; » overflow menu (widths measured from a hidden copy). Star at the
+  end of the address bar (filled when the place is bookmarked) and Ctrl+D
+  open Add / Edit for the place plus the single selected row of the main
+  view's FileList (it reports via `reportSelection`). Ctrl+Shift+B toggles
+  the bar. Opening shares `openLocation` with History (region switch +
+  flash, reveal, navigate; asks before switching profile).
+- 12.3 ✅ "Add bookmark…" in every service's row and tree menus
+  (`shell.addBookmark`); items (S3 files, parameters, secrets, ECS tasks)
+  bookmark their folder / list with `select`. History dialog "Bookmark…"
+  (the entry's profile and region). Not covered: DynamoDB items, RDS
+  snapshots, log streams (not places).
+- 12.4 ✅ (`components/BookmarkManager.tsx`) Manager (Ctrl+Shift+O): profile
+  filter (missing profiles marked), folders left with export checkboxes,
+  bookmarks right; open / edit / pin / move / remove from folder / delete;
+  folder new / edit (feature: description only) / delete (bookmarks stay) /
+  move. Bar dragging with pointer events (Tauri's file-drop handler blocks
+  HTML drag and drop): reorder your folders and pins; drop a bookmark (bar or
+  drop-down) on your folder to add it.
+- 12.5 ✅ (`components/BookmarkTransfer.tsx`) Export the ticked folders or
+  everything (profile filter applies), marked `nimbus-explorer-bookmarks`.
+  Import: `bookmarks_read_import` (validated), preview new / duplicate /
+  profile not found, keep profiles or map all to one; `planImport` merges
+  folders by name, skips duplicates, carries pins, fills empty feature
+  notes. History rules: `bookmarks_export`, and `bookmarks_save` with
+  reason `import|added|skipped|file`.
+- 12.6 ✅ Docs (`docs/bookmarks.md`, README, history guide), help topics
+  `bookmarks`, `bookmarks.edit`, `bookmarks.manager`, `bookmarks.import`,
+  and General / History topic updates.
