@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api, toAppError, type AppError, type SyncDirection, type SyncRunResult, type SyncSummary } from "../api/s3";
 import { formatSize } from "../format";
 import { DownloadIcon, UploadIcon } from "./Icons";
+import { DialogHelp } from "./HelpDialog";
 
 interface Props {
   bucket: string;
@@ -125,6 +126,7 @@ export function SyncDialog({ bucket, prefix, readOnly, onRan, onClose }: Props) 
         onKeyDown={(e) => e.key === "Escape" && !busy && onClose()}
       >
         <div className="dialog-title" id="sync-title">
+          <DialogHelp topic="s3.sync" />
           Sync with {s3}
         </div>
         <div className="dialog-body">

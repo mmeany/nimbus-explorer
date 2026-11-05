@@ -5,6 +5,7 @@ import { api } from "../../api/s3";
 import { sqsApi, type BatchReport, type MsgAttribute, type QueueInfo } from "../../api/sqs";
 import { ValueEditor } from "../../components/ValueEditor";
 import type { Shell } from "../../shell/shell";
+import { DialogHelp } from "../../components/HelpDialog";
 
 interface Props {
   queue: QueueInfo;
@@ -127,6 +128,7 @@ export function SendMessageDialog({ queue, shell, onClose, onSent }: Props) {
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog send-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
         <div className="dialog-title">
+          <DialogHelp topic="sqs.send" />
           Send to <span className="mono">{queue.name}</span>
         </div>
         <div className="dialog-body">

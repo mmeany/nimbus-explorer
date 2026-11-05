@@ -4,6 +4,7 @@ import type { AppError } from "../../api/core";
 import { smApi, type SecretInfo } from "../../api/secrets";
 import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
+import { DialogHelp } from "../../components/HelpDialog";
 
 export function DeleteSecretDialog({ secret, shell, onClose, onDeleted }: { secret: SecretInfo; shell: Shell; onClose: () => void; onDeleted: () => void }) {
   const [days, setDays] = useState(30);
@@ -31,7 +32,7 @@ export function DeleteSecretDialog({ secret, shell, onClose, onDeleted }: { secr
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">Delete secret</div>
+        <div className="dialog-title"><DialogHelp topic="secrets.delete" />Delete secret</div>
         <div className="dialog-body">
           <p>
             <span className="mono">{secret.name}</span>

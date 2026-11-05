@@ -5,12 +5,14 @@ import type { AppError } from "../../api/core";
 import { envKeyProblem, lambdaApi, type FunctionDetails, type Versions } from "../../api/lambda";
 import { api } from "../../api/s3";
 import { formatSize } from "../../format";
+import type { HelpTopicId } from "../../help";
+import { DialogHelp } from "../../components/HelpDialog";
 
-function Frame({ title, children, buttons, onClose, wide }: { title: string; children: React.ReactNode; buttons: React.ReactNode; onClose: () => void; wide?: boolean }) {
+function Frame({ title, help, children, buttons, onClose, wide }: { title: string; help: HelpTopicId; children: React.ReactNode; buttons: React.ReactNode; onClose: () => void; wide?: boolean }) {
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className={`dialog param-dialog ${wide ? "dialog-wide" : ""}`} role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">{title}</div>
+        <div className="dialog-title"><DialogHelp topic={help} />{title}</div>
         <div className="dialog-body">{children}</div>
         <div className="dialog-buttons">
           <div className="spacer" />
@@ -98,6 +100,7 @@ export function FunctionSettingsDialog({ f, onClose, onDone }: { f: FunctionDeta
   return (
     <Frame
       title={`Settings: ${f.name}`}
+      help="lambda.settings"
       wide
       onClose={onClose}
       buttons={
@@ -241,6 +244,7 @@ export function AliasDialog({
   return (
     <Frame
       title={alias ? `Edit alias ${alias.name}` : "New alias"}
+      help="lambda.alias"
       onClose={onClose}
       buttons={
         <>
@@ -355,6 +359,7 @@ export function UploadCodeDialog({ f, onClose, onDone }: { f: FunctionDetails; o
   return (
     <Frame
       title={`Upload code: ${f.name}`}
+      help="lambda.upload"
       onClose={onClose}
       buttons={
         <>

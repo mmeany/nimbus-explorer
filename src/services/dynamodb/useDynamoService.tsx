@@ -22,6 +22,7 @@ import { ExportDialog, ImportDialog } from "./TransferDialogs";
 import { BackupsTab } from "./BackupsTab";
 import { AddIndexDialog, CreateTableDialog, TableSettingsDialog } from "./TableDialogs";
 import { TableDetails } from "./TableDetails";
+import { HelpTopic } from "../../components/HelpDialog";
 
 const COLUMNS: Column[] = [
   { id: "name", label: "Name", width: 240 },
@@ -428,6 +429,7 @@ export function useDynamoService(shell: Shell): ServiceUi {
       <div className="empty-note">Loading…</div>
     ) : (
       <div className="service-pane">
+        <HelpTopic id={`dynamodb.${tab}`} />
         <div className="table-tabs">
           <span className="tt-name">{t.name}</span>
           <div className="segmented small">

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { profileLabel, sortProfiles, type ConnectionInfo, type ProfileInfo, type ThemePref } from "../api/core";
 import { HOME, placeCrumbs, type Place } from "../shell/places";
 import { AWS_REGIONS } from "../shell/regions";
-import { BackIcon, CopyIcon, ForwardIcon, GearIcon, LockIcon, RefreshIcon, UpIcon } from "./Icons";
+import { BackIcon, CopyIcon, ForwardIcon, GearIcon, HelpIcon, LockIcon, RefreshIcon, UpIcon } from "./Icons";
 
 interface Props {
   profiles: ProfileInfo[];
@@ -30,6 +30,7 @@ interface Props {
   onForward: () => void;
   onUp: () => void;
   onNavigate: (p: Place) => void;
+  onHelp: () => void;
 }
 
 export function Toolbar(p: Props) {
@@ -115,6 +116,9 @@ export function Toolbar(p: Props) {
           <option value="light">Light</option>
           <option value="dark">Dark</option>
         </select>
+        <button className="tool-btn" title="Help for this view (F1)" aria-label="Help" onClick={p.onHelp}>
+          <HelpIcon />
+        </button>
       </div>
 
       <div className="toolbar-row command-bar">{p.commands}</div>

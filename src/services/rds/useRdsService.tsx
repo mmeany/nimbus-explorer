@@ -18,6 +18,7 @@ import { ConnectTab } from "./ConnectTab";
 import { EventsLogs } from "./EventsLogs";
 import { SqlTab } from "./SqlTab";
 import { RestoreDialog, SnapshotList, type RestoreTarget } from "./Snapshots";
+import { HelpTopic } from "../../components/HelpDialog";
 
 const COLUMNS: Column[] = [
   { id: "name", label: "Name", width: 240 },
@@ -420,6 +421,7 @@ export function useRdsService(shell: Shell): ServiceUi {
   const viewToggle = (
     <div className="filter-bar sns-bar">
       <div className="segmented small">
+        {rootView === "snapshots" && <HelpTopic id="rds.snapshots" />}
         <button className={rootView === "databases" ? "active" : ""} onClick={() => setRootView("databases")}>
           Databases
         </button>

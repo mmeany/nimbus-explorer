@@ -12,6 +12,7 @@ import { usePaging } from "../../state/paged";
 import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
 import type { Db } from "./DbView";
+import { DialogHelp } from "../../components/HelpDialog";
 
 const COLUMNS: Column[] = [
   { id: "name", label: "Snapshot", width: 300 },
@@ -299,7 +300,7 @@ export function RestoreDialog({ target, onClose, onDone }: { target: RestoreTarg
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">{target.mode === "snapshot" ? `Restore ${target.snapshot.id}` : `Restore ${sourceName} to a point in time`}</div>
+        <div className="dialog-title"><DialogHelp topic="rds.restore" />{target.mode === "snapshot" ? `Restore ${target.snapshot.id}` : `Restore ${sourceName} to a point in time`}</div>
         <div className="dialog-body">
           <p className="hint">
             This creates a new {kind === "cluster" ? "cluster" : "database"}; {sourceName} isn't changed. Network settings (subnet group, security groups) are

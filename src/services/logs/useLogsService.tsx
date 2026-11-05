@@ -16,6 +16,7 @@ import { formatDate, formatSize } from "../../format";
 import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, useTokenPages } from "../../state/paged";
 import { LogViewer } from "./LogViewer";
+import { HelpTopic } from "../../components/HelpDialog";
 
 const GROUP_COLUMNS: Column[] = [
   { id: "name", label: "Log group", width: 380 },
@@ -250,6 +251,7 @@ export function useLogsService(shell: Shell): ServiceUi {
             </button>
           )}
         </div>
+        <HelpTopic id={`logs.${tab}`} />
         <div className="segmented small db-tabs">
           <button className={tab === "events" ? "active" : ""} onClick={() => setTab("events")}>
             Events

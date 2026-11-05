@@ -91,7 +91,7 @@ src-tauri/src/commands/<svc>.rs  one module per service
 Adding a service: extend `ServiceId`/`Place`/`SERVICES` and the place helpers,
 write `api/<svc>.ts`, `services/<svc>/use<Svc>Service.tsx`, register it in
 App's `services` map and SERVICE_ICONS, add `commands/<svc>.rs` and register its
-commands in lib.rs.
+commands in lib.rs, and add `src/help/topics/<svc>.ts` (see 10.4).
 
 Earlier layout (S3 internals):
 ```
@@ -679,3 +679,11 @@ charts; ECS Exec only as a command to copy (needs the Session Manager plugin).
   release builds. winget (`MarkMeany.NimbusExplorer`) is submitted by hand with
   `wingetcreate`: agreed, so that no token with write access to the owner's public
   repos is stored in GitHub. Don't add an automated winget job without asking.
+- 10.4 ✅ In-app help: help icon at the end of the toolbar's top row, F1 anywhere
+  (`src/help/`, `components/HelpDialog.tsx`; no new dependencies). Short Markdown
+  topics in `src/help/topics/<svc>.ts`, written for the app and separate from
+  `docs/`, shown with the existing renderer; ids are a compiler-checked union.
+  Topic choice: newest registered wins (`<DialogHelp topic>` in a dialog's title
+  bar, `<HelpTopic id>` for a tab or toggle), else `placeTopic(place)`; not
+  connected = `general`. When a view, tab or larger dialog changes, update its
+  topic; a new one gets a topic too. Simple confirm / prompt dialogs have none.

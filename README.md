@@ -87,6 +87,9 @@ GitHub Release. Each version is then submitted to winget by hand. See
 
 Each service is a node in the tree under the profile. Shared controls:
 
+- **Help**: the **?** button at the end of the toolbar, or **F1**, explains the
+  view and tab on screen. Larger dialogs have their own **?** in the title bar,
+  and F1 works there too.
 - **Region** list in the toolbar for the regional services (Parameter Store,
   SQS, SNS, DynamoDB, RDS, ECS, Lambda, CloudWatch Logs, Secrets Manager); remembered per profile. S3 always
   uses each bucket's own region.
@@ -149,6 +152,7 @@ Shortcuts for the other services are in their guides.
 | Backspace, Alt+↑         | Up one level              |
 | Alt+← / Alt+→            | Back / forward            |
 | F5                       | Refresh                   |
+| F1                       | Help for this view        |
 | Ctrl+A                   | Select all (on this page) |
 | Ctrl+PgDn / Ctrl+PgUp    | Next / previous page      |
 | Ctrl+F                   | Search                    |

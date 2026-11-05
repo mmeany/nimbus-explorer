@@ -3,10 +3,12 @@
 // are passed in by the controller.
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { AppError } from "../../api/core";
+import type { HelpTopicId } from "../../help";
 import { engineLabel, rdsApi, statusTone, type DbCluster, type DbInstance, type DbKind, type NameStatus, type PendingAction } from "../../api/rds";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
+import { HelpTopic } from "../../components/HelpDialog";
 
 export type Db = { kind: "cluster"; db: DbCluster } | { kind: "instance"; db: DbInstance };
 
@@ -37,6 +39,8 @@ export function StatusPill({ status }: { status: string | null }) {
 
 const yes = (b: boolean) => (b ? "Yes" : "No");
 const groups = (g: NameStatus[]) => g.map((x) => (x.status && x.status !== "active" && x.status !== "in-sync" ? `${x.name} (${x.status})` : x.name)).join(", ");
+
+const TAB_HELP: Record<string, HelpTopicId> = { connect: "rds.connect", sql: "rds.sql", snapshots: "rds.snapshots", events: "rds.events" };
 
 export function DbView({ kind, id, shell, reloadToken, onLoaded, onOpenInstance, onOpenCluster, actions, tabs = [] }: Props) {
   const [data, setData] = useState<Db | null>(null);
@@ -103,6 +107,7 @@ export function DbView({ kind, id, shell, reloadToken, onLoaded, onOpenInstance,
           Copy ARN
         </button>
       </div>
+      <HelpTopic id={(current && TAB_HELP[current.id]) ?? "rds.details"} />
       {actions && <div className="row db-actions">{actions(data)}</div>}
 
       {visibleTabs.length > 0 && (

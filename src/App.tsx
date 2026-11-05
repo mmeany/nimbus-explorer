@@ -9,6 +9,7 @@ import { ConnectionDialog } from "./components/ConnectionDialog";
 import { ContextMenu, type MenuItem } from "./components/ContextMenu";
 import { ErrorPanel, NoProfilesPanel } from "./components/ErrorPanel";
 import { FileList, type Column, type Row } from "./components/FileList";
+import { HelpDialog } from "./components/HelpDialog";
 import { BucketIcon, CloudIcon, LockIcon, ParamStoreIcon, ServerIcon, SqsIcon, DynamoIcon, SecretsIcon, SnsIcon, RdsIcon, LogsIcon, LambdaIcon, EcsIcon } from "./components/Icons";
 import { PromptDialog } from "./components/PromptDialog";
 import { TypedConfirmDialog } from "./components/TypedConfirmDialog";
@@ -26,6 +27,8 @@ import { useLogsService } from "./services/logs/useLogsService";
 import { useLambdaService } from "./services/lambda/useLambdaService";
 import { useEcsService } from "./services/ecs/useEcsService";
 import { useSecretsService } from "./services/secrets/useSecretsService";
+import { placeTopic } from "./help";
+import { openHelp, registeredHelpTopic, useOpenHelp } from "./help/store";
 import { HOME, parentPlace, placeUri, S3_ROOT, samePlace, SERVICES, type Place, type ServiceId } from "./shell/places";
 import type { ServiceUi, Shell } from "./shell/shell";
 import { useHistory } from "./state/navigation";
@@ -306,9 +309,20 @@ export default function App() {
     if (p) nav.navigate(p);
   }, [nav, place]);
 
+  const helpTopic = useOpenHelp();
+  const showHelp = useCallback(() => {
+    openHelp(connection ? (registeredHelpTopic() ?? placeTopic(place)) : "general");
+  }, [connection, place]);
+
   // Explorer keyboard shortcuts (ignored while typing in inputs or dialogs).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // F1 works everywhere, including inside dialogs.
+      if (e.key === "F1") {
+        e.preventDefault();
+        if (!document.querySelector(".help-dialog")) showHelp();
+        return;
+      }
       const t = e.target as HTMLElement;
       if (t.closest("input, textarea, select, [role=dialog], [role=alertdialog]")) return;
       if (e.key === "Backspace" || (e.altKey && e.key === "ArrowUp")) {
@@ -327,7 +341,7 @@ export default function App() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goUp, nav, refresh]);
+  }, [goUp, nav, refresh, showHelp]);
 
   // Keep the selected tree node in view.
   useEffect(() => {
@@ -427,6 +441,7 @@ export default function App() {
         onForward={nav.forward}
         onUp={goUp}
         onNavigate={nav.navigate}
+        onHelp={showHelp}
       />
       {connection?.readOnly && (
         <div className="readonly-banner" role="status">
@@ -529,6 +544,7 @@ export default function App() {
           }}
         />
       )}
+      {helpTopic && <HelpDialog topic={helpTopic} />}
     </div>
   );
 }

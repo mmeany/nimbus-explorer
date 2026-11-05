@@ -5,6 +5,7 @@ import type { AppError } from "../../api/core";
 import { queueNameFromArn, queueNameFromUrl, sqsApi, type MoveTask, type QueueInfo } from "../../api/sqs";
 import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
+import { DialogHelp } from "../../components/HelpDialog";
 
 /** A queue to pick (from the name list; no attributes needed). */
 export interface QueueChoice {
@@ -126,6 +127,7 @@ export function RedriveDialog({ queue, queues, shell, onClose, onChanged }: Prop
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog redrive-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
         <div className="dialog-title">
+          <DialogHelp topic="sqs.redrive" />
           {queue.isDlq ? "Redrive" : "Move messages"} · <span className="mono">{queue.name}</span>
         </div>
         <div className="dialog-body">

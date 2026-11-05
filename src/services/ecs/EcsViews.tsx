@@ -2,6 +2,7 @@
 // and events, tasks) and a task (containers and details).
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppError } from "../../api/core";
+import type { HelpTopicId } from "../../help";
 import { ecsApi, ecsTone, launchLabel, shortArn, type ClusterInfo, type ServiceInfo, type TaskInfo } from "../../api/ecs";
 import type { MenuItem } from "../../components/ContextMenu";
 import { ErrorPanel } from "../../components/ErrorPanel";
@@ -11,6 +12,7 @@ import { PageBar } from "../../components/PageBar";
 import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
 import { usePagedDetails, usePaging } from "../../state/paged";
+import { HelpTopic } from "../../components/HelpDialog";
 
 export function Pill({ status, prefix = "" }: { status: string | null; prefix?: string }) {
   return <span className={`status-pill ${ecsTone(status)}`}>{prefix}{(status ?? "unknown").toLowerCase().replace(/_/g, " ")}</span>;
@@ -151,6 +153,9 @@ export function TaskList({ shell, cluster, service, reloadToken, onOpen, actions
 // ---------------------------------------------------------------------------
 // Cluster view
 
+const SERVICE_HELP: Record<string, HelpTopicId> = { deployments: "ecs.service.deployments", tasks: "ecs.service.tasks", logs: "ecs.service.logs" };
+const TASK_HELP: Record<string, HelpTopicId> = { logs: "ecs.task.logs", exec: "ecs.task.exec" };
+
 const SERVICE_COLUMNS: Column[] = [
   { id: "name", label: "Service", width: 240 },
   { id: "status", label: "Status", width: 90 },
@@ -241,6 +246,7 @@ export function ClusterView({
           </button>
         )}
       </div>
+      <HelpTopic id={`ecs.cluster.${tab}`} />
       <div className="segmented small db-tabs">
         <button className={tab === "services" ? "active" : ""} onClick={() => onTab("services")}>
           Services
@@ -333,6 +339,7 @@ export function ServiceView({
         </div>
       </div>
       {primary?.rolloutState === "FAILED" && primary.rolloutReason && <div className="warn-note">{primary.rolloutReason}</div>}
+      <HelpTopic id={SERVICE_HELP[tab] ?? "ecs.service.details"} />
       <div className="segmented small db-tabs">
         {[{ id: "details", label: "Details" }, { id: "deployments", label: "Deployments and events" }, { id: "tasks", label: "Tasks" }, ...extraTabs].map((t) => (
           <button key={t.id} className={tab === t.id ? "active" : ""} onClick={() => setTab(t.id)}>
@@ -522,6 +529,7 @@ export function TaskView({
         </button>
       </div>
       {t.stoppedReason && <div className="warn-note">Stopped: {t.stoppedReason}</div>}
+      <HelpTopic id={TASK_HELP[tab] ?? "ecs.task.details"} />
       {extraTabs.length > 0 && (
         <div className="segmented small db-tabs">
           {[{ id: "details", label: "Details" }, ...extraTabs].map((x) => (

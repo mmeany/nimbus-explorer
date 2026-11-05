@@ -4,6 +4,7 @@ import type { AppError } from "../../api/core";
 import { scheduleProblem, smApi, type SecretInfo } from "../../api/secrets";
 import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
+import { DialogHelp } from "../../components/HelpDialog";
 
 /** "every 30 days" (from AutomaticallyAfterDays) → "rate(30 days)". */
 function initialSchedule(s: SecretInfo): string {
@@ -69,6 +70,7 @@ export function RotationDialog({ secret, shell, onClose, onChanged }: { secret: 
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog secret-editor" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
         <div className="dialog-title">
+          <DialogHelp topic="secrets.rotation" />
           Rotation · <span className="mono">{secret.name}</span>
         </div>
         <div className="dialog-body">

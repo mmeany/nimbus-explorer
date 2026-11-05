@@ -6,6 +6,7 @@ import { ValueEditor } from "../../components/ValueEditor";
 import type { Shell } from "../../shell/shell";
 import { TagRows } from "../sqs/QueueSettingsDialog";
 import { flatObject } from "./SecretValueDisplay";
+import { DialogHelp } from "../../components/HelpDialog";
 
 interface Props {
   /** null = create in `folder`. */
@@ -153,7 +154,7 @@ export function SecretEditorDialog({ secret, folder, shell, onClose, onSaved }: 
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog secret-editor" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">{editing ? <>Edit secret · <span className="mono">{secret!.name}</span></> : "New secret"}</div>
+        <div className="dialog-title"><DialogHelp topic="secrets.editor" />{editing ? <>Edit secret · <span className="mono">{secret!.name}</span></> : "New secret"}</div>
         <div className="dialog-body">
           {!editing && (
             <>

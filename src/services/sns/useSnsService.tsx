@@ -18,6 +18,7 @@ import { SubscriptionDialog } from "./SubscriptionDialog";
 import { TopicSettingsDialog } from "./TopicSettingsDialog";
 import { TopicView } from "./TopicView";
 import { WatchPanel } from "./WatchPanel";
+import { HelpTopic } from "../../components/HelpDialog";
 
 const TOPIC_COLUMNS: Column[] = [
   { id: "name", label: "Name", width: 260 },
@@ -477,6 +478,7 @@ export function useSnsService(shell: Shell): ServiceUi {
       <div className="service-pane">
         <div className="filter-bar sns-bar">
           <div className="segmented small">
+            {subsView && <HelpTopic id="sns.subscriptions" />}
             <button className={!subsView ? "active" : ""} onClick={() => setRootView("topics")}>
               Topics
             </button>

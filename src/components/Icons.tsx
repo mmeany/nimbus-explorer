@@ -10,6 +10,16 @@ export function BucketIcon({ size = 16 }: P) {
   );
 }
 
+export function HelpIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M6 6.2 a2 2 0 1 1 3.1 1.7 C8.3 8.4 8 8.8 8 9.6" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="8" cy="11.6" r="0.85" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function FolderIcon({ size = 16, open = false }: P & { open?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>

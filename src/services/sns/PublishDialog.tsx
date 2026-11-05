@@ -8,6 +8,7 @@ import type { MsgAttribute } from "../../api/sqs";
 import { ValueEditor } from "../../components/ValueEditor";
 import type { Shell } from "../../shell/shell";
 import { attributeProblem } from "../sqs/SendMessageDialog";
+import { DialogHelp } from "../../components/HelpDialog";
 
 interface Props {
   topic: TopicInfo;
@@ -151,6 +152,7 @@ export function PublishDialog({ topic, shell, onClose, onSent }: Props) {
         onKeyDown={(e) => e.key === "Escape" && onClose()}
       >
         <div className="dialog-title">
+          <DialogHelp topic="sns.publish" />
           Publish to <span className="mono">{topic.name}</span>
         </div>
         <div className="dialog-body">

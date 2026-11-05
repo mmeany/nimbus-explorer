@@ -8,6 +8,7 @@ import { MaskedValue } from "../../components/MaskedValue";
 import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
 import { SecretValueDisplay } from "./SecretValueDisplay";
+import { DialogHelp } from "../../components/HelpDialog";
 
 const AWS_LABELS = ["AWSCURRENT", "AWSPREVIOUS", "AWSPENDING"];
 
@@ -123,6 +124,7 @@ export function SecretVersionsDialog({ secret, shell, onClose, onChanged }: { se
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog history-dialog" role="dialog" aria-modal tabIndex={-1} ref={(el) => el?.focus()} onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && e.target === e.currentTarget && onClose()}>
         <div className="dialog-title">
+          <DialogHelp topic="secrets.versions" />
           Versions · <span className="mono">{secret.name}</span>
         </div>
         <div className="dialog-body">

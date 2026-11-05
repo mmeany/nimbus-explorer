@@ -15,6 +15,7 @@ import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
 import { usePaging } from "../../state/paged";
 import { PropRows } from "./EcsViews";
+import { DialogHelp, HelpTopic } from "../../components/HelpDialog";
 
 const COLUMNS: Column[] = [{ id: "name", label: "Family", width: 420 }];
 
@@ -226,7 +227,7 @@ function NewRevisionDialog({ td, onClose, onDone }: { td: TaskDefJson; onClose: 
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog dialog-wide" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">New revision of {td.name.slice(0, td.name.lastIndexOf(":"))}</div>
+        <div className="dialog-title"><DialogHelp topic="ecs.newRevision" />New revision of {td.name.slice(0, td.name.lastIndexOf(":"))}</div>
         <div className="dialog-body">
           <p className="hint">
             Starts from {td.name}. Edit the JSON (for example the image tag, CPU / memory, environment) and register it as a new revision. Services keep running their current
@@ -355,6 +356,7 @@ export function FamilyView({ shell, family, reloadToken, onChanged }: { shell: S
           {revs.active.length} active, {revs.inactive.length} deregistered revision{revs.inactive.length === 1 ? "" : "s"}
         </span>
       </div>
+      <HelpTopic id={`ecs.family.${tab}`} />
       <div className="segmented small db-tabs">
         <button className={tab === "details" ? "active" : ""} onClick={() => setTab("details")}>
           Details

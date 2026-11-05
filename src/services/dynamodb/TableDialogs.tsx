@@ -4,6 +4,7 @@ import type { AppError } from "../../api/core";
 import { ddbApi, ddbNameProblem, type IndexSpec, type KeySpec, type SettingsPatch, type TableInfo } from "../../api/dynamo";
 import type { Shell } from "../../shell/shell";
 import { TagRows } from "../sqs/QueueSettingsDialog";
+import { DialogHelp } from "../../components/HelpDialog";
 
 const STREAM_VIEWS = [
   ["NEW_IMAGE", "New image"],
@@ -149,7 +150,7 @@ export function CreateTableDialog({ shell, onClose, onCreated }: { shell: Shell;
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog table-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">New table</div>
+        <div className="dialog-title"><DialogHelp topic="dynamodb.newTable" />New table</div>
         <div className="dialog-body">
           <div className="pe-grid">
             <span className="form-label">Name</span>
@@ -270,6 +271,7 @@ export function AddIndexDialog({ table, shell, onClose, onAdded }: { table: Tabl
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog table-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
         <div className="dialog-title">
+          <DialogHelp topic="dynamodb.addIndex" />
           Add global index · <span className="mono">{table.name}</span>
         </div>
         <div className="dialog-body">
@@ -355,6 +357,7 @@ export function TableSettingsDialog({ table: t, shell, onClose, onSaved }: { tab
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog table-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
         <div className="dialog-title">
+          <DialogHelp topic="dynamodb.tableSettings" />
           Table settings · <span className="mono">{t.name}</span>
         </div>
         <div className="dialog-body">

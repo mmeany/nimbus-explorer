@@ -5,6 +5,7 @@ import type { AppError } from "../../api/core";
 import { snsApi, snsWriteApi, topicNameProblem, type TopicInfo } from "../../api/sns";
 import { ValueEditor, jsonProblem } from "../../components/ValueEditor";
 import { TagRows, tagProblem, type TagRow } from "../sqs/QueueSettingsDialog";
+import { DialogHelp } from "../../components/HelpDialog";
 
 export interface TopicForm {
   name: string;
@@ -208,7 +209,7 @@ export function TopicSettingsDialog({ topic, onClose, onSaved }: Props) {
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.key === "Escape" && onClose()}
       >
-        <div className="dialog-title">{creating ? "New topic" : `Edit topic · ${topic!.name}`}</div>
+        <div className="dialog-title"><DialogHelp topic="sns.topicSettings" />{creating ? "New topic" : `Edit topic · ${topic!.name}`}</div>
         <div className="dialog-body">
           {loading ? (
             <div className="hint">Loading…</div>

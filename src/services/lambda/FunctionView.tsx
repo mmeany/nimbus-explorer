@@ -2,12 +2,14 @@
 // aliases, plus extra tabs from the controller such as Invoke and Logs).
 import { useEffect, useState, type ReactNode } from "react";
 import type { AppError } from "../../api/core";
+import type { HelpTopicId } from "../../help";
 import { lambdaApi, runtimeLabel, sourceLabel, type FunctionDetails, type Triggers, type Versions } from "../../api/lambda";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { ValueView } from "../../components/ValueView";
 import { formatDate, formatSize } from "../../format";
 import type { Shell } from "../../shell/shell";
 import { AliasDialog, downloadCode, UploadCodeDialog } from "./LambdaDialogs";
+import { HelpTopic } from "../../components/HelpDialog";
 
 export interface FunctionTab {
   id: string;
@@ -43,6 +45,8 @@ function Props_({ rows }: { rows: [string, ReactNode][] }) {
 }
 
 const stateTone = (s: string | null) => (s === "Active" || s === "Successful" ? "ok" : s === "Failed" ? "bad" : s === "Pending" || s === "InProgress" ? "busy" : "off");
+
+const TAB_HELP: Record<string, HelpTopicId> = { details: "lambda.details", invoke: "lambda.invoke", logs: "lambda.logs", triggers: "lambda.triggers", versions: "lambda.versions" };
 
 export function FunctionView({ name, shell, reloadToken, onLoaded, onOpenLogs, tabs = [] }: Props) {
   const [data, setData] = useState<{ name: string; f: FunctionDetails | null; error: AppError | null } | null>(null);
@@ -97,6 +101,7 @@ export function FunctionView({ name, shell, reloadToken, onLoaded, onOpenLogs, t
       </div>
       {f.description && <div className="hint">{f.description}</div>}
       {(f.stateReason || f.lastUpdateReason) && f.state !== "Active" && <div className="warn-note">{f.stateReason ?? f.lastUpdateReason}</div>}
+      <HelpTopic id={TAB_HELP[tab] ?? "lambda.details"} />
       <div className="segmented small db-tabs">
         {[{ id: "details", label: "Details" }, ...tabs, { id: "triggers", label: "Triggers" }, { id: "versions", label: "Versions and aliases" }].map((t) => (
           <button key={t.id} className={tab === t.id ? "active" : ""} onClick={() => setTab(t.id)}>
