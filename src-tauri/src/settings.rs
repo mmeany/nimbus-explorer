@@ -35,6 +35,8 @@ pub struct Settings {
     pub regions: BTreeMap<String, String>,
     /// Remembered filters, newest first, keyed by "<service>|<profile>|<region>".
     pub filter_history: BTreeMap<String, Vec<String>>,
+    /// Activity history: on/off, rollover period, file size limit, files kept.
+    pub history: crate::history::HistorySettings,
 }
 
 /// Filters remembered per key.

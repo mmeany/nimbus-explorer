@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { takeReveal } from "../state/reveal";
 
 export interface Column {
   id: string;
@@ -76,6 +77,20 @@ export function FileList({ columns, rows, selected, onSelectionChange, onOpen, o
   // Drop the shift-anchor when the row set changes.
   useEffect(() => {
     anchor.current = null;
+  }, [rows]);
+
+  // A row asked for by the History dialog ("go to location"): select it once it's listed.
+  useEffect(() => {
+    if (rows.length === 0) return;
+    const key = takeReveal((k) => rows.some((r) => r.key === k));
+    if (key === null) return;
+    anchor.current = key;
+    onSelectionChange(new Set([key]));
+    const i = sorted.findIndex((r) => r.key === key);
+    const el = bodyRef.current;
+    if (el && i >= 0) el.scrollTop = Math.max(0, i * ROW_H - el.clientHeight / 3);
+    // Only when the rows change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
 
   /** Scrolls so row `index` is fully visible. */

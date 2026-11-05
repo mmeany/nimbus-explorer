@@ -497,6 +497,16 @@ button { font: inherit; color: inherit; }
 .pe-grid .form-label { margin-top: 0; }
 .masked-block { display: flex; flex-direction: column; gap: 6px; }
 .history-dialog { width: min(900px, 95vw); }
+.activity-dialog { width: min(1100px, 96vw); max-height: 90vh; display: flex; flex-direction: column; outline: none; }
+.activity-dialog .dialog-body { overflow: auto; display: flex; flex-direction: column; gap: 2px; }
+.activity-filters input[type="search"] { flex: 1; min-width: 160px; }
+.activity-table-wrap { max-height: 52vh; }
+.activity-table tr { cursor: default; }
+.activity-table tr.selected td { background: var(--sel); }
+.activity-table td.mono { max-width: 340px; }
+.activity-table .muted { font-size: 11px; }
+.activity-settings { margin-top: 6px; }
+.activity-settings .row { gap: 6px; align-items: center; }
 .history-table-wrap { max-height: 220px; }
 .history-table tr { cursor: default; }
 .history-table tr.selected td { background: var(--sel); }

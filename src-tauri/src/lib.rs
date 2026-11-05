@@ -7,6 +7,7 @@ mod ecs;
 mod ecs_actions;
 mod ecs_taskdefs;
 mod error;
+mod history;
 mod lambda;
 mod lambda_admin;
 mod lambda_code;
@@ -61,6 +62,13 @@ pub fn run() {
             commands::set_read_only,
             commands::remember_filter,
             commands::forget_filter,
+            commands::history::history_record,
+            commands::history::history_page,
+            commands::history::history_profiles,
+            commands::history::history_export,
+            commands::history::history_clear,
+            commands::history::history_open_folder,
+            commands::history::set_history_settings,
             commands::ssm::ssm_list_path,
             commands::ssm::ssm_list_prefix,
             commands::ssm::ssm_values,

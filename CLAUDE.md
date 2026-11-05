@@ -87,7 +87,13 @@ src/api/core.ts                `call` (invoke wrapper), AppError, profile/settin
 src-tauri/src/commands/mod.rs  AppState + app-level commands (profiles, settings,
                                connect, dialogs, transfer cancel, parse_yaml)
 src-tauri/src/commands/<svc>.rs  one module per service
+src-tauri/src/history.rs       activity history files (see Phase 11)
+src/history/rules.ts           one history rule per recorded command
 ```
+**Every write command (one that calls `ensure_writable`) needs a rule in
+`src/history/rules.ts`** (names and locations only, never values); a Rust test
+fails otherwise. Local writes (downloads, exports) should get one too.
+
 Adding a service: extend `ServiceId`/`Place`/`SERVICES` and the place helpers,
 write `api/<svc>.ts`, `services/<svc>/use<Svc>Service.tsx`, register it in
 App's `services` map and SERVICE_ICONS, add `commands/<svc>.rs` and register its
@@ -687,3 +693,38 @@ charts; ECS Exec only as a command to copy (needs the Session Manager plugin).
   bar, `<HelpTopic id>` for a tab or toggle), else `placeTopic(place)`; not
   connected = `general`. When a view, tab or larger dialog changes, update its
   topic; a new one gets a topic too. Simple confirm / prompt dialogs have none.
+
+### Phase 11: Activity history (agreed 2026-11-05)
+Option C of the options discussed: append-only JSON Lines files, per profile,
+written by Rust; no new dependencies (no SQLite). Opening an entry goes to
+where it happened and never re-runs anything.
+- 11.1 ✅ (`src-tauri/src/history.rs`, `commands/history.rs`) Files in
+  `<settings dir>/history/<safe profile>/` (+ `profile.txt` with the real
+  name): `<period>[.n].jsonl`, period day / ISO week / month / year in UTC
+  (own civil-date maths, no date crate), `.n` once a file reaches
+  `maxFileMb`; `keepFiles` prunes the oldest per profile (on a new file and on
+  saving settings). Settings in `settings.json` `history` (enabled, period,
+  maxFileMb, keepFiles; default on, month, 10 MB, 24). Appends under a
+  process-wide lock; unreadable lines are skipped and counted. Paging newest
+  first with a {file, line} cursor; filters (service, text, failures, UTC
+  time range); export CSV / JSON (`.s3x-part` then rename); clear (typed
+  confirmation in the UI); open folder. All allowed in read-only mode.
+  Rust adds time, profile (from the connection) and region ("" for s3 / app).
+- 11.2 ✅ (`api/core.ts` `setCallObserver`, `history/recorder.ts`,
+  `history/rules.ts`) Recording happens in the UI layer because it knows the
+  `Place`: every `call` is observed; a command with a rule records action,
+  target, `place` (derived from the arguments, else the place on screen) and
+  `select` (row key to highlight). Refusals of kind readOnly / notConnected
+  aren't recorded; failures are, with the error kind and message. PartiQL
+  SELECT / later pages and read-only SQL runs return no entry. Test
+  `every_write_command_has_a_history_rule` scans `commands/*.rs` for
+  `ensure_writable` and checks rules.ts has `  <command>:` for each.
+- 11.3 ✅ (`components/HistoryDialog.tsx`, toolbar clock button, Ctrl+H, help
+  topic `history`) Profile / service / text / date / failures filters, 200 per
+  page + Load older, Settings, Export, Open folder, Clear. Go to location
+  (`App.goToEntry`): asks before switching profile (`connectTo` now returns
+  the ConnectionInfo), sets the region if it differs, navigates, and selects
+  the row via `state/reveal.ts` (a pending key, 15 s, taken by the first
+  `FileList` that lists it). The dialog renders before the shared confirm
+  dialogs so they appear on top of it.
+- 11.4 ✅ Docs (`docs/history.md`, README).

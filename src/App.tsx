@@ -10,6 +10,7 @@ import { ContextMenu, type MenuItem } from "./components/ContextMenu";
 import { ErrorPanel, NoProfilesPanel } from "./components/ErrorPanel";
 import { FileList, type Column, type Row } from "./components/FileList";
 import { HelpDialog } from "./components/HelpDialog";
+import { HistoryDialog } from "./components/HistoryDialog";
 import { BucketIcon, CloudIcon, LockIcon, ParamStoreIcon, ServerIcon, SqsIcon, DynamoIcon, SecretsIcon, SnsIcon, RdsIcon, LogsIcon, LambdaIcon, EcsIcon } from "./components/Icons";
 import { PromptDialog } from "./components/PromptDialog";
 import { TypedConfirmDialog } from "./components/TypedConfirmDialog";
@@ -27,11 +28,14 @@ import { useLogsService } from "./services/logs/useLogsService";
 import { useLambdaService } from "./services/lambda/useLambdaService";
 import { useEcsService } from "./services/ecs/useEcsService";
 import { useSecretsService } from "./services/secrets/useSecretsService";
+import { DEFAULT_HISTORY_SETTINGS, type HistoryEntry } from "./api/history";
 import { placeTopic } from "./help";
 import { openHelp, registeredHelpTopic, useOpenHelp } from "./help/store";
 import { HOME, parentPlace, placeUri, S3_ROOT, samePlace, SERVICES, type Place, type ServiceId } from "./shell/places";
 import type { ServiceUi, Shell } from "./shell/shell";
+import { installHistoryRecorder, setHistoryPlace } from "./history/recorder";
 import { useHistory } from "./state/navigation";
+import { requestReveal } from "./state/reveal";
 import { useTheme } from "./state/theme";
 import { useTransfers } from "./state/transfers";
 
@@ -51,6 +55,9 @@ interface PromptState {
   validate: (v: string) => string | null;
   resolve: (v: string | null) => void;
 }
+
+// Every finished command passes the activity-history recorder (src/history/).
+installHistoryRecorder();
 
 const TREE_WIDTH_KEY = "s3x.treeWidth";
 
@@ -105,9 +112,12 @@ export default function App() {
   const [working, setWorking] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [homeSelected, setHomeSelected] = useState<Set<string>>(new Set());
+  const [showHistory, setShowHistory] = useState(false);
   const flashTimer = useRef<number | undefined>(undefined);
   const nav = useHistory<Place>(HOME, samePlace);
   const place = nav.current;
+  // History entries fall back to the place on screen when a command doesn't say where.
+  setHistoryPlace(place);
   const treeRef = useRef<HTMLDivElement>(null);
 
   const themePref: ThemePref = settings?.theme ?? "system";
@@ -115,7 +125,7 @@ export default function App() {
 
   async function changeTheme(theme: ThemePref) {
     // Apply immediately; persisting is best-effort.
-    setSettings((s) => (s ? { ...s, theme } : { lastProfile: null, overrides: {}, regions: {}, filterHistory: {}, theme }));
+    setSettings((s) => (s ? { ...s, theme } : { lastProfile: null, overrides: {}, regions: {}, filterHistory: {}, history: DEFAULT_HISTORY_SETTINGS, theme }));
     try {
       setSettings(await api.setTheme(theme));
     } catch {
@@ -254,17 +264,18 @@ export default function App() {
   // Each connect gets a sequence number so a slow response can't win over a newer one.
   const seq = useRef(0);
   const connectTo = useCallback(
-    async (name: string) => {
+    async (name: string): Promise<ConnectionInfo | null> => {
       const my = ++seq.current;
       setProfile(name);
       setConnectError(null);
       setConnecting(true);
       try {
         const info = await api.connect(name);
-        if (my !== seq.current) return;
+        if (my !== seq.current) return null;
         setConnection(info);
         setConnectionId((n) => n + 1);
         nav.reset(S3_ROOT);
+        return info;
       } catch (e) {
         if (my === seq.current) {
           setConnection(null);
@@ -273,6 +284,7 @@ export default function App() {
       } finally {
         if (my === seq.current) setConnecting(false);
       }
+      return null;
     },
     [nav.reset],
   );
@@ -296,6 +308,53 @@ export default function App() {
     // Run once on start-up.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ---------------------------------------------------------------------------
+  // History: go to where an entry happened (never re-runs it)
+
+  async function goToEntry(e: HistoryEntry) {
+    const target = e.place;
+    if (!target || !SERVICES.some((s) => s.id === target.service)) {
+      showFlash("This entry has no location to go to");
+      return;
+    }
+    let info = connection;
+    if (!info || e.profile !== info.profile) {
+      if (!profiles?.some((p) => p.name === e.profile)) {
+        showError({ kind: "other", message: `Profile "${e.profile}" isn't in your AWS config any more.`, detail: "" });
+        return;
+      }
+      const ok = await ask(
+        "Switch profile?",
+        <>
+          <p>
+            This happened with profile "{e.profile}". Connect to it and go there?
+          </p>
+          <p className="hint">The new connection starts read-only, as always.</p>
+        </>,
+        [
+          { label: "Switch and go", value: "yes", primary: true },
+          { label: "Cancel", value: "no" },
+        ],
+        "no",
+      );
+      if (ok !== "yes") return;
+      info = await connectTo(e.profile);
+      if (!info) return;
+    }
+    if (e.region && e.region !== info.serviceRegion) {
+      try {
+        setConnection(await api.setRegion(e.region));
+        showFlash(`Region set to ${e.region} (where this happened)`);
+      } catch (err) {
+        showError(err);
+        return;
+      }
+    }
+    setShowHistory(false);
+    requestReveal(e.select ?? null);
+    nav.navigate(target);
+  }
 
   // ---------------------------------------------------------------------------
   // Navigation
@@ -324,6 +383,11 @@ export default function App() {
         return;
       }
       const t = e.target as HTMLElement;
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "h" && !t.closest("[role=dialog], [role=alertdialog]")) {
+        e.preventDefault();
+        setShowHistory(true);
+        return;
+      }
       if (t.closest("input, textarea, select, [role=dialog], [role=alertdialog]")) return;
       if (e.key === "Backspace" || (e.altKey && e.key === "ArrowUp")) {
         e.preventDefault();
@@ -442,6 +506,7 @@ export default function App() {
         onUp={goUp}
         onNavigate={nav.navigate}
         onHelp={showHelp}
+        onHistory={() => setShowHistory(true)}
       />
       {connection?.readOnly && (
         <div className="readonly-banner" role="status">
@@ -489,6 +554,16 @@ export default function App() {
           {services[s.id].dialogs}
         </div>
       ))}
+      {/* Before the shared dialogs, so its confirmations show on top of it. */}
+      {showHistory && (
+        <HistoryDialog
+          shell={shell}
+          settings={settings?.history ?? DEFAULT_HISTORY_SETTINGS}
+          onSettingsSaved={setSettings}
+          onGoTo={(e) => void goToEntry(e)}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
       {prompt && (
         <PromptDialog
           title={prompt.title}

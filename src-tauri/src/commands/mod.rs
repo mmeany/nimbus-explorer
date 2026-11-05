@@ -4,6 +4,7 @@
 
 pub mod dynamo;
 pub mod ecs;
+pub mod history;
 pub mod lambda;
 pub mod logs;
 pub mod rds;

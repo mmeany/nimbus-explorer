@@ -57,6 +57,30 @@ Secret values stay masked until you choose **Reveal** or **Copy**. They're never
 
 Press **F1** anywhere for help with what's on screen. **General help** below covers the profile, the read-only lock, regions and shortcuts.`,
   },
+  history: {
+    title: "History",
+    body: `The app records what you do, per profile: changes (uploads, deletes, edits, invokes, purges…), downloads and exports, connecting, and unlocking or locking read-only mode. Open it with the clock button in the toolbar or **Ctrl+H**.
+
+### Going back to where it happened
+
+Double-click an entry, or select it and choose **Go to location**. The app opens the folder, queue, table, function or other place where it happened and selects the item when it's on the page. If the entry belongs to another profile, it asks before switching, and it switches region if needed. **Nothing is run again.**
+
+After a delete, the location is the folder or list the item was in.
+
+### What's recorded
+
+Time, service, action, target (names, keys, ARNs), the result and a short detail such as a count. **Values are never recorded**: no parameter or secret values, message bodies, item contents, environment variables, payloads or SQL text. Reads such as SELECT statements, and anything refused by the read-only lock, aren't recorded.
+
+### Filters
+
+Filter by profile, service, text, date range (your local days) or failures only. **Load older** fetches the next 200.
+
+### Files and settings
+
+History is kept on this computer in one folder per profile under the app's settings folder (**Open folder** shows it), as JSON Lines files. In **Settings…** choose when a new file starts (every day, week, month or year, and when a file reaches a size), how many files to keep (older ones are deleted), or turn recording off.
+
+**Export…** writes the filtered entries as CSV, or JSON if the file name ends in \`.json\`. **Clear…** deletes the selected profile's history after you type its name.`,
+  },
   "connection.settings": {
     title: "Connection settings",
     body: `Point this profile at a different endpoint without editing your AWS config. It's for emulators and S3-compatible servers such as LocalStack and MinIO.

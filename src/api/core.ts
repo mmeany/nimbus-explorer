@@ -37,6 +37,8 @@ export interface Settings {
   regions: Record<string, string>;
   /** Remembered filters, newest first, keyed "<service>|<profile>|<region>". */
   filterHistory: Record<string, string[]>;
+  /** Activity history options (see api/history.ts). */
+  history: import("./history").HistorySettings;
 }
 
 export interface ConnectionInfo {
@@ -75,11 +77,32 @@ export function toAppError(e: unknown): AppError {
   return { kind: "other", message, detail: message };
 }
 
+/** Sees every finished command (the activity history, src/history/recorder.ts). */
+export type CallObserver = (cmd: string, args: Record<string, unknown>, result: unknown, error: AppError | null) => void;
+let observer: CallObserver | null = null;
+
+export function setCallObserver(o: CallObserver | null) {
+  observer = o;
+}
+
+function observe(cmd: string, args: Record<string, unknown> | undefined, result: unknown, error: AppError | null) {
+  try {
+    observer?.(cmd, args ?? {}, result, error);
+  } catch {
+    /* history must never break the command it records */
+  }
+}
+
 /** Invokes a Rust command, normalising errors to AppError. */
 export async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  let result: T;
   try {
-    return await invoke<T>(cmd, args);
+    result = await invoke<T>(cmd, args);
   } catch (e) {
-    throw toAppError(e);
+    const err = toAppError(e);
+    observe(cmd, args, undefined, err);
+    throw err;
   }
+  observe(cmd, args, result, null);
+  return result;
 }

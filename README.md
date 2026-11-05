@@ -90,6 +90,13 @@ Each service is a node in the tree under the profile. Shared controls:
 - **Help**: the **?** button at the end of the toolbar, or **F1**, explains the
   view and tab on screen. Larger dialogs have their own **?** in the title bar,
   and F1 works there too.
+- **History**: the clock button in the toolbar, or **Ctrl+H**, lists what you
+  did per profile (changes, downloads, exports, connecting, the read-only lock),
+  newest first, with filters. Double-click an entry to go back to where it
+  happened; nothing is run again. Only names and locations are recorded, never
+  values. Kept on this computer as JSON Lines files, a new file every day /
+  week / month / year (your choice) or at a size limit. See
+  [docs/history.md](docs/history.md).
 - **Region** list in the toolbar for the regional services (Parameter Store,
   SQS, SNS, DynamoDB, RDS, ECS, Lambda, CloudWatch Logs, Secrets Manager); remembered per profile. S3 always
   uses each bucket's own region.
@@ -153,6 +160,7 @@ Shortcuts for the other services are in their guides.
 | Alt+← / Alt+→            | Back / forward            |
 | F5                       | Refresh                   |
 | F1                       | Help for this view        |
+| Ctrl+H                   | History                   |
 | Ctrl+A                   | Select all (on this page) |
 | Ctrl+PgDn / Ctrl+PgUp    | Next / previous page      |
 | Ctrl+F                   | Search                    |
