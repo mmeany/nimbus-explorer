@@ -543,6 +543,7 @@ export function useSsmService(shell: Shell): ServiceUi {
         { label: "Import into this folder…", disabled: readOnly, onClick: () => setIo({ kind: "import", folder: newFolder }) },
         "separator",
         { label: "Copy path", onClick: () => void shell.copyText(path) },
+        { label: "Add bookmark for this folder…", onClick: () => shell.addBookmark({ service: "ssm", path }, null, null) },
         "separator",
         { label: "Refresh", shortcut: "F5", onClick: refresh },
       ];
@@ -550,6 +551,7 @@ export function useSsmService(shell: Shell): ServiceUi {
       items = [
         { label: "Open", bold: true, onClick: () => go(key) },
         { label: "Copy path", onClick: () => void shell.copyText(key) },
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "ssm", path: key }, null, null) },
         { label: "Filter by this path", onClick: () => void applyFilter(key) },
         "separator",
         { label: "New parameter here…", disabled: readOnly, onClick: () => setEditor({ mode: "create", folder: key }) },
@@ -571,6 +573,7 @@ export function useSsmService(shell: Shell): ServiceUi {
         { label: "Tier and policies…", onClick: () => p && setSettingsOf({ param: p, tab: "tier" }) },
         "separator",
         { label: "Copy name", onClick: () => void shell.copyText(key) },
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "ssm", path: parentPath(key) }, key, lastSegment(key)) },
         ...(p && p.paramType !== "SecureString" && p.value !== null
           ? [{ label: "Copy value", onClick: () => void shell.copyText(p.value!) } as MenuItem]
           : []),
@@ -629,6 +632,7 @@ export function useSsmService(shell: Shell): ServiceUi {
           shell.openMenu(x, y, [
             { label: "Open", bold: true, onClick: () => (setFilter(""), go(p)) },
             { label: "Copy path", onClick: () => void shell.copyText(p) },
+            { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "ssm", path: p }, null, null) },
             { label: "Filter by this path", onClick: () => void applyFilter(p) },
             "separator",
             { label: "New parameter here…", disabled: readOnly, onClick: () => setEditor({ mode: "create", folder: p }) },

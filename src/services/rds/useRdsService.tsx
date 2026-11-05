@@ -338,6 +338,7 @@ export function useRdsService(shell: Shell): ServiceUi {
       items.push(
         { label: "Copy name", onClick: () => void shell.copyText(id) },
         ...(arn ? [{ label: "Copy ARN", onClick: () => void shell.copyText(arn) } as MenuItem] : []),
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "rds", kind, id }, null, null) },
         "separator",
       );
     }

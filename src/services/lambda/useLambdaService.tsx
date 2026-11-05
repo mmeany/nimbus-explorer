@@ -206,6 +206,7 @@ export function useLambdaService(shell: Shell): ServiceUi {
         "separator",
         { label: "Copy name", onClick: () => void shell.copyText(f.name) },
         { label: "Copy ARN", onClick: () => void shell.copyText(f.arn) },
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "lambda", fn: f.name }, null, null) },
         "separator",
       );
     }

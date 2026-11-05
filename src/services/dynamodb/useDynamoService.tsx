@@ -331,6 +331,7 @@ export function useDynamoService(shell: Shell): ServiceUi {
         "separator",
         { label: "Copy name", onClick: () => void shell.copyText(t.name) },
         ...(t.arn ? [{ label: "Copy ARN", onClick: () => void shell.copyText(t.arn!) } as MenuItem] : []),
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "dynamodb", table: t.name }, null, null) },
         "separator",
         { label: "Delete table…", shortcut: "Del", disabled: readOnly, onClick: () => void deleteTable(t.name) },
         "separator",

@@ -138,6 +138,7 @@ export function useLogsService(shell: Shell): ServiceUi {
         "separator",
         { label: "Copy name", onClick: () => void shell.copyText(key) },
         ...(g?.arn ? [{ label: "Copy ARN", onClick: () => void shell.copyText(g.arn!) } as MenuItem] : []),
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "logs", group: key }, null, null) },
         "separator",
       );
     }

@@ -384,17 +384,18 @@ export default function App() {
 
   /** Opens the add (or, if it exists, edit) dialog for a place and optional item. */
   const addBookmark = useCallback(
-    (at: Place, select: string | null, label: string | null, folder: string | null = null) => {
+    (at: Place, select: string | null, label: string | null, folder: string | null = null, who: { profile: string; region: string } | null = null) => {
       if (!connection || at.service === "home") return;
-      const existing = findBookmark(currentBookmarks(), connection.profile, at, select);
+      const profile = who?.profile ?? connection.profile;
+      const existing = findBookmark(currentBookmarks(), profile, at, select);
       const crumbs = placeCrumbs(at);
       const name = label ?? crumbs[crumbs.length - 1]?.label ?? SERVICES.find((s) => s.id === at.service)?.name ?? "Bookmark";
       setBookmarkEdit({
         existing,
         folder,
         draft: {
-          profile: connection.profile,
-          region: at.service === "s3" ? "" : connection.serviceRegion,
+          profile,
+          region: at.service === "s3" ? "" : (who?.region || connection.serviceRegion),
           service: at.service,
           place: at,
           select,
@@ -652,6 +653,16 @@ export default function App() {
         </div>
       ))}
       {/* Before the shared dialogs, so their confirmations and prompts show on top. */}
+      {showHistory && (
+        <HistoryDialog
+          shell={shell}
+          settings={settings?.history ?? DEFAULT_HISTORY_SETTINGS}
+          onSettingsSaved={setSettings}
+          onGoTo={(e) => void goToEntry(e)}
+          onBookmark={(e) => e.place && e.place.service !== "home" && addBookmark(e.place, e.select ?? null, null, null, { profile: e.profile, region: e.region })}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
       {bookmarkEdit && (
         <BookmarkDialog
           shell={shell}
@@ -659,15 +670,6 @@ export default function App() {
           existing={bookmarkEdit.existing}
           initialFolder={bookmarkEdit.folder}
           onClose={() => setBookmarkEdit(null)}
-        />
-      )}
-      {showHistory && (
-        <HistoryDialog
-          shell={shell}
-          settings={settings?.history ?? DEFAULT_HISTORY_SETTINGS}
-          onSettingsSaved={setSettings}
-          onGoTo={(e) => void goToEntry(e)}
-          onClose={() => setShowHistory(false)}
         />
       )}
       {prompt && (

@@ -716,6 +716,7 @@ export function useS3Service(shell: Shell): ServiceUi {
       { label: "Upload files into this folder…", disabled: readOnly, onClick: () => void uploadFilesTo(l) },
       { label: "Upload folder into this folder…", disabled: readOnly, onClick: () => void uploadFolderTo(l) },
       "separator",
+      { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "s3", ...l }, null, null) },
       { label: "Copy S3 URI", onClick: () => void copyText(toS3Uri(l)) },
       ...(isBucket || l.bucket === null
         ? []
@@ -831,6 +832,7 @@ export function useS3Service(shell: Shell): ServiceUi {
             "separator",
             { label: "Sync this bucket…", onClick: () => setSyncTarget(b) },
             { label: "Download list of contents…", onClick: () => void downloadListing(b) },
+            { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "s3", ...b }, null, null) },
             { label: "Copy S3 URI", onClick: () => void copyText(toS3Uri(b)) },
           ]
         : [{ label: "Refresh", shortcut: "F5", onClick: refresh }];
@@ -844,6 +846,7 @@ export function useS3Service(shell: Shell): ServiceUi {
         "separator",
         { label: "Sync this folder…", onClick: () => setSyncTarget(loc) },
         { label: "Download list of contents…", onClick: () => void downloadListing(loc) },
+        { label: "Add bookmark for this folder…", onClick: () => shell.addBookmark({ service: "s3", ...loc }, null, null) },
         { label: "Copy S3 URI", onClick: () => void copyText(toS3Uri(loc)) },
         "separator",
         { label: "Refresh", shortcut: "F5", onClick: refresh },
@@ -863,6 +866,17 @@ export function useS3Service(shell: Shell): ServiceUi {
         { label: single ? "Download…" : `Download ${keys.length} items…`, onClick: () => void downloadItems(keys) },
         ...(isFile ? [{ label: "Share link…", onClick: () => setShareKey(key) } as MenuItem] : []),
         ...(single ? [{ label: "Copy S3 URI", onClick: () => void copyText(`s3://${loc.bucket}/${key}`) } as MenuItem] : []),
+        ...(single
+          ? [
+              {
+                label: "Add bookmark…",
+                onClick: () =>
+                  isFolder
+                    ? shell.addBookmark({ service: "s3", ...into }, null, null)
+                    : shell.addBookmark({ service: "s3", bucket: loc.bucket, prefix: parentPrefix(key) }, key, baseName(key)),
+              } as MenuItem,
+            ]
+          : []),
         "separator",
         { label: anyFolder ? `Cut (${noFolders.toLowerCase()})` : "Cut", shortcut: "Ctrl+X", disabled: readOnly || anyFolder, onClick: () => toClipboard("cut", keys) },
         { label: anyFolder ? `Copy (${noFolders.toLowerCase()})` : "Copy", shortcut: "Ctrl+C", disabled: readOnly || anyFolder, onClick: () => toClipboard("copy", keys) },

@@ -112,7 +112,7 @@ export function TaskList({ shell, cluster, service, reloadToken, onOpen, actions
   function menu(key: string | null, x: number, y: number) {
     const t = key ? byId.get(key) : undefined;
     const items: MenuItem[] = [];
-    if (t) items.push({ label: "Open", bold: true, shortcut: "Enter", onClick: () => onOpen(t.id) }, { label: "Copy task id", onClick: () => void shell.copyText(t.id) }, { label: "Copy ARN", onClick: () => void shell.copyText(t.arn) }, ...(actions ? ["separator" as const, ...actions(t)] : []), "separator");
+    if (t) items.push({ label: "Open", bold: true, shortcut: "Enter", onClick: () => onOpen(t.id) }, { label: "Copy task id", onClick: () => void shell.copyText(t.id) }, { label: "Copy ARN", onClick: () => void shell.copyText(t.arn) }, { label: "Add bookmark…", onClick: () => shell.addBookmark(shell.place, t.id, `task ${t.id.slice(0, 12)}`) }, ...(actions ? ["separator" as const, ...actions(t)] : []), "separator");
     items.push({ label: "Refresh", onClick: retry });
     shell.openMenu(x, y, items);
   }

@@ -389,7 +389,11 @@ export function useSnsService(shell: Shell): ServiceUi {
     const items: MenuItem[] = [];
     const s = key ? subFor(key) : undefined;
     if (s) {
-      items.push({ label: "Open topic", bold: true, shortcut: "Enter", onClick: () => go(topicNameFromArn(s.topicArn)) }, "separator");
+      items.push(
+        { label: "Open topic", bold: true, shortcut: "Enter", onClick: () => go(topicNameFromArn(s.topicArn)) },
+        { label: "Bookmark the topic…", onClick: () => shell.addBookmark({ service: "sns", topic: topicNameFromArn(s.topicArn) }, null, null) },
+        "separator",
+      );
       if (s.pending) items.push({ label: "Confirm with token…", disabled: readOnly, onClick: () => void confirmWithToken(s.topicArn) });
       else
         items.push(
@@ -419,6 +423,7 @@ export function useSnsService(shell: Shell): ServiceUi {
         "separator",
         { label: "Copy ARN", onClick: () => void shell.copyText(t.arn) },
         { label: "Copy name", onClick: () => void shell.copyText(t.name) },
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "sns", topic: t.name }, null, null) },
         "separator",
       );
     } else {

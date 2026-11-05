@@ -37,6 +37,8 @@ interface Props {
   onSettingsSaved: (s: Settings) => void;
   /** Go to where an entry happened (switching profile / region if needed). */
   onGoTo: (e: HistoryEntry) => void;
+  /** Bookmark where an entry happened. */
+  onBookmark: (e: HistoryEntry) => void;
   onClose: () => void;
 }
 
@@ -69,7 +71,7 @@ function resultText(e: HistoryEntry): string {
   }
 }
 
-export function HistoryDialog({ shell, settings, onSettingsSaved, onGoTo, onClose }: Props) {
+export function HistoryDialog({ shell, settings, onSettingsSaved, onGoTo, onBookmark, onClose }: Props) {
   const current = shell.connection?.profile ?? shell.profile ?? "";
   const [profile, setProfile] = useState(current);
   const [profiles, setProfiles] = useState<string[]>([]);
@@ -313,6 +315,9 @@ export function HistoryDialog({ shell, settings, onSettingsSaved, onGoTo, onClos
               </button>
             )}
             <div className="spacer" />
+            <button className="btn" disabled={!sel || !canGo(sel)} onClick={() => sel && onBookmark(sel)} title="Bookmark where this happened (for the entry's profile and region)">
+              Bookmark…
+            </button>
             <button className="btn" disabled={!sel || !canGo(sel)} onClick={() => sel && onGoTo(sel)} title="Opens the location; nothing is run again">
               Go to location
             </button>
