@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { profileLabel, sortProfiles, type ConnectionInfo, type ProfileInfo, type ThemePref } from "../api/core";
 import { HOME, placeCrumbs, type Place } from "../shell/places";
 import { AWS_REGIONS } from "../shell/regions";
-import { BackIcon, CopyIcon, ForwardIcon, GearIcon, HelpIcon, HistoryIcon, LockIcon, RefreshIcon, UpIcon } from "./Icons";
+import { BackIcon, CopyIcon, ForwardIcon, GearIcon, HelpIcon, HistoryIcon, LockIcon, RefreshIcon, StarIcon, UpIcon } from "./Icons";
 
 interface Props {
   profiles: ProfileInfo[];
@@ -32,6 +32,12 @@ interface Props {
   onNavigate: (p: Place) => void;
   onHelp: () => void;
   onHistory: () => void;
+  canBookmark: boolean;
+  /** The current place is bookmarked (filled star). */
+  bookmarked: boolean;
+  onBookmark: () => void;
+  /** The bookmarks bar row, or null when hidden. */
+  bookmarksBar: ReactNode;
 }
 
 export function Toolbar(p: Props) {
@@ -138,6 +144,15 @@ export function Toolbar(p: Props) {
           <UpIcon />
         </button>
         <AddressBar place={p.place} onNavigate={p.onNavigate} />
+        <button
+          className={`tool-btn ${p.bookmarked ? "star-on" : ""}`}
+          title={p.bookmarked ? "Edit bookmark (Ctrl+D)" : "Bookmark this location (Ctrl+D)"}
+          aria-label="Bookmark"
+          onClick={p.onBookmark}
+          disabled={!p.canBookmark}
+        >
+          <StarIcon filled={p.bookmarked} />
+        </button>
         <button className="tool-btn" title={p.uri ? `Copy ${p.uri} to the clipboard` : "Copy this location to the clipboard"} onClick={p.onCopyLocation} disabled={!p.connection || !p.uri}>
           <CopyIcon />
         </button>
@@ -145,6 +160,7 @@ export function Toolbar(p: Props) {
           <RefreshIcon />
         </button>
       </div>
+      {p.bookmarksBar}
     </div>
   );
 }

@@ -11,6 +11,11 @@ import { ErrorPanel, NoProfilesPanel } from "./components/ErrorPanel";
 import { FileList, type Column, type Row } from "./components/FileList";
 import { HelpDialog } from "./components/HelpDialog";
 import { HistoryDialog } from "./components/HistoryDialog";
+import { BookmarkDialog, type BookmarkDraft } from "./components/BookmarkDialog";
+import { BookmarksBar } from "./components/BookmarksBar";
+import { bookmarksApi, type Bookmark } from "./api/bookmarks";
+import { currentBookmarks, findBookmark, isPlaceBookmarked, loadBookmarks, useBookmarks } from "./state/bookmarks";
+import { currentSelection } from "./state/selection";
 import { BucketIcon, CloudIcon, LockIcon, ParamStoreIcon, ServerIcon, SqsIcon, DynamoIcon, SecretsIcon, SnsIcon, RdsIcon, LogsIcon, LambdaIcon, EcsIcon } from "./components/Icons";
 import { PromptDialog } from "./components/PromptDialog";
 import { TypedConfirmDialog } from "./components/TypedConfirmDialog";
@@ -31,7 +36,7 @@ import { useSecretsService } from "./services/secrets/useSecretsService";
 import { DEFAULT_HISTORY_SETTINGS, type HistoryEntry } from "./api/history";
 import { placeTopic } from "./help";
 import { openHelp, registeredHelpTopic, useOpenHelp } from "./help/store";
-import { HOME, parentPlace, placeUri, S3_ROOT, samePlace, SERVICES, type Place, type ServiceId } from "./shell/places";
+import { HOME, parentPlace, placeCrumbs, placeUri, S3_ROOT, samePlace, SERVICES, type Place, type ServiceId } from "./shell/places";
 import type { ServiceUi, Shell } from "./shell/shell";
 import { installHistoryRecorder, setHistoryPlace } from "./history/recorder";
 import { useHistory } from "./state/navigation";
@@ -125,7 +130,7 @@ export default function App() {
 
   async function changeTheme(theme: ThemePref) {
     // Apply immediately; persisting is best-effort.
-    setSettings((s) => (s ? { ...s, theme } : { lastProfile: null, overrides: {}, regions: {}, filterHistory: {}, history: DEFAULT_HISTORY_SETTINGS, theme }));
+    setSettings((s) => (s ? { ...s, theme } : { lastProfile: null, overrides: {}, regions: {}, filterHistory: {}, history: DEFAULT_HISTORY_SETTINGS, hideBookmarksBar: false, theme }));
     try {
       setSettings(await api.setTheme(theme));
     } catch {
@@ -234,6 +239,7 @@ export default function App() {
     openMenu: (x, y, items) => setMenu({ x, y, items }),
     copyText,
     openTransfers: () => setShowTransfers(true),
+    addBookmark: (at, select, label) => addBookmark(at, select, label),
   };
 
   // ---------------------------------------------------------------------------
@@ -310,25 +316,30 @@ export default function App() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  // History: go to where an entry happened (never re-runs it)
+  // Going to a recorded location (history entries and bookmarks). Never re-runs
+  // anything: switches profile (after asking) and region if needed, navigates,
+  // and selects the item when it's listed.
 
-  async function goToEntry(e: HistoryEntry) {
-    const target = e.place;
+  async function openLocation(
+    t: { profile: string; region: string; place?: Place | null; select?: string | null },
+    what: "entry" | "bookmark",
+  ): Promise<boolean> {
+    const target = t.place;
     if (!target || !SERVICES.some((s) => s.id === target.service)) {
-      showFlash("This entry has no location to go to");
-      return;
+      showFlash(`This ${what} has no location to go to`);
+      return false;
     }
     let info = connection;
-    if (!info || e.profile !== info.profile) {
-      if (!profiles?.some((p) => p.name === e.profile)) {
-        showError({ kind: "other", message: `Profile "${e.profile}" isn't in your AWS config any more.`, detail: "" });
-        return;
+    if (!info || t.profile !== info.profile) {
+      if (!profiles?.some((p) => p.name === t.profile)) {
+        showError({ kind: "other", message: `Profile "${t.profile}" isn't in your AWS config any more.`, detail: "" });
+        return false;
       }
       const ok = await ask(
         "Switch profile?",
         <>
           <p>
-            This happened with profile "{e.profile}". Connect to it and go there?
+            {what === "entry" ? "This happened with" : "This bookmark is for"} profile "{t.profile}". Connect to it and go there?
           </p>
           <p className="hint">The new connection starts read-only, as always.</p>
         </>,
@@ -338,22 +349,81 @@ export default function App() {
         ],
         "no",
       );
-      if (ok !== "yes") return;
-      info = await connectTo(e.profile);
-      if (!info) return;
+      if (ok !== "yes") return false;
+      info = await connectTo(t.profile);
+      if (!info) return false;
     }
-    if (e.region && e.region !== info.serviceRegion) {
+    if (t.region && target.service !== "s3" && t.region !== info.serviceRegion) {
       try {
-        setConnection(await api.setRegion(e.region));
-        showFlash(`Region set to ${e.region} (where this happened)`);
+        setConnection(await api.setRegion(t.region));
+        showFlash(`Region set to ${t.region} (${what === "entry" ? "where this happened" : "the bookmark's region"})`);
       } catch (err) {
         showError(err);
-        return;
+        return false;
       }
     }
-    setShowHistory(false);
-    requestReveal(e.select ?? null);
+    requestReveal(t.select ?? null);
     nav.navigate(target);
+    return true;
+  }
+
+  async function goToEntry(e: HistoryEntry) {
+    if (await openLocation(e, "entry")) setShowHistory(false);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bookmarks
+
+  const bookmarks = useBookmarks();
+  const [bookmarkEdit, setBookmarkEdit] = useState<{ draft: BookmarkDraft; existing: Bookmark | null; folder?: string | null } | null>(null);
+  const barVisible = !(settings?.hideBookmarksBar ?? false);
+
+  useEffect(() => {
+    void loadBookmarks();
+  }, []);
+
+  /** Opens the add (or, if it exists, edit) dialog for a place and optional item. */
+  const addBookmark = useCallback(
+    (at: Place, select: string | null, label: string | null, folder: string | null = null) => {
+      if (!connection || at.service === "home") return;
+      const existing = findBookmark(currentBookmarks(), connection.profile, at, select);
+      const crumbs = placeCrumbs(at);
+      const name = label ?? crumbs[crumbs.length - 1]?.label ?? SERVICES.find((s) => s.id === at.service)?.name ?? "Bookmark";
+      setBookmarkEdit({
+        existing,
+        folder,
+        draft: {
+          profile: connection.profile,
+          region: at.service === "s3" ? "" : connection.serviceRegion,
+          service: at.service,
+          place: at,
+          select,
+          name: name.slice(0, 100),
+        },
+      });
+    },
+    [connection],
+  );
+
+  /** Star / Ctrl+D: the current place, plus the selected row when exactly one is. */
+  function bookmarkHere() {
+    if (!connection || place.service === "home") return;
+    const sel = currentSelection();
+    addBookmark(place, sel?.key ?? null, sel?.label ?? null);
+  }
+
+  function manageBookmarks() {
+    showFlash("The bookmark manager arrives in the next step");
+  }
+
+  async function toggleBar() {
+    const visible = !barVisible;
+    setSettings((s) => (s ? { ...s, hideBookmarksBar: !visible } : s));
+    try {
+      setSettings(await bookmarksApi.setBarVisible(visible));
+    } catch {
+      /* keep the in-memory choice */
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -383,9 +453,14 @@ export default function App() {
         return;
       }
       const t = e.target as HTMLElement;
-      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "h" && !t.closest("[role=dialog], [role=alertdialog]")) {
+      const inDialog = !!t.closest?.("[role=dialog], [role=alertdialog]");
+      const k = e.key.toLowerCase();
+      if (e.ctrlKey && !e.altKey && !inDialog && ((!e.shiftKey && (k === "h" || k === "d")) || (e.shiftKey && (k === "b" || k === "o")))) {
         e.preventDefault();
-        setShowHistory(true);
+        if (k === "h") setShowHistory(true);
+        else if (k === "d") bookmarkHereRef.current();
+        else if (k === "b") void toggleBarRef.current();
+        else onManageBookmarksRef.current();
         return;
       }
       if (t.closest("input, textarea, select, [role=dialog], [role=alertdialog]")) return;
@@ -406,6 +481,13 @@ export default function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [goUp, nav, refresh, showHelp]);
+  // The key handler is registered once per dependency change; these stay current.
+  const bookmarkHereRef = useRef(bookmarkHere);
+  bookmarkHereRef.current = bookmarkHere;
+  const toggleBarRef = useRef(toggleBar);
+  toggleBarRef.current = toggleBar;
+  const onManageBookmarksRef = useRef(manageBookmarks);
+  onManageBookmarksRef.current = manageBookmarks;
 
   // Keep the selected tree node in view.
   useEffect(() => {
@@ -507,6 +589,21 @@ export default function App() {
         onNavigate={nav.navigate}
         onHelp={showHelp}
         onHistory={() => setShowHistory(true)}
+        canBookmark={!!connection && place.service !== "home"}
+        bookmarked={!!connection && isPlaceBookmarked(bookmarks, connection.profile, place)}
+        onBookmark={bookmarkHere}
+        bookmarksBar={
+          connection && barVisible ? (
+            <BookmarksBar
+              file={bookmarks}
+              profile={connection.profile}
+              serviceRegion={connection.serviceRegion}
+              icons={SERVICE_ICONS}
+              onOpen={(b) => void openLocation(b, "bookmark")}
+              onManage={manageBookmarks}
+            />
+          ) : null
+        }
       />
       {connection?.readOnly && (
         <div className="readonly-banner" role="status">
@@ -554,7 +651,16 @@ export default function App() {
           {services[s.id].dialogs}
         </div>
       ))}
-      {/* Before the shared dialogs, so its confirmations show on top of it. */}
+      {/* Before the shared dialogs, so their confirmations and prompts show on top. */}
+      {bookmarkEdit && (
+        <BookmarkDialog
+          shell={shell}
+          draft={bookmarkEdit.draft}
+          existing={bookmarkEdit.existing}
+          initialFolder={bookmarkEdit.folder}
+          onClose={() => setBookmarkEdit(null)}
+        />
+      )}
       {showHistory && (
         <HistoryDialog
           shell={shell}

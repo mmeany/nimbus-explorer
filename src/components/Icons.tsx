@@ -10,6 +10,21 @@ export function BucketIcon({ size = 16 }: P) {
   );
 }
 
+/** Bookmark star: outline, or filled (colour from CSS, e.g. .star-on). */
+export function StarIcon({ size = 16, filled = false }: P & { filled?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path
+        d="M8 1.8 L9.8 5.7 L14 6.1 L10.8 8.9 L11.8 13.1 L8 10.9 L4.2 13.1 L5.2 8.9 L2 6.1 L6.2 5.7 Z"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function HelpIcon({ size = 16 }: P) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>

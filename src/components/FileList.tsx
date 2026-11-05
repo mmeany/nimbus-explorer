@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { takeReveal } from "../state/reveal";
+import { reportSelection } from "../state/selection";
 
 export interface Column {
   id: string;
@@ -92,6 +93,20 @@ export function FileList({ columns, rows, selected, onSelectionChange, onOpen, o
     // Only when the rows change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
+
+  // Tell "Add bookmark" which single row of the main view is selected.
+  const owner = useRef({});
+  useEffect(() => {
+    if (!bodyRef.current?.closest(".pane-main")) return;
+    const key = selected.size === 1 ? [...selected][0] : null;
+    const row = key !== null ? rows.find((r) => r.key === key) : undefined;
+    const first = columns[0]?.id;
+    reportSelection(owner.current, row ? { key: row.key, label: (first && row.cells[first]?.text) || row.key } : null);
+  }, [selected, rows, columns]);
+  useEffect(() => {
+    const me = owner.current;
+    return () => reportSelection(me, null);
+  }, []);
 
   /** Scrolls so row `index` is fully visible. */
   function ensureVisible(index: number) {

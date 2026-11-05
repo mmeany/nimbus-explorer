@@ -34,6 +34,8 @@ export interface Shell {
   openMenu: (x: number, y: number, items: MenuItem[]) => void;
   copyText: (text: string) => Promise<void>;
   openTransfers: () => void;
+  /** Opens Add bookmark (or Edit, if it exists) for a place and an optional row to select. */
+  addBookmark: (place: Place, select: string | null, label: string | null) => void;
 }
 
 /** What each service gives back to the shell to place on screen. */

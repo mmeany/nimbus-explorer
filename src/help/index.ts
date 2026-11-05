@@ -2,6 +2,7 @@
 // ids are checked by the compiler, so a view can't point at a missing topic.
 // The longer guides for readers of the repository are in docs/.
 import type { Place } from "../shell/places";
+import { bookmarksTopics } from "./topics/bookmarks";
 import { dynamodbTopics } from "./topics/dynamodb";
 import { ecsTopics } from "./topics/ecs";
 import { generalTopics } from "./topics/general";
@@ -22,6 +23,7 @@ export interface HelpTopicText {
 
 export const HELP_TOPICS = {
   ...generalTopics,
+  ...bookmarksTopics,
   ...s3Topics,
   ...ssmTopics,
   ...sqsTopics,

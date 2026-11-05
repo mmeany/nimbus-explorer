@@ -39,6 +39,8 @@ export interface Settings {
   filterHistory: Record<string, string[]>;
   /** Activity history options (see api/history.ts). */
   history: import("./history").HistorySettings;
+  /** The bookmarks bar is shown unless set. */
+  hideBookmarksBar: boolean;
 }
 
 export interface ConnectionInfo {
