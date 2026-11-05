@@ -13,6 +13,7 @@ import { HelpDialog } from "./components/HelpDialog";
 import { HistoryDialog } from "./components/HistoryDialog";
 import { BookmarkDialog, type BookmarkDraft } from "./components/BookmarkDialog";
 import { BookmarksBar } from "./components/BookmarksBar";
+import { BookmarkManager } from "./components/BookmarkManager";
 import { bookmarksApi, type Bookmark } from "./api/bookmarks";
 import { currentBookmarks, findBookmark, isPlaceBookmarked, loadBookmarks, useBookmarks } from "./state/bookmarks";
 import { currentSelection } from "./state/selection";
@@ -413,8 +414,13 @@ export default function App() {
     addBookmark(place, sel?.key ?? null, sel?.label ?? null);
   }
 
+  const [showManager, setShowManager] = useState(false);
   function manageBookmarks() {
-    showFlash("The bookmark manager arrives in the next step");
+    setShowManager(true);
+  }
+
+  function editBookmark(b: Bookmark) {
+    setBookmarkEdit({ existing: b, draft: { profile: b.profile, region: b.region, service: b.service, place: b.place, select: b.select ?? null, name: b.name } });
   }
 
   async function toggleBar() {
@@ -602,6 +608,8 @@ export default function App() {
               icons={SERVICE_ICONS}
               onOpen={(b) => void openLocation(b, "bookmark")}
               onManage={manageBookmarks}
+              onFlash={showFlash}
+              onError={showError}
             />
           ) : null
         }
@@ -661,6 +669,16 @@ export default function App() {
           onGoTo={(e) => void goToEntry(e)}
           onBookmark={(e) => e.place && e.place.service !== "home" && addBookmark(e.place, e.select ?? null, null, null, { profile: e.profile, region: e.region })}
           onClose={() => setShowHistory(false)}
+        />
+      )}
+      {showManager && (
+        <BookmarkManager
+          shell={shell}
+          profiles={(profiles ?? []).map((p) => p.name)}
+          icons={SERVICE_ICONS}
+          onOpen={(b) => void openLocation(b, "bookmark").then((ok) => ok && setShowManager(false))}
+          onEdit={editBookmark}
+          onClose={() => setShowManager(false)}
         />
       )}
       {bookmarkEdit && (
