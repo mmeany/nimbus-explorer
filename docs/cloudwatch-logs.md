@@ -40,7 +40,11 @@ the last 30 days, or a **Custom range…**. The first search returns up to
   top (works with the "Last …" ranges). Up to 20,000 events are kept; the
   oldest drop off.
 - Click an event to see its full message below the list, with **Copy**.
-  JSON messages get a collapsible tree.
+  JSON messages get a collapsible tree. The list shrinks to make room, so
+  everything fits in the window; drag the bar between them to change the
+  split (remembered), or double-click it to go back to the default. The
+  same viewer is used on the Lambda and ECS Logs tabs, which fill the window
+  in the same way.
 - **Download…** saves every matching event in the range, oldest first, to a
   text file: one line per event, `time<TAB>stream<TAB>message` (no stream
   column for a single stream). Times are UTC.

@@ -800,3 +800,13 @@ Smaller UI improvements, one commit each; more items to be added by the owner.
   `widestCell`), shared with FileList. A column the user sized gets a fixed
   width on its th / td (box-sizing border-box); others keep the table's auto
   layout with the 280 px cap.
+- 13.3 ✅ Log viewer fits the window. Lambda's and ECS's Logs tabs used a
+  guessed height (`calc(100vh - …)`) inside a scrolling page, so they
+  overflowed (worse once the bookmarks bar arrived). A tab marked `fill`
+  (`FunctionTab.fill`, ECS `extraTabs[].fill`) makes the view
+  `.queue-view.fill`: pane height and full width, min-height 460 px, below
+  which the pane scrolls. In `LogViewer`, a bar between the list and the
+  message (`.log-splitter`) sets the message's share of the area (default
+  40%, localStorage `logs.detailSplit`, double-click resets); the list keeps
+  at least header + 5 rows + footer (`LIST_RESERVE`), the message at least
+  `DETAIL_MIN`.

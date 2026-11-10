@@ -259,6 +259,7 @@ export function useLambdaService(shell: Shell): ServiceUi {
     {
       id: "logs",
       label: "Logs",
+      fill: true,
       render: (f) => (
         <div className="lambda-logs">
           <LogViewer key={f.logGroup} shell={shell} group={f.logGroup} defaultMinutes={60} reloadToken={reloadToken} />

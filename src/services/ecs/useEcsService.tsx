@@ -418,7 +418,7 @@ export function useEcsService(shell: Shell): ServiceUi {
         <ServiceView key={`${cluster}/${id}`} shell={shell} cluster={cluster} name={id} reloadToken={reloadToken} onLoaded={setViewService}
           onOpenTask={(t) => go(cluster, "task", t)}
           taskActions={taskActions(cluster)}
-          extraTabs={[{ id: "logs", label: "Logs", render: (s) => <ContainerLogs key={s.taskDefinition} shell={shell} taskDefinition={s.taskDefinition} taskId={null} reloadToken={reloadToken} /> }]}
+          extraTabs={[{ id: "logs", label: "Logs", fill: true, render: (s) => <ContainerLogs key={s.taskDefinition} shell={shell} taskDefinition={s.taskDefinition} taskId={null} reloadToken={reloadToken} /> }]}
         />
       </div>
     );
@@ -435,7 +435,7 @@ export function useEcsService(shell: Shell): ServiceUi {
           onLoaded={setViewTask}
           onOpenService={(s) => go(cluster, "service", s)}
           extraTabs={[
-            { id: "logs", label: "Logs", render: (t) => <ContainerLogs key={t.id} shell={shell} taskDefinition={t.taskDefinition} taskId={t.id} reloadToken={reloadToken} /> },
+            { id: "logs", label: "Logs", fill: true, render: (t) => <ContainerLogs key={t.id} shell={shell} taskDefinition={t.taskDefinition} taskId={t.id} reloadToken={reloadToken} /> },
             {
               id: "exec",
               label: "Shell (ECS Exec)",

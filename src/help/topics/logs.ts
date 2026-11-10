@@ -26,7 +26,7 @@ Applied by AWS. Press Enter or **Search**. Search also moves a "Last …" range 
 ### Other controls
 
 - **Follow**: checks for new events every 3 seconds and adds them at the top. It works with "Last …" ranges, and keeps up to 20,000 events.
-- **Click an event**: its full message shows below, with **Copy**. JSON gets a tree.
+- **Click an event**: its full message shows below, with **Copy**. JSON gets a tree. Drag the bar above the message to resize it; double-click the bar to reset.
 - **Download…**: saves every matching event in the range to a text file, oldest first, with times in UTC.
 - **Show all streams**: appears when you've narrowed to certain streams, and goes back to the whole group.`,
   },

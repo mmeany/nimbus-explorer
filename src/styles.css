@@ -642,7 +642,7 @@ body.col-resizing, body.col-resizing * { cursor: col-resize !important; user-sel
 .ecs-list { flex: 1; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--border-light); }
 .ecs-bar { gap: 8px; padding: 4px 6px; border-bottom: 1px solid var(--border-light); }
 .ecs-tab-list { height: calc(100vh - 300px); min-height: 280px; display: flex; flex-direction: column; }
-.ecs-logs { height: calc(100vh - 290px); min-height: 320px; display: flex; flex-direction: column; gap: 4px; }
+.ecs-logs { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 4px; }
 .ecs-logs .ecs-bar { border: none; padding: 0; }
 .exec-row { margin-top: 6px; gap: 8px; }
 .ecs-counts { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -655,7 +655,10 @@ body.col-resizing, body.col-resizing * { cursor: col-resize !important; user-sel
 .env-editor { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; }
 .env-key { width: 220px; }
 .env-value { flex: 1; }
-.lambda-logs { height: calc(100vh - 230px); min-height: 320px; display: flex; flex-direction: column; }
+.lambda-logs { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* A tab that fills the pane (Lambda / ECS logs): the view takes the pane's height and
+   width; below min-height the pane scrolls instead. */
+.queue-view.fill { flex: 1; min-height: 460px; max-width: none; padding-bottom: 10px; }
 .invoke-tab { display: flex; flex-direction: column; gap: 6px; }
 .invoke-bar { flex-wrap: wrap; gap: 6px; }
 .inv-qualifier { width: 160px; }
@@ -671,8 +674,12 @@ body.col-resizing, body.col-resizing * { cursor: col-resize !important; user-sel
 .log-pattern { flex: 1; min-width: 240px; }
 .log-streams { gap: 8px; }
 .log-split { flex: 1; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--border-light); }
+.log-viewer .log-split { gap: 0; }
 .log-foot { gap: 8px; padding: 3px 8px; border-top: 1px solid var(--border-light); background: var(--chrome); }
-.log-detail { max-height: 40%; min-height: 90px; overflow: auto; border-top: 1px solid var(--border-light); padding: 4px 8px; display: flex; flex-direction: column; gap: 4px; }
+.log-detail { flex: none; box-sizing: border-box; overflow: auto; padding: 4px 8px; display: flex; flex-direction: column; gap: 4px; }
+.log-splitter { flex: none; box-sizing: border-box; height: 5px; cursor: row-resize; border-top: 1px solid var(--border-light); background: var(--chrome); }
+.log-splitter:hover { background: var(--sel-border); }
+body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-select: none; }
 .page-bar { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-top: 1px solid var(--border-light); background: var(--chrome); flex-wrap: wrap; }
 .page-bar-label { min-width: 110px; text-align: center; }
 .btn.small { padding: 1px 8px; min-height: 0; }

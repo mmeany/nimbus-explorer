@@ -39,7 +39,7 @@ A synchronous call shows whether it succeeded or the function returned an error,
 - **Filter pattern**: \`ERROR\`, \`"timed out"\`, \`ERROR -health\` or \`{ $.level = "error" }\`. Press Enter or **Search**.
 - **Load older**: fetches further back.
 - **Follow**: adds new events every 3 seconds.
-- Click an event for its full message. JSON gets a tree.
+- Click an event for its full message. JSON gets a tree. Drag the bar above the message to resize it; double-click the bar to reset.
 - **Download…**: saves every matching event in the range.
 
 New invocations can take a few seconds to appear.`,

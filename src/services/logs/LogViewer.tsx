@@ -2,7 +2,7 @@
 // a filter pattern, optional stream restriction, "Load older", follow live
 // (polls every 3 s), the selected event's full message, and download.
 // Used by the CloudWatch Logs service, Lambda and ECS.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import type { AppError } from "../../api/core";
 import { logsApi, type EventsRequest, type LogEvent } from "../../api/logs";
 import { api } from "../../api/s3";
@@ -53,6 +53,38 @@ interface Props {
   reloadToken?: number;
 }
 
+/** Share of the list + message area the message takes (remembered in localStorage). */
+const SPLIT_KEY = "logs.detailSplit";
+const DEFAULT_SPLIT = 0.4;
+/** Height kept for the list when the message is open: header + 5 rows (FileList ROW_H 22) + footer row with its margins. */
+const LIST_RESERVE = 26 + 5 * 22 + 40;
+/** Smallest message panel: its header line + about 3 lines of text. */
+const DETAIL_MIN = 72;
+const SPLITTER_H = 5;
+
+function loadSplit(): number {
+  try {
+    const v = Number(localStorage.getItem(SPLIT_KEY));
+    return v > 0 && v < 1 ? v : DEFAULT_SPLIT;
+  } catch {
+    return DEFAULT_SPLIT;
+  }
+}
+
+function saveSplit(v: number) {
+  try {
+    localStorage.setItem(SPLIT_KEY, String(Math.round(v * 1000) / 1000));
+  } catch {
+    // Not remembered.
+  }
+}
+
+/** Message panel height for `split` of `total` px, keeping both minimums where they fit. */
+function detailHeight(split: number, total: number): number {
+  const max = Math.max(DETAIL_MIN, total - LIST_RESERVE - SPLITTER_H);
+  return Math.round(Math.min(max, Math.max(DETAIL_MIN, split * total)));
+}
+
 export function LogViewer({ shell, group, streams = [], streamPrefix = null, onClearStreams, defaultMinutes = 60, reloadToken = 0 }: Props) {
   const [minutes, setMinutes] = useState<number | "custom">(defaultMinutes);
   const [custom, setCustom] = useState(() => ({ from: toLocalInput(Date.now() - 3600_000), to: toLocalInput(Date.now()) }));
@@ -64,6 +96,16 @@ export function LogViewer({ shell, group, streams = [], streamPrefix = null, onC
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // List / message split: the message's share of the area, and that area's height.
+  const [split, setSplit] = useState(loadSplit);
+  const [splitEl, setSplitEl] = useState<HTMLDivElement | null>(null);
+  const [splitH, setSplitH] = useState(0);
+  useEffect(() => {
+    if (!splitEl) return;
+    const ro = new ResizeObserver(() => setSplitH(splitEl.clientHeight));
+    ro.observe(splitEl);
+    return () => ro.disconnect();
+  }, [splitEl]);
   const single = streams.length === 1;
   const streamKey = streams.join("\n");
 
@@ -205,6 +247,34 @@ export function LogViewer({ shell, group, streams = [], streamPrefix = null, onC
     [events],
   );
   const sel = selected.size === 1 ? byId.get([...selected][0]) : undefined;
+  const detailH = splitH ? detailHeight(split, splitH) : undefined;
+
+  /** Drag the bar between the list and the message; saved on release. */
+  function startSplitDrag(e: PointerEvent<HTMLDivElement>) {
+    if (e.button !== 0 || !splitH || detailH === undefined) return;
+    e.preventDefault();
+    const el = e.currentTarget;
+    const y0 = e.clientY;
+    const h0 = detailH;
+    const total = splitH;
+    el.setPointerCapture(e.pointerId);
+    document.body.classList.add("row-resizing");
+    let next = split;
+    const move = (ev: globalThis.PointerEvent) => {
+      next = detailHeight((h0 - (ev.clientY - y0)) / total, total) / total;
+      setSplit(next);
+    };
+    const end = () => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", end);
+      el.removeEventListener("pointercancel", end);
+      document.body.classList.remove("row-resizing");
+      saveSplit(next);
+    };
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
+  }
 
   const rangeText = minutes === "custom" ? "in this range" : `in the ${RANGES.find(([m]) => m === minutes)?.[1].toLowerCase() ?? "range"}`;
 
@@ -281,7 +351,7 @@ export function LogViewer({ shell, group, streams = [], streamPrefix = null, onC
       {error ? (
         <ErrorPanel error={error} profile={shell.profile} onRetry={() => setTick((t) => t + 1)} />
       ) : (
-        <div className="log-split">
+        <div className="log-split" ref={setSplitEl}>
           <FileList
             storageKey="logs.events"
             key={searchKey}
@@ -306,7 +376,20 @@ export function LogViewer({ shell, group, streams = [], streamPrefix = null, onC
             {loading && <span className="hint">Loading…</span>}
           </div>
           {sel && (
-            <div className="log-detail">
+            <div
+              className="log-splitter"
+              role="separator"
+              aria-orientation="horizontal"
+              title="Drag to resize, double-click to reset"
+              onPointerDown={startSplitDrag}
+              onDoubleClick={() => {
+                setSplit(DEFAULT_SPLIT);
+                saveSplit(DEFAULT_SPLIT);
+              }}
+            />
+          )}
+          {sel && (
+            <div className="log-detail" style={{ height: detailH }}>
               <div className="row">
                 <span className="hint">
                   {formatEventTime(sel.time)}

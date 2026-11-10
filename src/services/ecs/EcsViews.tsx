@@ -299,7 +299,8 @@ export function ServiceView({
   reloadToken: number;
   onLoaded: (s: ServiceInfo | null) => void;
   onOpenTask: (id: string) => void;
-  extraTabs?: { id: string; label: string; render: (s: ServiceInfo) => ReactNode }[];
+  /** `fill`: the tab fills the pane's height and width (see FunctionTab). */
+  extraTabs?: { id: string; label: string; render: (s: ServiceInfo) => ReactNode; fill?: boolean }[];
   taskActions?: (t: TaskInfo) => MenuItem[];
 }) {
   const [tab, setTab] = useState("details");
@@ -311,7 +312,7 @@ export function ServiceView({
   const primary = s.deployments.find((d) => d.status === "PRIMARY");
   const current = extraTabs.find((t) => t.id === tab);
   return (
-    <div className="queue-view db-view">
+    <div className={`queue-view db-view${current?.fill ? " fill" : ""}`}>
       <div className="qv-head">
         <span className="qv-name">{s.name}</span>
         <Pill status={s.status} />
@@ -508,7 +509,7 @@ export function TaskView({
   reloadToken: number;
   onLoaded: (t: TaskInfo | null) => void;
   onOpenService: (name: string) => void;
-  extraTabs?: { id: string; label: string; render: (t: TaskInfo) => ReactNode }[];
+  extraTabs?: { id: string; label: string; render: (t: TaskInfo) => ReactNode; fill?: boolean }[];
 }) {
   const [tab, setTab] = useState("details");
   const { data: t, error, retry } = useLoad(() => ecsApi.task(cluster, id), [cluster, id, reloadToken], (d) => (d && d.lastStatus !== d.desiredStatus ? 5000 : null));
@@ -518,7 +519,7 @@ export function TaskView({
   const service = t.group?.startsWith("service:") ? t.group.slice(8) : null;
   const current = extraTabs.find((x) => x.id === tab);
   return (
-    <div className="queue-view db-view">
+    <div className={`queue-view db-view${current?.fill ? " fill" : ""}`}>
       <div className="qv-head">
         <span className="qv-name mono">{t.id}</span>
         <Pill status={t.lastStatus} />

@@ -16,6 +16,8 @@ export interface FunctionTab {
   label: string;
   /** `goTab` switches to another tab (e.g. Invoke → Logs). */
   render: (f: FunctionDetails, goTab: (id: string) => void) => ReactNode;
+  /** The tab fills the pane's height and width (e.g. a log viewer) instead of scrolling with the page. */
+  fill?: boolean;
 }
 
 interface Props {
@@ -88,7 +90,7 @@ export function FunctionView({ name, shell, reloadToken, onLoaded, onOpenLogs, t
   const current = tabs.find((t) => t.id === tab);
 
   return (
-    <div className="queue-view db-view">
+    <div className={`queue-view db-view${current?.fill ? " fill" : ""}`}>
       <div className="qv-head">
         <span className="qv-name">{f.name}</span>
         <span className={`status-pill ${stateTone(f.state)}`}>{f.state ?? "unknown"}</span>
