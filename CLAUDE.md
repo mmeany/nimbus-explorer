@@ -784,3 +784,14 @@ descriptions on bookmarks and on every folder; no new dependencies.
 - 12.6 ✅ Docs (`docs/bookmarks.md`, README, history guide), help topics
   `bookmarks`, `bookmarks.edit`, `bookmarks.manager`, `bookmarks.import`,
   and General / History topic updates.
+
+### Phase 13: UI enhancements (agreed 2026-11-10)
+Smaller UI improvements, one commit each; more items to be added by the owner.
+- 13.1 ✅ Resizable list columns: drag the right edge of a header cell in
+  `FileList` (pointer events; minimum width), double-click it to fit the
+  widest visible cell, header right-click "Reset column widths". Widths are
+  remembered per list in localStorage via FileList's `storageKey` prop
+  (`fl-cols|<storageKey>`); columns without a stored width use their default.
+  The list scrolls horizontally when the columns are wider than the pane.
+  New `FileList` uses should pass a `storageKey`. Not yet: DynamoDB's
+  `ResultsGrid` (Scan / Query results), a separate grid.

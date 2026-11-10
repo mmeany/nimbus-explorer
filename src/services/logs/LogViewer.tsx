@@ -283,6 +283,7 @@ export function LogViewer({ shell, group, streams = [], streamPrefix = null, onC
       ) : (
         <div className="log-split">
           <FileList
+            storageKey="logs.events"
             key={searchKey}
             columns={columns}
             rows={rows}

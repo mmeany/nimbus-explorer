@@ -510,6 +510,7 @@ export function useSnsService(shell: Shell): ServiceUi {
           ) : (
             <>
             <FileList
+              storageKey="sns.subscriptions"
               key="subs"
               columns={SUB_COLUMNS}
               rows={pageSubRows}
@@ -529,6 +530,7 @@ export function useSnsService(shell: Shell): ServiceUi {
           <>
             {paged.error && <div className="warn-note list-note">Couldn't load topic details: {paged.error.message}</div>}
             <FileList
+              storageKey="sns.topics"
               key="topics"
               columns={TOPIC_COLUMNS}
               rows={topicRows}

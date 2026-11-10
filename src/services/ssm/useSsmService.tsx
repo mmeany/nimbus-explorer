@@ -706,6 +706,7 @@ export function useSsmService(shell: Shell): ServiceUi {
           <>
           {paged.error && <div className="warn-note list-note">Couldn't load values: {paged.error.message}</div>}
           <FileList
+            storageKey="ssm.parameters"
             key={listKey}
             columns={filter ? FILTER_COLUMNS : BROWSE_COLUMNS}
             rows={rows}

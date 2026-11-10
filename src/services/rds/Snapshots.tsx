@@ -223,6 +223,7 @@ export function SnapshotList({ shell, db, reloadToken, onRestore, onOpenDb }: Pr
       ) : (
         <div className={db ? "snap-list" : "snap-list grow-list"}>
           <FileList
+            storageKey="rds.snapshots"
             columns={db ? COLUMNS.filter((c) => c.id !== "db" && c.id !== "engine") : COLUMNS}
             rows={rows}
             selected={selected}

@@ -556,6 +556,7 @@ export default function App() {
   } else {
     content = (
       <FileList
+        storageKey="home"
         columns={HOME_COLUMNS}
         rows={homeRows}
         selected={homeSelected}

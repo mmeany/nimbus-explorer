@@ -41,6 +41,10 @@ The **bookmarks bar** under the address bar holds pinned bookmarks, a folder per
 
 Long lists show 100, 500 or 1,000 rows at a time. Use the pager under the list, or Ctrl+PgUp / Ctrl+PgDn. Where each row costs an AWS call, only the page on screen is fetched, and sorting by a column other than the name sorts just that page.
 
+### Columns
+
+Click a column heading to sort by it. Drag the edge of a heading to resize the column, or double-click the edge to fit the widest row on screen. Each list remembers its widths. Right-click a heading and choose **Reset column widths** to go back to the defaults.
+
 ### Filters
 
 Filter boxes remember your last 10 filters per profile and region. Open the ▾ list to reuse one, remove one with its ✕, or clear the history.

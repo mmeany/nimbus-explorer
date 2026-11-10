@@ -134,6 +134,7 @@ export function TaskList({ shell, cluster, service, reloadToken, onOpen, actions
       ) : (
         <>
           <FileList
+            storageKey="ecs.tasks"
             columns={stopped ? TASK_COLUMNS : TASK_COLUMNS.filter((c) => c.id !== "reason")}
             rows={rows}
             selected={selected}
@@ -263,6 +264,7 @@ export function ClusterView({
         <div className="ecs-list">
           {paged.error && <div className="warn-note list-note">Couldn't load service details: {paged.error.message}</div>}
           <FileList
+            storageKey="ecs.services"
             columns={SERVICE_COLUMNS}
             rows={rows}
             selected={selected}

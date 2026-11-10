@@ -381,6 +381,7 @@ export function useEcsService(shell: Shell): ServiceUi {
           <ErrorPanel error={listing.error} profile={profile} onRetry={refresh} />
         ) : (
           <FileList
+            storageKey="ecs.clusters"
             columns={CLUSTER_COLUMNS}
             rows={rows}
             selected={selected}

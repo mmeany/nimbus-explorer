@@ -482,6 +482,7 @@ export function useRdsService(shell: Shell): ServiceUi {
           <ErrorPanel error={listing.error} profile={profile} onRetry={refresh} />
         ) : (
           <FileList
+            storageKey="rds.databases"
             columns={COLUMNS}
             rows={rows}
             selected={selected}

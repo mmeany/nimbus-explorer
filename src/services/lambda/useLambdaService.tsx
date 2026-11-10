@@ -287,6 +287,7 @@ export function useLambdaService(shell: Shell): ServiceUi {
         ) : (
           <>
             <FileList
+              storageKey="lambda.functions"
               columns={COLUMNS}
               rows={rows}
               selected={selected}

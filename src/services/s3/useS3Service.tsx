@@ -918,6 +918,7 @@ export function useS3Service(shell: Shell): ServiceUi {
         <ErrorPanel error={bucketsError} profile={profile} onRetry={loadBuckets} />
       ) : (
         <FileList
+          storageKey="s3.buckets"
           columns={BUCKET_COLUMNS}
           rows={bucketRows}
           selected={selected}
@@ -949,6 +950,7 @@ export function useS3Service(shell: Shell): ServiceUi {
           </FilterBox>
           <ObjectFilterBar filter={objFilter} onChange={setObjFilter} classes={pageClasses} />
           <FileList
+            storageKey="s3.objects"
             key={`${toS3Uri(loc)}|${recursive ? "flat" : ""}`}
             columns={recursive ? FLAT_COLUMNS : OBJECT_COLUMNS}
             rows={objectRows}

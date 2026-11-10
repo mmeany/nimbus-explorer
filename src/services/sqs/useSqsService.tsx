@@ -456,6 +456,7 @@ export function useSqsService(shell: Shell): ServiceUi {
           <>
             {paged.error && <div className="warn-note list-note">Couldn't load queue details: {paged.error.message}</div>}
             <FileList
+              storageKey="sqs.queues"
               columns={COLUMNS}
               rows={rows}
               selected={selected}

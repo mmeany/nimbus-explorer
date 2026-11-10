@@ -55,7 +55,7 @@ export function FamilyList({ shell, filter, reloadToken, onOpen }: { shell: Shel
         <ErrorPanel error={current.error} profile={shell.profile} onRetry={() => setData(null)} />
       ) : (
         <>
-          <FileList columns={COLUMNS} rows={rows} selected={selected} onSelectionChange={setSelected} onOpen={onOpen} emptyText={!current ? "Loading…" : filter ? `No task definition families begin with "${filter}".` : "No task definitions."} />
+          <FileList storageKey="ecs.taskdefs" columns={COLUMNS} rows={rows} selected={selected} onSelectionChange={setSelected} onOpen={onOpen} emptyText={!current ? "Loading…" : filter ? `No task definition families begin with "${filter}".` : "No task definitions."} />
           {list.length > paging.pageSize && <PageBar {...paging.bar} loading={false} />}
         </>
       )}

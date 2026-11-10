@@ -210,6 +210,7 @@ export function useLogsService(shell: Shell): ServiceUi {
         ) : (
           <>
             <FileList
+              storageKey="logs.groups"
               columns={GROUP_COLUMNS}
               rows={groupRows}
               selected={selected}
@@ -359,6 +360,7 @@ function StreamList({ shell, group, listKey, onShow }: { shell: Shell; group: st
       ) : (
         <>
           <FileList
+            storageKey="logs.streams"
             columns={STREAM_COLUMNS}
             rows={rows}
             selected={selected}

@@ -116,6 +116,10 @@ Each service is a node in the tree under the profile. Shared controls:
   the list (Ctrl+PgUp / Ctrl+PgDn). Where each row costs an AWS call
   (queue counts, topic and table details, parameter values), only the page
   on screen is fetched.
+- **Columns**: drag the edge of a column heading to widen or narrow it, or
+  double-click the edge to fit what's on screen. Widths are remembered per
+  list; right-click a heading for **Reset column widths**. A list wider than
+  the window scrolls sideways.
 
 ## S3 features
 

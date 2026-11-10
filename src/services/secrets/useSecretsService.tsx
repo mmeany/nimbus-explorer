@@ -381,6 +381,7 @@ export function useSecretsService(shell: Shell): ServiceUi {
           <ErrorPanel error={listing.error} profile={profile} onRetry={refresh} />
         ) : (
           <FileList
+            storageKey="secrets.list"
             key={filter ? `f:${filter}` : `p:${path}`}
             columns={filter ? FILTER_COLUMNS : COLUMNS}
             rows={rows}

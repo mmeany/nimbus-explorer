@@ -406,6 +406,7 @@ export function useDynamoService(shell: Shell): ServiceUi {
           <>
             {paged.error && <div className="warn-note list-note">Couldn't load table details: {paged.error.message}</div>}
             <FileList
+              storageKey="dynamodb.tables"
               columns={COLUMNS}
               rows={rows}
               selected={selected}
