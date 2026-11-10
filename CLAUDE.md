@@ -810,3 +810,13 @@ Smaller UI improvements, one commit each; more items to be added by the owner.
   40%, localStorage `logs.detailSplit`, double-click resets); the list keeps
   at least header + 5 rows + footer (`LIST_RESERVE`), the message at least
   `DETAIL_MIN`.
+- 13.4 ✅ Line numbers for read-only text (`components/NumberedText.tsx`,
+  `state/lineNumbers.ts`): S3 previews (Text / Raw / Source / Formatted),
+  `ValueView` text, `DiffView` (old and new numbers). One app-wide toggle,
+  on by default, localStorage `text.lineNumbers`, shown next to Wrap lines and
+  in ValueView's bar for multi-line text; one-line text gets no number. Not
+  wrapped: a sticky gutter `<pre>` beside the text `<pre>` (two elements, so
+  100k lines stay fast). Wrapped: a block per line with the number as a
+  `::before` hanging indent (first row only), in `content-visibility: auto`
+  chunks of 500. Numbers are never selected or copied. Not numbered: log
+  tails (RDS log files, Lambda invoke log) and textarea editors.

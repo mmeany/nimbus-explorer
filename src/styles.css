@@ -454,6 +454,7 @@ body.col-resizing, body.col-resizing * { cursor: col-resize !important; user-sel
 
 /* ---------- Shared value components ---------- */
 .value-view { display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+.value-view-bar { gap: 12px; }
 .value-view .data-tree { border: 1px solid var(--border-light); max-height: 420px; }
 .value-text { margin: 0; padding: 6px 8px; background: var(--code-bg); border: 1px solid var(--border-light); white-space: pre-wrap; word-break: break-word; user-select: text; max-height: 420px; overflow: auto; }
 .segmented.small button { height: 20px; padding: 0 10px; font-size: 11px; }
@@ -475,6 +476,25 @@ body.col-resizing, body.col-resizing * { cursor: col-resize !important; user-sel
 .diff-line.add { background: color-mix(in srgb, var(--tok-string) 14%, transparent); }
 .diff-line.del { background: color-mix(in srgb, var(--danger) 14%, transparent); }
 .diff-gutter { display: inline-block; width: 22px; text-align: center; color: var(--muted); user-select: none; }
+.diff-num { display: inline-block; min-width: var(--ln-w, 2ch); padding: 0 6px; text-align: right; color: var(--muted); user-select: none; }
+/* NumberedText (components/NumberedText.tsx). Wrapped: one block per line, number in a hanging indent. */
+pre.numbered { --ln-gap: 12px; }
+pre.numbered .ln { display: block; padding-left: calc(var(--ln-w) + var(--ln-gap)); text-indent: calc(-1 * (var(--ln-w) + var(--ln-gap))); }
+pre.numbered .ln-chunk { display: block; content-visibility: auto; contain-intrinsic-block-size: auto calc(var(--ln-rows) * 1.2em); }
+pre.numbered .ln::before {
+  content: attr(data-n); display: inline-block; box-sizing: border-box; width: calc(var(--ln-w) + var(--ln-gap)); padding-right: var(--ln-gap);
+  text-indent: 0; text-align: right; color: var(--muted); user-select: none;
+}
+/* Not wrapped: a sticky gutter column beside the text. The shadow covers text scrolled
+   into the container's left padding, where sticky stops. */
+.numbered-cols { display: flex; align-items: flex-start; --ln-bg: var(--pane); }
+.value-text.numbered-cols { --ln-bg: var(--code-bg); }
+.numbered-cols > pre { margin: 0; }
+.numbered-cols .ln-gutter {
+  position: sticky; left: 0; flex: none; min-width: var(--ln-w); padding-right: 12px; text-align: right;
+  color: var(--muted); user-select: none; background: var(--ln-bg); box-shadow: -12px 0 0 var(--ln-bg);
+}
+.numbered-cols .ln-body { flex: none; user-select: text; tab-size: inherit; }
 
 /* ---------- Filter box ---------- */
 .filter-bar { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-bottom: 1px solid var(--border-light); background: var(--chrome); }

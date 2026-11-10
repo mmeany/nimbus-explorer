@@ -143,7 +143,9 @@ Each service is a node in the tree under the profile. Shared controls:
   and they stay set as you browse until you click **Clear filters**. Folders
   are hidden while a type, size, date or class filter is set
 - Preview text, images and rendered Markdown; JSON, YAML and CSV as
-  collapsible trees (CSV also as a table); ←/→ steps through the folder
+  collapsible trees (CSV also as a table); ←/→ steps through the folder.
+  Text views have line numbers (on by default, with a toggle that applies to
+  every text view in the app) and optional line wrapping
 - Download files or whole folders; upload files or folders (dialog or
   drag-and-drop from Explorer onto the list, a folder or a tree node)
 - New folder, delete (folders recursively, with object count), rename,

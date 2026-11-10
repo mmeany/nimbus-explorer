@@ -20,7 +20,7 @@ Creating and deleting buckets isn't part of this app.`,
 
 ### Working with files
 
-- **Preview**: Enter or double-click a file. Text, images, Markdown, JSON, YAML and CSV are supported, and ←/→ steps through the folder.
+- **Preview**: Enter or double-click a file. Text, images, Markdown, JSON, YAML and CSV are supported, and ←/→ steps through the folder. Text views show **line numbers** (untick to hide them) and can **wrap lines**.
 - **Upload**: the command bar, or drag files from Explorer onto the list, a folder or a tree node.
 - **Download**: select items and choose Download. Folders are recreated recursively.
 - **Copy and move**: cut, copy and paste files between folders and buckets. Copies are made inside S3, with nothing downloaded.
