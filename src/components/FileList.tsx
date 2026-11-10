@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { ContextMenu } from "./ContextMenu";
+import { useColumnWidths, widestCell } from "../state/columnWidths";
 import { takeReveal } from "../state/reveal";
 import { reportSelection } from "../state/selection";
 
@@ -43,39 +44,6 @@ type Sort = { col: string; dir: 1 | -1 };
 const ROW_H = 22;
 /** Extra rows rendered above/below the viewport. */
 const OVERSCAN = 12;
-/** Narrowest a column can be dragged. */
-const MIN_COL_W = 40;
-/** Widest a column can be dragged or fitted. */
-const MAX_COL_W = 2000;
-
-type Widths = Record<string, number>;
-
-const widthsKey = (k: string) => `fl-cols|${k}`;
-
-function loadWidths(storageKey?: string): Widths {
-  if (!storageKey) return {};
-  try {
-    const v = JSON.parse(localStorage.getItem(widthsKey(storageKey)) ?? "{}");
-    if (!v || typeof v !== "object") return {};
-    const out: Widths = {};
-    for (const [k, w] of Object.entries(v)) if (typeof w === "number" && w >= MIN_COL_W) out[k] = Math.min(w, MAX_COL_W);
-    return out;
-  } catch {
-    return {};
-  }
-}
-
-function saveWidths(storageKey: string | undefined, w: Widths) {
-  if (!storageKey) return;
-  try {
-    if (Object.keys(w).length === 0) localStorage.removeItem(widthsKey(storageKey));
-    else localStorage.setItem(widthsKey(storageKey), JSON.stringify(w));
-  } catch {
-    // Not remembered; the widths still apply until the list unmounts.
-  }
-}
-
-const clampW = (w: number) => Math.round(Math.min(MAX_COL_W, Math.max(MIN_COL_W, w)));
 
 /** Details-view list with sortable columns and Explorer-style selection. */
 export function FileList({ columns, rows, selected, onSelectionChange, onOpen, onContextMenu, onOrderChange, emptyText, initialSort, storageKey }: Props) {
@@ -91,12 +59,7 @@ export function FileList({ columns, rows, selected, onSelectionChange, onOpen, o
   // Header scrolls horizontally with the body (its own scrollbar hidden).
   const headWrapRef = useRef<HTMLDivElement>(null);
   // Column widths the user set (by column id); others use Column.width.
-  const [custom, setCustom] = useState<Widths>(() => loadWidths(storageKey));
-  const [loadedKey, setLoadedKey] = useState(storageKey);
-  if (loadedKey !== storageKey) {
-    setLoadedKey(storageKey);
-    setCustom(loadWidths(storageKey));
-  }
+  const cw = useColumnWidths(storageKey);
   const [headMenu, setHeadMenu] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -221,62 +184,20 @@ export function FileList({ columns, rows, selected, onSelectionChange, onOpen, o
     setSort((s) => (s.col === col ? { col, dir: (s.dir * -1) as 1 | -1 } : { col, dir: 1 }));
   }
 
-  const widths = columns.map((c) => custom[c.id] ?? c.width);
+  const widths = columns.map((c) => cw.custom[c.id] ?? c.width);
   const template = widths.map((w) => `${w}px`).join(" ") + " minmax(0, 1fr)";
   // Rows have a 2px margin each side (.fl-row).
   const contentW = widths.reduce((a, b) => a + b, 0) + 4;
 
-  function setWidth(id: string, w: number, save: boolean) {
-    setCustom((c) => {
-      const next = { ...c, [id]: clampW(w) };
-      if (save) saveWidths(storageKey, next);
-      return next;
-    });
-  }
-
-  /** Drag on a header cell's right edge. */
-  function startResize(e: PointerEvent<HTMLSpanElement>, id: string, startW: number) {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const el = e.currentTarget;
-    const x0 = e.clientX;
-    el.setPointerCapture(e.pointerId);
-    document.body.classList.add("col-resizing");
-    let w = startW;
-    const move = (ev: globalThis.PointerEvent) => {
-      w = startW + ev.clientX - x0;
-      setWidth(id, w, false);
-    };
-    const end = () => {
-      el.removeEventListener("pointermove", move);
-      el.removeEventListener("pointerup", end);
-      el.removeEventListener("pointercancel", end);
-      document.body.classList.remove("col-resizing");
-      if (w !== startW) setWidth(id, w, true);
-    };
-    el.addEventListener("pointermove", move);
-    el.addEventListener("pointerup", end);
-    el.addEventListener("pointercancel", end);
-  }
-
   /** Double-click on a header cell's edge: as wide as its widest visible cell. */
   function fitColumn(index: number) {
     const nth = `:scope > :nth-child(${index + 1})`;
-    let w = 0;
-    const head = headerRef.current?.querySelector<HTMLElement>(nth);
-    if (head) w = head.scrollWidth;
-    bodyRef.current?.querySelectorAll<HTMLElement>(".fl-row").forEach((row) => {
-      const cell = row.querySelector<HTMLElement>(nth);
-      if (cell) w = Math.max(w, cell.scrollWidth);
-    });
-    if (w > 0) setWidth(columns[index].id, w + 2, true);
+    const head = [...(headerRef.current?.querySelectorAll(nth) ?? [])];
+    const cells = [...(bodyRef.current?.querySelectorAll(`.fl-row > :nth-child(${index + 1})`) ?? [])];
+    const w = widestCell([...head, ...cells]);
+    if (w > 0) cw.setWidth(columns[index].id, w + 2);
   }
 
-  function resetWidths() {
-    setCustom({});
-    saveWidths(storageKey, {});
-  }
   const first = Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN);
   const last = Math.min(sorted.length, Math.ceil((scrollTop + viewH) / ROW_H) + OVERSCAN);
   const visible = sorted.slice(first, last);
@@ -304,7 +225,7 @@ export function FileList({ columns, rows, selected, onSelectionChange, onOpen, o
             <span
               className="fl-resizer"
               title="Drag to resize, double-click to fit"
-              onPointerDown={(e) => startResize(e, c.id, widths[i])}
+              onPointerDown={(e) => cw.startResize(e, c.id, widths[i])}
               onClick={(e) => e.stopPropagation()}
               onDoubleClick={(e) => {
                 e.stopPropagation();
@@ -320,7 +241,7 @@ export function FileList({ columns, rows, selected, onSelectionChange, onOpen, o
         <ContextMenu
           x={headMenu.x}
           y={headMenu.y}
-          items={[{ label: "Reset column widths", onClick: resetWidths, disabled: Object.keys(custom).length === 0 }]}
+          items={[{ label: "Reset column widths", onClick: cw.reset, disabled: !cw.hasCustom }]}
           onClose={() => setHeadMenu(null)}
         />
       )}

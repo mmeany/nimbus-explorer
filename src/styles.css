@@ -596,6 +596,7 @@ body.col-resizing, body.col-resizing * { cursor: col-resize !important; user-sel
 .item-pane .check-row { margin-top: 0; }
 .results-grid { flex: 1; overflow: auto; outline: none; }
 .results-grid table { border-collapse: collapse; white-space: nowrap; }
+.results-grid th, .results-grid td { box-sizing: border-box; }
 .results-grid th { position: sticky; top: 0; background: var(--chrome); color: var(--header-text); font-weight: 600; text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); cursor: default; user-select: none; }
 .results-grid th.rg-key { color: var(--text); }
 .results-grid td { padding: 2px 8px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; border-right: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); }

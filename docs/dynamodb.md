@@ -53,6 +53,10 @@ first appear. Numbers are right-aligned; maps, lists and sets show a summary
 (e.g. `{3 keys}`, `[2 items]`). Click a column header to sort the loaded
 results. Click a row to show the item on the right as a tree, as plain JSON or
 DynamoDB JSON. Ctrl+click / Shift+click select several; Ctrl+A selects all.
+Long values are cut off at a default width: drag a header's right edge to
+resize the column, or double-click the edge to fit the loaded rows. Widths are
+remembered per table, by attribute name, for both Scan / Query and PartiQL;
+right-click the header for **Reset column widths**.
 
 ## Creating, editing and deleting items
 

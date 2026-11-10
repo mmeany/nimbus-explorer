@@ -793,5 +793,10 @@ Smaller UI improvements, one commit each; more items to be added by the owner.
   remembered per list in localStorage via FileList's `storageKey` prop
   (`fl-cols|<storageKey>`); columns without a stored width use their default.
   The list scrolls horizontally when the columns are wider than the pane.
-  New `FileList` uses should pass a `storageKey`. Not yet: DynamoDB's
-  `ResultsGrid` (Scan / Query results), a separate grid.
+  New `FileList` uses should pass a `storageKey`.
+- 13.2 ✅ The same for DynamoDB's `ResultsGrid` (Scan / Query and PartiQL
+  results; `storageKey` `ddb|<table>`, widths by attribute name). The width
+  state, drag and reset live in `state/columnWidths.ts` (`useColumnWidths`,
+  `widestCell`), shared with FileList. A column the user sized gets a fixed
+  width on its th / td (box-sizing border-box); others keep the table's auto
+  layout with the 280 px cap.

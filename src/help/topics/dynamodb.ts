@@ -20,7 +20,7 @@ export const dynamodbTopics = {
 
 Results come **100 at a time**, with **Load more** for the next page. Filters apply after DynamoDB reads, so a page can return few items, or none, while more remain. **Count all** counts every match without fetching items. The line above the grid shows items read and capacity consumed.
 
-Click a row to see the item on the right. Column headers sort only what's loaded.
+Click a row to see the item on the right. Column headers sort only what's loaded. Drag a header's edge to resize a column, or double-click it to fit. Widths are remembered per table.
 
 ### Changing items
 
