@@ -71,7 +71,9 @@ Secret values stay masked until you choose **Reveal** or **Copy**. They're never
 - **CloudWatch Logs**: log groups, streams and events
 - **Secrets Manager**: secrets, versions and rotation
 
-Press **F1** anywhere for help with what's on screen. **General help** below covers the profile, the read-only lock, regions and shortcuts.`,
+Press **F1** anywhere for help with what's on screen. **General help** below covers the profile, the read-only lock, regions and shortcuts.
+
+**About** (before the theme list) shows the version and links to the project on GitHub, where you can report bugs and request features.`,
   },
   history: {
     title: "History",

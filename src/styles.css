@@ -302,6 +302,14 @@ body.col-resizing, body.col-resizing * { cursor: col-resize !important; user-sel
 
 /* ---------- Confirm dialog ---------- */
 .confirm-body p { margin: 0 0 6px; line-height: 1.5; user-select: text; }
+.about-dialog { width: 520px; max-width: calc(100vw - 40px); }
+.about-body { gap: 8px; }
+.about-body p { margin: 0; line-height: 1.5; user-select: text; }
+.about-name { font-size: 15px; font-weight: 600; display: flex; align-items: baseline; gap: 10px; }
+.about-version { font-size: 12px; font-weight: normal; color: var(--muted); user-select: text; }
+.about-link { padding: 2px 0; }
+.about-credit { font-style: italic; }
+.about-btn { margin-right: 6px; }
 .name-list { margin: 4px 0 0; padding-left: 18px; max-height: 150px; overflow: auto; color: var(--muted); }
 
 .command-bar { border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); margin: 2px -6px; padding: 0 4px; }

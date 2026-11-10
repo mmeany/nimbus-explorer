@@ -10,6 +10,7 @@ import { ContextMenu, type MenuItem } from "./components/ContextMenu";
 import { ErrorPanel, NoProfilesPanel } from "./components/ErrorPanel";
 import { FileList, type Column, type Row } from "./components/FileList";
 import { HelpDialog } from "./components/HelpDialog";
+import { AboutDialog } from "./components/AboutDialog";
 import { HistoryDialog } from "./components/HistoryDialog";
 import { BookmarkDialog, type BookmarkDraft } from "./components/BookmarkDialog";
 import { BookmarksBar } from "./components/BookmarksBar";
@@ -120,6 +121,7 @@ export default function App() {
   const [flash, setFlash] = useState<string | null>(null);
   const [homeSelected, setHomeSelected] = useState<Set<string>>(new Set());
   const [showHistory, setShowHistory] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const flashTimer = useRef<number | undefined>(undefined);
   const nav = useHistory<Place>(HOME, samePlace);
   const place = nav.current;
@@ -599,6 +601,7 @@ export default function App() {
         onNavigate={nav.navigate}
         onHelp={showHelp}
         onHistory={() => setShowHistory(true)}
+        onAbout={() => setShowAbout(true)}
         canBookmark={!!connection && place.service !== "home"}
         bookmarked={!!connection && isPlaceBookmarked(bookmarks, connection.profile, place)}
         onBookmark={bookmarkHere}
@@ -663,6 +666,7 @@ export default function App() {
           {services[s.id].dialogs}
         </div>
       ))}
+      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} onError={showError} />}
       {/* Before the shared dialogs, so their confirmations and prompts show on top. */}
       {showHistory && (
         <HistoryDialog

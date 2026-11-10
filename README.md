@@ -90,6 +90,9 @@ Each service is a node in the tree under the profile. Shared controls:
 - **Help**: the **?** button at the end of the toolbar, or **F1**, explains the
   view and tab on screen. Larger dialogs have their own **?** in the title bar,
   and F1 works there too.
+- **About**: the button before the theme list shows the version and a link
+  to this repository, where bugs and feature requests should be raised as
+  [issues](https://github.com/mmeany/nimbus-explorer/issues).
 - **Bookmarks**: a bar under the address bar (Ctrl+Shift+B) with pinned
   bookmarks, a folder per service and your own folders, which can mix services
   and have descriptions. Add with the ☆ / **Ctrl+D** or **Add bookmark…** in

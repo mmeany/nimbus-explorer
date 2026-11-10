@@ -32,6 +32,7 @@ interface Props {
   onNavigate: (p: Place) => void;
   onHelp: () => void;
   onHistory: () => void;
+  onAbout: () => void;
   canBookmark: boolean;
   /** The current place is bookmarked (filled star). */
   bookmarked: boolean;
@@ -109,6 +110,9 @@ export function Toolbar(p: Props) {
         )}
         <div className="spacer" />
         {p.busy && <span className="busy">Working…</span>}
+        <button className="btn about-btn" title="About this app, where to report bugs and request features" onClick={p.onAbout}>
+          About
+        </button>
         <label className="field-label" htmlFor="theme">
           Theme:
         </label>

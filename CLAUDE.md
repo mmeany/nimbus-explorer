@@ -820,3 +820,10 @@ Smaller UI improvements, one commit each; more items to be added by the owner.
   `::before` hanging indent (first row only), in `content-visibility: auto`
   chunks of 500. Numbers are never selected or copied. Not numbered: log
   tails (RDS log files, Lambda invoke log) and textarea editors.
+- 13.5 ✅ About dialog (`components/AboutDialog.tsx`; **About** button before
+  the theme list): summary, version, GitHub link with a note to log bugs and
+  feature requests there, credit line, MIT / not-affiliated note. Rust
+  `about_info` (product name + version from tauri.conf.json, `PROJECT_URL`)
+  and `open_project_page`, which opens only that fixed URL with the OS
+  opener (explorer / open / xdg-open), so the UI can't open arbitrary
+  addresses and no opener plugin is needed.

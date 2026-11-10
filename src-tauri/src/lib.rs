@@ -269,6 +269,8 @@ pub fn run() {
             commands::s3::share_link,
             commands::s3::object_properties,
             commands::parse_yaml,
+            commands::about_info,
+            commands::open_project_page,
             commands::s3::plan_sync,
             commands::s3::run_sync,
             commands::s3::export_listing,
