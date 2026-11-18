@@ -252,17 +252,22 @@ pub struct ExecutionPage {
     pub next_token: Option<String>,
 }
 
-/// One page of a Standard machine's executions, newest first.
+/// One page of executions, newest first: a Standard machine's (machine ARN)
+/// or a Distributed Map run's child executions (map run ARN, ":mapRun:").
 pub async fn executions(
     conn: &Connection,
-    machine_arn: &str,
+    source_arn: &str,
     status: Option<&str>,
     token: Option<String>,
     page_size: i32,
 ) -> Result<ExecutionPage, AppError> {
-    let out = client(conn)
-        .list_executions()
-        .state_machine_arn(machine_arn)
+    let mut req = client(conn).list_executions();
+    req = if source_arn.contains(":mapRun:") {
+        req.map_run_arn(source_arn)
+    } else {
+        req.state_machine_arn(source_arn)
+    };
+    let out = req
         .set_status_filter(status.filter(|s| !s.is_empty()).map(ExecutionStatus::from))
         .max_results(page_size.clamp(1, 1000))
         .set_next_token(token)

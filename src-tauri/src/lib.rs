@@ -23,6 +23,7 @@ mod s3;
 mod secrets;
 mod settings;
 mod sfn;
+mod sfn_map;
 mod sfn_run;
 mod sns;
 mod sns_publish;
@@ -204,6 +205,9 @@ pub fn run() {
             commands::sfn::sfn_inputs,
             commands::sfn::sfn_save_input,
             commands::sfn::sfn_delete_input,
+            commands::sfn::sfn_map_runs,
+            commands::sfn::sfn_map_run,
+            commands::sfn::sfn_update_map_run,
             commands::lambda::lambda_list,
             commands::lambda::lambda_get,
             commands::lambda::lambda_env_values,

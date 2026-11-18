@@ -891,7 +891,15 @@ tab / dialog.
   read-only mode), built-in templates, "Re-run with this input" from any
   execution. Stop (asks; optional error and cause). Redrive (Standard;
   failed / aborted / timed out, within AWS's redrive window).
-- 14.4 Distributed Map runs: Map runs list per execution, map-run place with
+- 14.4 ✅ (`src-tauri/src/sfn_map.rs`, `services/sfn/MapRunView.tsx`; Place
+  `{machine, execution: parent, mapRun: "label:uuid"}`; child executions are
+  places with execution "label:uuid" (names never contain ":"), ARN
+  `…:execution:<machine>/<label>:<uuid>`; `sfn_executions` takes a machine or
+  a map run ARN; without a Label, AWS names runs with a generated id, so the
+  graph matches runs to Map states by MapRunStarted events, then Label, then
+  "the only distributed Map"; a child's graph falls back to the parent's
+  item processor when DescribeStateMachineForExecution fails (MiniStack);
+  children can't be redriven one by one) Distributed Map runs: Map runs list per execution, map-run place with
   child execution counts and failures; UpdateMapRun (tolerated failure
   count / percentage, max concurrency).
 - 14.5 Edit: definition editor (ValueEditor + live graph preview while the

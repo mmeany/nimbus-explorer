@@ -1,7 +1,7 @@
 // One execution: status, input / output, error, and its event history.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AppError } from "../../api/core";
-import { arnTail, eventDetails, executionArn, sfnApi, type ExecutionDetails, type HistoryEvent } from "../../api/sfn";
+import { arnTail, eventDetails, executionArn, executionPlaceName, sfnApi, type ExecutionDetails, type HistoryEvent, type MapRunRef } from "../../api/sfn";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { HelpTopic } from "../../components/HelpDialog";
@@ -11,7 +11,7 @@ import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
 import { useTokenPages } from "../../state/paged";
 import { duration, Pill, PropsTable } from "./MachineView";
-import { runStatus } from "./graph/asl";
+import { itemProcessorDefinition, runStatus } from "./graph/asl";
 import { GraphView } from "./graph/GraphView";
 
 const EVENT_COLUMNS: Column[] = [
@@ -37,13 +37,14 @@ interface Props {
   name: string;
   reloadToken: number;
   onLoaded: (e: ExecutionDetails | null) => void;
+  onOpenMapRun: (mapRunArn: string) => void;
 }
 
-export function ExecutionView({ shell, machineArn, name, reloadToken, onLoaded }: Props) {
+export function ExecutionView({ shell, machineArn, name, reloadToken, onLoaded, onOpenMapRun }: Props) {
   const arn = machineArn ? executionArn(machineArn, name) : null;
   const [data, setData] = useState<{ arn: string; e: ExecutionDetails | null; error: AppError | null } | null>(null);
   const [tick, setTick] = useState(0);
-  const [tab, setTab] = useState<"graph" | "overview" | "history">("graph");
+  const [tab, setTab] = useState<"graph" | "overview" | "history" | "mapruns">("graph");
 
   useEffect(() => {
     if (!arn) return;
@@ -76,12 +77,29 @@ export function ExecutionView({ shell, machineArn, name, reloadToken, onLoaded }
     return () => window.clearTimeout(t);
   }, [running, e]);
 
+  // Distributed Map runs this execution started (checked again with each poll).
+  const refreshKey = `${reloadToken}|${running ? tick : "done"}`;
+  const [mapRuns, setMapRuns] = useState<{ key: string; runs: MapRunRef[] } | null>(null);
+  useEffect(() => {
+    if (!arn) return;
+    let stale = false;
+    const key = `${arn}|${refreshKey}`;
+    sfnApi
+      .mapRuns(arn)
+      .then((runs) => !stale && setMapRuns({ key, runs }))
+      .catch(() => !stale && setMapRuns({ key, runs: [] }));
+    return () => {
+      stale = true;
+    };
+  }, [arn, refreshKey]);
+  const runs = mapRuns?.runs ?? [];
+
   if (!arn) return <div className="empty-note">Loading…</div>;
   if (data?.arn === arn && data.error) return <ErrorPanel error={data.error} profile={shell.profile} onRetry={() => setTick((x) => x + 1)} />;
   if (!e) return <div className="empty-note">Loading…</div>;
 
   return (
-    <div className={`queue-view db-view${tab !== "overview" ? " fill" : ""}`}>
+    <div className={`queue-view db-view${tab === "graph" || tab === "history" ? " fill" : ""}`}>
       <div className="qv-head">
         <span className="qv-name">{e.name}</span>
         <Pill status={e.status} />
@@ -102,11 +120,18 @@ export function ExecutionView({ shell, machineArn, name, reloadToken, onLoaded }
         <button className={tab === "history" ? "active" : ""} onClick={() => setTab("history")}>
           Event history
         </button>
+        {runs.length > 0 && (
+          <button className={tab === "mapruns" ? "active" : ""} onClick={() => setTab("mapruns")}>
+            Map runs ({runs.length})
+          </button>
+        )}
       </div>
       {tab === "graph" ? (
-        <ExecutionGraph shell={shell} e={e} machineArn={machineArn} refreshKey={`${reloadToken}|${running ? tick : "done"}`} />
+        <ExecutionGraph shell={shell} e={e} machineArn={machineArn} refreshKey={refreshKey} mapRuns={runs} onOpenMapRun={onOpenMapRun} />
       ) : tab === "overview" ? (
-        <Overview e={e} />
+        <Overview e={e} onOpenMapRun={onOpenMapRun} />
+      ) : tab === "mapruns" ? (
+        <MapRunsTab runs={runs} onOpen={onOpenMapRun} />
       ) : (
         <History shell={shell} arn={e.arn} start={e.start} refreshKey={`${reloadToken}|${running ? tick : "done"}`} />
       )}
@@ -114,7 +139,41 @@ export function ExecutionView({ shell, machineArn, name, reloadToken, onLoaded }
   );
 }
 
-function Overview({ e }: { e: ExecutionDetails }) {
+function MapRunsTab({ runs, onOpen }: { runs: MapRunRef[]; onOpen: (arn: string) => void }) {
+  return (
+    <div className="lambda-details">
+      <p className="hint">Each distributed Map state that ran (and each redrive of it) has a map run, with its own child executions.</p>
+      <table className="sync-table">
+        <thead>
+          <tr>
+            <th>Map run</th>
+            <th>Started</th>
+            <th>Stopped</th>
+            <th>Duration</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {runs.map((r) => (
+            <tr key={r.arn}>
+              <td className="mono">{r.label}</td>
+              <td>{formatDate(r.start)}</td>
+              <td>{r.stop ? formatDate(r.stop) : "running"}</td>
+              <td>{duration(r.start, r.stop)}</td>
+              <td className="right">
+                <button className="link-btn" onClick={() => onOpen(r.arn)}>
+                  Open
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Overview({ e, onOpenMapRun }: { e: ExecutionDetails; onOpenMapRun: (arn: string) => void }) {
   return (
     <div className="lambda-details">
       {(e.error || e.cause) && (
@@ -133,7 +192,17 @@ function Overview({ e }: { e: ExecutionDetails }) {
           ["Alias", e.aliasArn ? arnTail(e.aliasArn) : null],
           ["Redrives", e.redriveCount ? String(e.redriveCount) : null],
           ["Redrive", e.redriveStatus ? `${e.redriveStatus.toLowerCase().replace(/_/g, " ")}${e.redriveStatusReason ? `: ${e.redriveStatusReason}` : ""}` : null],
-          ["Map run", e.mapRunArn],
+          [
+            "Map run",
+            e.mapRunArn ? (
+              <>
+                This is a child execution of a Distributed Map.{" "}
+                <button className="link-btn" onClick={() => onOpenMapRun(e.mapRunArn!)}>
+                  Open the map run
+                </button>
+              </>
+            ) : null,
+          ],
           ["X-Ray trace", e.traceHeader],
         ]}
       />
@@ -235,7 +304,7 @@ function looksJson(s: string): boolean {
  * execution used (DescribeStateMachineForExecution, else the machine's); the
  * whole history is read again on every poll while the execution runs.
  */
-function ExecutionGraph({ shell, e, machineArn, refreshKey }: { shell: Shell; e: ExecutionDetails; machineArn: string | null; refreshKey: string }) {
+function ExecutionGraph({ shell, e, machineArn, refreshKey, mapRuns, onOpenMapRun }: { shell: Shell; e: ExecutionDetails; machineArn: string | null; refreshKey: string; mapRuns: MapRunRef[]; onOpenMapRun: (arn: string) => void }) {
   const [definition, setDefinition] = useState<{ arn: string; text: string | null; error: AppError | null } | null>(null);
   const [history, setHistory] = useState<{ key: string; events: HistoryEvent[]; truncated: boolean; error: AppError | null } | null>(null);
   const [retry, setRetry] = useState(0);
@@ -246,7 +315,13 @@ function ExecutionGraph({ shell, e, machineArn, refreshKey }: { shell: Shell; e:
       try {
         const text = await sfnApi.executionDefinition(e.arn).catch(async (err) => {
           if (!machineArn) throw err;
-          return (await sfnApi.describe(machineArn)).definition;
+          const parent = (await sfnApi.describe(machineArn)).definition;
+          if (!e.mapRunArn) return parent;
+          // A map run's child runs the item processor of its Map state ("Fan" in "Fan:uuid").
+          const place = executionPlaceName(e.arn);
+          const inner = itemProcessorDefinition(parent, place.slice(0, place.lastIndexOf(":")));
+          if (!inner) throw err;
+          return inner;
         });
         if (!stale) setDefinition({ arn: e.arn, text, error: null });
       } catch (err) {
@@ -281,5 +356,5 @@ function ExecutionGraph({ shell, e, machineArn, refreshKey }: { shell: Shell; e:
       : history.truncated
         ? `Coloured from the first ${history.events.length.toLocaleString()} events; the execution has more.`
         : null;
-  return <GraphView shell={shell} definition={def.text} runs={runs ?? new Map()} note={note} exportName={e.name} />;
+  return <GraphView shell={shell} definition={def.text} runs={runs ?? new Map()} note={note} exportName={e.name.replace(/:/g, "-")} mapRuns={mapRuns} onOpenMapRun={onOpenMapRun} />;
 }

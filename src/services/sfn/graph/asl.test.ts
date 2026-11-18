@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { HistoryEvent } from "../../../api/sfn";
-import { allStates, parseMachine, runStatus } from "./asl";
+import { allStates, itemProcessorDefinition, parseMachine, runStatus } from "./asl";
 import { DEMO, eventMaker } from "./fixtures";
 
 describe("parseMachine", () => {
@@ -48,6 +48,21 @@ describe("parseMachine", () => {
     expect(choice).toHaveLength(1);
     // Merged labels are cut to 40 characters.
     expect(choice[0].label).toBe("a BooleanEquals true; b BooleanEquals t…");
+  });
+
+  it("finds a distributed Map's item processor by Label, name, or as the only one", () => {
+    const machine = (label?: string) =>
+      JSON.stringify({
+        StartAt: "Fan",
+        States: { Fan: { Type: "Map", ...(label ? { Label: label } : {}), ItemProcessor: { ProcessorConfig: { Mode: "DISTRIBUTED" }, StartAt: "Ok", States: { Ok: { Type: "Pass", End: true } } }, End: true } },
+      });
+    const inner = JSON.parse(itemProcessorDefinition(machine("Items"), "Items")!);
+    expect(inner).toEqual({ StartAt: "Ok", States: { Ok: { Type: "Pass", End: true } } });
+    expect(itemProcessorDefinition(machine(), "Fan")).not.toBeNull();
+    // AWS names unlabelled runs with a generated id: the only distributed Map is the one.
+    expect(itemProcessorDefinition(machine(), "d3e43102-acad")).not.toBeNull();
+    expect(itemProcessorDefinition(JSON.stringify(DEMO), "nope")).not.toBeNull(); // DEMO has one distributed Map (B1)
+    expect(itemProcessorDefinition(JSON.stringify({ StartAt: "A", States: { A: { Type: "Pass", End: true } } }), "A")).toBeNull();
   });
 
   it("rejects anything that isn't a JSON object", () => {
@@ -133,6 +148,20 @@ describe("runStatus", () => {
       { id: 6, type: "PassStateExited", timestamp: "t", stateExitedEventDetails: { name: "Handle" } },
     ] as HistoryEvent[];
     expect(runStatus(h).get("Call")).toMatchObject({ status: "caught", error: "E" });
+  });
+
+  it("records the map runs a distributed Map started", () => {
+    const ev = eventMaker();
+    const h = [
+      ev("ExecutionStarted", 0, {}, "executionStarted"),
+      ev("MapStateEntered", 1, { name: "Fan" }, "stateEntered"),
+      ev("MapStateStarted", 2),
+      ev("MapRunStarted", 3, { mapRunArn: "arn:aws:states:r:1:mapRun:m/Fan:a" }, "mapRunStarted"),
+      ev("MapRunSucceeded", 4),
+      ev("MapStateSucceeded", 5),
+      ev("MapStateExited", 6, { name: "Fan" }, "stateExited"),
+    ];
+    expect(runStatus(h).get("Fan")).toMatchObject({ status: "succeeded", mapRuns: ["arn:aws:states:r:1:mapRun:m/Fan:a"] });
   });
 
   it("counts loop and Map iterations and pins iteration failures on the Map", () => {

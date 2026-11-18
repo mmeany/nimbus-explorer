@@ -45,6 +45,25 @@ A Standard execution opens once it has started. An Express machine keeps no hist
 
 A stopped Standard execution can be **redriven**: restarted from the state where it stopped, within 14 days.`,
   },
+  "sfn.maprun": {
+    title: "Map run",
+    body: `A Distributed Map state runs each item (or batch of items) as a child execution. The map run shows the counts of items and child executions by status, its settings and its child executions. While it runs, the view checks again every 5 seconds.
+
+- **Child executions**: filter by status; open one (Enter or double-click) to see its graph, input, output and history. Right-click to stop a running one.
+- **Settings** (command bar, while the run is running): max concurrency and tolerated failures.
+- **Open parent execution** goes back to the execution that started the run.
+
+Without a Label on the Map state, AWS names the run with a generated id instead of the state's name. Express child workflows aren't kept by AWS, so they can't be listed; look in their log group.`,
+  },
+  "sfn.maprun.settings": {
+    title: "Map run settings",
+    body: `Change a running map run without redeploying:
+
+- **Max concurrency**: how many child executions run at once (0 means no limit, up to 10,000).
+- **Tolerated failures**: as a percentage of items, a number of items, or both. Once failures pass either, the run (and the Map state) fails. 0 for both fails it at the first failure.
+
+Only this run changes; the next run uses the Map state's definition again.`,
+  },
   "sfn.machine": {
     title: "Definition",
     body: `The machine's definition (Amazon States Language). The states table lists every state, including the ones inside Parallel branches and Map item processors, with the next state, the resource a Task calls, and its comment. **Definition** shows the ASL itself as a tree or as text.
@@ -83,6 +102,8 @@ If logging is off, the tab says so. Turn it on in the machine's settings (level 
   "sfn.execution": {
     title: "Execution",
     body: `One execution: status, start and stop times, the version or alias it ran, its input and output, and the error and cause when it failed. While it's running, the view checks again every 5 seconds.
+
+**Map runs** (a tab, when the execution ran a distributed Map) lists each map run; in the graph, a distributed Map state's details link to its runs. A child execution of a map run links back to it from **Overview**.
 
 Commands: **Re-run** starts a new execution with this one's input (and the version or alias it ran), **Stop** ends a running execution, **Redrive** restarts a failed, aborted or timed-out one from the state where it stopped (within 14 days; not for executions a Map Run started). All three are disabled in read-only mode.
 

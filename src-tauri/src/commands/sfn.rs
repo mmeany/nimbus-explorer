@@ -6,6 +6,7 @@ use crate::sfn::{
     self, ExecutionDetails, ExecutionPage, FullHistory, HistoryPage, MachineDetails, MachineRef,
     Versions,
 };
+use crate::sfn_map::{self as map, MapRunChange, MapRunDetails, MapRunRef};
 use crate::sfn_run::{self as run, SavedInput, StartRequest, Started};
 use tauri::State;
 
@@ -155,4 +156,32 @@ pub fn sfn_delete_input(
     name: String,
 ) -> Result<Vec<SavedInput>, AppError> {
     run::delete_input(&state.settings.dir(), &key, &name)
+}
+
+/// The Distributed Map runs of an execution.
+#[tauri::command]
+pub async fn sfn_map_runs(
+    state: State<'_, AppState>,
+    arn: String,
+) -> Result<Vec<MapRunRef>, AppError> {
+    map::list(&*state.connection()?, &arn).await
+}
+
+#[tauri::command]
+pub async fn sfn_map_run(
+    state: State<'_, AppState>,
+    arn: String,
+) -> Result<MapRunDetails, AppError> {
+    map::describe(&*state.connection()?, &arn).await
+}
+
+/// Changes a running map run's concurrency / failure tolerance.
+#[tauri::command]
+pub async fn sfn_update_map_run(
+    state: State<'_, AppState>,
+    arn: String,
+    change: MapRunChange,
+) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    map::update(&*state.connection()?, &arn, &change).await
 }

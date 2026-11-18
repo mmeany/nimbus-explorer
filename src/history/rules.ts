@@ -392,6 +392,13 @@ export const RULES: Record<string, Rule> = {
   }),
   sfn_stop: (a) => ({ service: "sfn", action: "Stop execution", target: sfnExecName(a.arn), place: sfnExecPlace(a.arn), detail: a.error ? `error ${a.error}` : null }),
   sfn_redrive: (a) => ({ service: "sfn", action: "Redrive execution", target: sfnExecName(a.arn), place: sfnExecPlace(a.arn) }),
+  sfn_update_map_run: (a) => {
+    // "arn:…:mapRun:orders/Fan:uuid"
+    const tail = String(a.arn).slice(String(a.arn).indexOf(":mapRun:") + 8);
+    const [machine, id] = [tail.split("/")[0], tail.slice(tail.indexOf("/") + 1)];
+    const changed = [a.change?.maxConcurrency != null ? `max concurrency ${a.change.maxConcurrency}` : "", a.change?.toleratedFailurePercentage != null ? `tolerated ${a.change.toleratedFailurePercentage}%` : "", a.change?.toleratedFailureCount != null ? `tolerated ${a.change.toleratedFailureCount} items` : ""].filter(Boolean).join(", ");
+    return { service: "sfn", action: "Change map run", target: `${machine} map run ${id.slice(0, id.lastIndexOf(":"))}`, detail: changed || null };
+  },
   sfn_export_svg: (a) => ({ service: "sfn", action: "Export graph", target: base(a.path), detail: `to ${a.path}` }),
   lambda_download_code: (a) => ({ service: "lambda", action: "Download code", target: a.qualifier ? `${a.name}:${a.qualifier}` : a.name, place: fnPlace(a.name), detail: `to ${a.dest}` }),
 

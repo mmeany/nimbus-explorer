@@ -179,6 +179,8 @@ export interface StateRun {
   cause: string | null;
   enteredAt: string | null;
   exitedAt: string | null;
+  /** Distributed Map: ARNs of the map runs it started (MapRunStarted events). */
+  mapRuns: string[];
 }
 
 const isFailure = (t: string) => /(Failed|TimedOut|Aborted)$/.test(t) && !t.startsWith("Execution") && t !== "FailStateEntered";
@@ -255,11 +257,16 @@ export function runStatus(events: HistoryEvent[]): Map<string, StateRun> {
       const r = runs.get(name);
       const status: RunStatus = e.type === "FailStateEntered" ? "failed" : "running";
       if (r) Object.assign(r, { status, entered: r.entered + 1, input: str(d.input) ?? r.input, enteredAt: e.timestamp });
-      else runs.set(name, { status, entered: 1, failures: 0, input: str(d.input), output: null, error: null, cause: null, enteredAt: e.timestamp, exitedAt: null });
+      else runs.set(name, { status, entered: 1, failures: 0, input: str(d.input), output: null, error: null, cause: null, enteredAt: e.timestamp, exitedAt: null, mapRuns: [] });
       if (e.type === "FailStateEntered") {
         const def = runs.get(name)!;
         def.exitedAt = e.timestamp;
       }
+    } else if (e.type === "MapRunStarted" || e.type === "MapRunRedriven") {
+      const arn = str(d.mapRunArn);
+      const name = arn ? ownerOf(e) : null;
+      const r = name ? runs.get(name) : undefined;
+      if (r && arn && !r.mapRuns.includes(arn)) r.mapRuns.push(arn);
     } else if (e.type.endsWith("StateExited")) {
       const name = str(d.name);
       if (name) close(name);
@@ -290,4 +297,21 @@ export function runStatus(events: HistoryEvent[]): Map<string, StateRun> {
     }
   }
   return runs;
+}
+
+/**
+ * The item processor (as a definition) of the distributed Map whose Label (or
+ * name) is `label`, or of the only distributed Map; null if none matches. Used
+ * for a map run's child execution when the endpoint can't describe it.
+ */
+export function itemProcessorDefinition(definition: string, label: string): string | null {
+  const parsed = parseMachine(definition);
+  if (!parsed) return null;
+  const maps = allStates(parsed.graph).filter((n) => n.distributed);
+  const pick = maps.find((n) => (typeof n.def?.Label === "string" ? n.def.Label : n.name) === label) ?? (maps.length === 1 ? maps[0] : undefined);
+  const inner = pick?.def ? ((pick.def.ItemProcessor ?? pick.def.Iterator) as Record<string, unknown> | undefined) : undefined;
+  if (!inner) return null;
+  const rest = { ...inner };
+  delete rest.ProcessorConfig;
+  return JSON.stringify(rest, null, 2);
 }

@@ -879,3 +879,5 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .sfn-key.failed::before { border-color: var(--sfn-bad); background: var(--sfn-bad-bg); }
 .sfn-key.caught::before { border-color: var(--sfn-caught); background: var(--sfn-caught-bg); }
 .sfn-graph-bar { align-items: center; }
+.sfn-counts { width: auto; }
+.sfn-counts th, .sfn-counts td { padding-right: 14px; }

@@ -2,7 +2,7 @@
 // state (its ASL and, in an execution, how it ran), a legend and Export SVG.
 import { useMemo, useRef, useState } from "react";
 import { api } from "../../../api/s3";
-import { sfnApi } from "../../../api/sfn";
+import { sfnApi, type MapRunRef } from "../../../api/sfn";
 import { ValueView } from "../../../components/ValueView";
 import { formatDate } from "../../../format";
 import type { Shell } from "../../../shell/shell";
@@ -27,9 +27,12 @@ interface Props {
   note?: string | null;
   /** File name (without .svg) suggested for Export SVG. */
   exportName: string;
+  /** Execution view: the Distributed Map runs it started, and how to open one. */
+  mapRuns?: MapRunRef[];
+  onOpenMapRun?: (arn: string) => void;
 }
 
-export function GraphView({ shell, definition, runs, note, exportName }: Props) {
+export function GraphView({ shell, definition, runs, note, exportName, mapRuns = [], onOpenMapRun }: Props) {
   const parsed = useMemo(() => parseMachine(definition), [definition]);
   const [selected, setSelected] = useState<string | null>(null);
   const graphRef = useRef<StateGraphHandle>(null);
@@ -38,6 +41,13 @@ export function GraphView({ shell, definition, runs, note, exportName }: Props) 
   if (!parsed) return <div className="warn-note">The definition isn't valid JSON, so it can't be drawn.</div>;
   const node = selected ? states.get(selected) : undefined;
   const run = selected ? runs?.get(selected) : undefined;
+  // A distributed Map's runs: from MapRunStarted events, else by its Label, else the only distributed Map.
+  const distributed = [...states.values()].filter((n) => n.distributed);
+  const nodeRuns = !node?.distributed
+    ? []
+    : run?.mapRuns.length
+      ? mapRuns.filter((m) => run.mapRuns.includes(m.arn))
+      : mapRuns.filter((m) => (typeof node.def?.Label === "string" ? m.label === node.def.Label : distributed.length === 1));
 
   async function exportSvg() {
     const svg = graphRef.current?.exportSvg();
@@ -87,6 +97,27 @@ export function GraphView({ shell, definition, runs, note, exportName }: Props) 
               <span className="qbadge">{node.type}</span>
             </div>
             {runs && <RunDetails run={run ?? null} />}
+            {node.distributed && runs && (
+              <>
+                <div className="props-section">Map runs</div>
+                {nodeRuns.length === 0 ? (
+                  <p className="hint">None found for this state.</p>
+                ) : (
+                  nodeRuns.map((m) => (
+                    <div key={m.arn} className="row">
+                      <span className="mono">{m.label}</span>
+                      <span className="hint">{m.stop ? "finished" : "running"}</span>
+                      <div className="spacer" />
+                      {onOpenMapRun && (
+                        <button className="link-btn" onClick={() => onOpenMapRun(m.arn)}>
+                          Open
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </>
+            )}
             <div className="props-section">Definition</div>
             <ValueView value={JSON.stringify(node.def ?? {}, null, 2)} />
           </div>

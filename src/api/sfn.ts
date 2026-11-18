@@ -95,7 +95,63 @@ export const sfnApi = {
   inputs: (key: string) => call<SavedInput[]>("sfn_inputs", { key }),
   saveInput: (key: string, name: string, input: string) => call<SavedInput[]>("sfn_save_input", { key, name, input }),
   deleteInput: (key: string, name: string) => call<SavedInput[]>("sfn_delete_input", { key, name }),
+  /** The Distributed Map runs an execution started. */
+  mapRuns: (arn: string) => call<MapRunRef[]>("sfn_map_runs", { arn }),
+  mapRun: (arn: string) => call<MapRunDetails>("sfn_map_run", { arn }),
+  /** Changes a running map run's settings; refused in read-only mode. */
+  updateMapRun: (arn: string, change: MapRunChange) => call<void>("sfn_update_map_run", { arn, change }),
 };
+
+export interface MapRunRef {
+  arn: string;
+  /** The Map state's Label (a generated id when the state has no Label). */
+  label: string;
+  /** "label:uuid", as places name it. */
+  id: string;
+  start: string | null;
+  stop: string | null;
+}
+
+export interface MapRunCounts {
+  pending: number;
+  running: number;
+  succeeded: number;
+  failed: number;
+  timedOut: number;
+  aborted: number;
+  total: number;
+  resultsWritten: number;
+  failuresNotRedrivable: number | null;
+  pendingRedrive: number | null;
+}
+
+export interface MapRunDetails extends MapRunRef {
+  executionArn: string;
+  /** RUNNING, SUCCEEDED, FAILED or ABORTED. */
+  status: string;
+  /** 0 = no limit. */
+  maxConcurrency: number;
+  toleratedFailurePercentage: number;
+  toleratedFailureCount: number;
+  items: MapRunCounts;
+  executions: MapRunCounts;
+  redriveCount: number | null;
+  redriveDate: string | null;
+}
+
+export interface MapRunChange {
+  maxConcurrency?: number;
+  toleratedFailurePercentage?: number;
+  toleratedFailureCount?: number;
+}
+
+/** "arn:…:stateMachine:orders" + "Fan:uuid" → "arn:…:mapRun:orders/Fan:uuid". */
+export function mapRunArn(machineArn: string, id: string): string {
+  return `${machineArn.replace(":stateMachine:", ":mapRun:")}/${id}`;
+}
+
+/** Child executions of a map run are named "label:uuid" in places (execution names never contain ":"). */
+export const isChildExecution = (name: string) => name.includes(":");
 
 export interface StartRequest {
   machineArn: string;
@@ -124,7 +180,15 @@ export const REDRIVABLE = ["FAILED", "ABORTED", "TIMED_OUT"];
 
 /** "arn:aws:states:r:a:stateMachine:orders" + "run-1" → "arn:aws:states:r:a:execution:orders:run-1". */
 export function executionArn(machineArn: string, execution: string): string {
-  return `${machineArn.replace(":stateMachine:", ":execution:")}:${execution}`;
+  // A map run's child ("Fan:uuid") lives under "<machine>/Fan:uuid".
+  return `${machineArn.replace(":stateMachine:", ":execution:")}${execution.includes(":") ? "/" : ":"}${execution}`;
+}
+
+/** "arn:…:execution:orders/Fan:uuid" → "Fan:uuid"; "arn:…:execution:orders:run-1" → "run-1". */
+export function executionPlaceName(arn: string): string {
+  const tail = arn.slice(arn.indexOf(":execution:") + ":execution:".length);
+  const slash = tail.indexOf("/");
+  return slash >= 0 ? tail.slice(slash + 1) : tail.slice(tail.indexOf(":") + 1);
 }
 
 /** The part after the last ":" of an ARN (a version number, an alias or execution name). */

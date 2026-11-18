@@ -114,7 +114,7 @@ export function placeCrumbs(p: Place): { label: string; place: Place }[] {
     if (p.view === "activities") out.push({ label: "Activities", place: { ...SFN_ROOT, view: "activities" } });
     if (p.machine) out.push({ label: p.machine, place: { ...SFN_ROOT, machine: p.machine } });
     if (p.machine && p.execution) out.push({ label: p.execution, place: { ...SFN_ROOT, machine: p.machine, execution: p.execution } });
-    if (p.mapRun) out.push({ label: `map run ${p.mapRun.slice(-8)}`, place: p });
+    if (p.mapRun) out.push({ label: `map run ${p.mapRun.slice(0, p.mapRun.lastIndexOf(":"))}`, place: p });
   }
   if (p.service === "logs" && p.group) out.push({ label: p.group, place: p });
   if (p.service === "secrets") {

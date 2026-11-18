@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { definitionStates, executionArn, executionNameProblem, statusTone } from "./sfn";
+import { definitionStates, executionArn, executionNameProblem, executionPlaceName, isChildExecution, mapRunArn, statusTone } from "./sfn";
 
 describe("executionNameProblem", () => {
   it("accepts names AWS accepts and blank (AWS picks one)", () => {
@@ -17,8 +17,20 @@ describe("executionNameProblem", () => {
 });
 
 describe("helpers", () => {
-  it("builds execution ARNs from machine ARNs", () => {
-    expect(executionArn("arn:aws:states:eu-west-2:1:stateMachine:orders", "run-1")).toBe("arn:aws:states:eu-west-2:1:execution:orders:run-1");
+  it("builds execution ARNs from machine ARNs, map run children included", () => {
+    const m = "arn:aws:states:eu-west-2:1:stateMachine:orders";
+    expect(executionArn(m, "run-1")).toBe("arn:aws:states:eu-west-2:1:execution:orders:run-1");
+    expect(executionArn(m, "Fan:9f6e")).toBe("arn:aws:states:eu-west-2:1:execution:orders/Fan:9f6e");
+    expect(isChildExecution("Fan:9f6e")).toBe(true);
+    expect(isChildExecution("run-1")).toBe(false);
+  });
+  it("turns execution ARNs back into place names", () => {
+    expect(executionPlaceName("arn:aws:states:eu-west-2:1:execution:orders:run-1")).toBe("run-1");
+    expect(executionPlaceName("arn:aws:states:eu-west-2:1:execution:orders/Fan:9f6e")).toBe("Fan:9f6e");
+    expect(executionPlaceName("arn:aws:states:eu-west-2:1:execution:orders/Process items:9f6e")).toBe("Process items:9f6e");
+  });
+  it("builds map run ARNs", () => {
+    expect(mapRunArn("arn:aws:states:eu-west-2:1:stateMachine:orders", "Fan:3526")).toBe("arn:aws:states:eu-west-2:1:mapRun:orders/Fan:3526");
   });
   it("gives statuses a tone", () => {
     expect([statusTone("SUCCEEDED"), statusTone("TIMED_OUT"), statusTone("RUNNING"), statusTone(null)]).toEqual(["ok", "bad", "busy", "off"]);

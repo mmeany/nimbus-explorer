@@ -3,13 +3,13 @@
 // the execution view.
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, type AppError } from "../../api/s3";
-import { arnTail, REDRIVABLE, sfnApi, type ExecutionDetails, type ExecutionSummary, type MachineDetails, type MachineRef } from "../../api/sfn";
+import { arnTail, executionPlaceName, isChildExecution, mapRunArn, REDRIVABLE, sfnApi, type ExecutionDetails, type ExecutionSummary, type MachineDetails, type MachineRef, type MapRunDetails } from "../../api/sfn";
 import { CommandButton, CommandSeparator } from "../../components/CommandButton";
 import type { MenuItem } from "../../components/ContextMenu";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { FilterBox } from "../../components/FilterBox";
-import { PlayIcon, RedriveIcon, RefreshIcon, StateMachineIcon, StepFunctionsIcon, StopIcon } from "../../components/Icons";
+import { EditIcon, PlayIcon, RedriveIcon, RefreshIcon, StateMachineIcon, StepFunctionsIcon, StopIcon } from "../../components/Icons";
 import { PageBar } from "../../components/PageBar";
 import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { formatDate } from "../../format";
@@ -18,6 +18,7 @@ import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePagedDetails, usePaging } from "../../state/paged";
 import { ExecutionView } from "./ExecutionView";
 import { MachineView } from "./MachineView";
+import { MapRunSettingsDialog, MapRunView } from "./MapRunView";
 import { StartExecutionDialog, StopExecutionDialog, type StartPreset } from "./RunDialogs";
 
 const COLUMNS: Column[] = [
@@ -30,17 +31,18 @@ const COLUMNS: Column[] = [
   { id: "description", label: "Description", width: 320 },
 ];
 
-const machinePlace = (machine: string | null, execution: string | null = null): Place => ({ ...SFN_ROOT, machine, execution });
+const machinePlace = (machine: string | null, execution: string | null = null, mapRun: string | null = null): Place => ({ ...SFN_ROOT, machine, execution, mapRun });
 
 export function useSfnService(shell: Shell): ServiceUi {
   const { connection, connectionId, profile, place } = shell;
   const active = place.service === "sfn";
   const machine = place.service === "sfn" ? place.machine : null;
   const execution = place.service === "sfn" ? place.execution : null;
+  const mapRun = place.service === "sfn" ? place.mapRun : null;
   const region = connection?.serviceRegion ?? "";
   const scope = `${connectionId}|${region}`;
   const historyKey = `sfn|${profile ?? ""}|${region}`;
-  const go = useCallback((m: string | null, e: string | null = null) => shell.navigate(machinePlace(m, e)), [shell]);
+  const go = useCallback((m: string | null, e: string | null = null, r: string | null = null) => shell.navigate(machinePlace(m, e, r)), [shell]);
 
   const [open, setOpen] = useState(false);
   const [listing, setListing] = useState<{ key: string; machines: MachineRef[] | null; error: AppError | null } | null>(null);
@@ -53,6 +55,8 @@ export function useSfnService(shell: Shell): ServiceUi {
   const [viewExecution, setViewExecution] = useState<ExecutionDetails | null>(null);
   const [startFor, setStartFor] = useState<{ machine: MachineRef; preset: StartPreset | null } | null>(null);
   const [stopFor, setStopFor] = useState<{ arn: string; name: string } | null>(null);
+  const [viewMapRun, setViewMapRun] = useState<MapRunDetails | null>(null);
+  const [mapRunSettings, setMapRunSettings] = useState<MapRunDetails | null>(null);
 
   useEffect(() => {
     setListing(null);
@@ -198,6 +202,35 @@ export function useSfnService(shell: Shell): ServiceUi {
     }
   }
 
+  /** Opens a map run: its place names the machine, the parent execution and the run. */
+  async function openMapRun(arn: string) {
+    try {
+      const d = await sfnApi.mapRun(arn);
+      const owner = arn.slice(arn.indexOf(":mapRun:") + ":mapRun:".length).split("/")[0];
+      go(owner, executionPlaceName(d.executionArn), d.id);
+    } catch (e) {
+      shell.showError(e);
+    }
+  }
+
+  function openExecutionArn(arn: string) {
+    const owner = arn.slice(arn.indexOf(":execution:") + ":execution:".length).split(/[/:]/)[0];
+    go(owner, executionPlaceName(arn));
+  }
+
+  function childMenu(e: ExecutionSummary, placeName: string, x: number, y: number) {
+    if (!machine) return;
+    shell.openMenu(x, y, [
+      { label: "Open", bold: true, shortcut: "Enter", onClick: () => go(machine, placeName) },
+      "separator",
+      { label: "Stop…", disabled: shell.readOnly || e.status !== "RUNNING", onClick: () => stopExecution({ arn: e.arn, name: e.name }) },
+      "separator",
+      { label: "Copy name", onClick: () => void shell.copyText(e.name) },
+      { label: "Copy ARN", onClick: () => void shell.copyText(e.arn) },
+      { label: "Add bookmark…", onClick: () => shell.addBookmark(machinePlace(machine, placeName), null, null) },
+    ]);
+  }
+
   function openLogs(group: string) {
     shell.navigate({ service: "logs", group });
   }
@@ -324,13 +357,29 @@ export function useSfnService(shell: Shell): ServiceUi {
         </div>
       </div>
     );
+  } else if (active && machine && execution && mapRun) {
+    content = (
+      <div className="service-pane scroll-pane">
+        <MapRunView
+          key={`${machine}|${mapRun}`}
+          shell={shell}
+          arn={machineRef ? mapRunArn(machineRef.arn, mapRun) : null}
+          reloadToken={reloadToken}
+          onLoaded={setViewMapRun}
+          onOpenChild={(child) => go(machine, child)}
+          onOpenParent={openExecutionArn}
+          childMenu={childMenu}
+        />
+      </div>
+    );
+    status = `${machine} › ${execution} › map run${viewMapRun?.id === mapRun ? ` · ${viewMapRun.status.toLowerCase()} · ${viewMapRun.executions.succeeded.toLocaleString()} of ${viewMapRun.executions.total.toLocaleString()} child executions succeeded` : ""} · ${region}`;
   } else if (active && machine && execution) {
     content = (
       <div className="service-pane scroll-pane">
-        <ExecutionView key={`${machine}|${execution}`} shell={shell} machineArn={machineRef?.arn ?? null} name={execution} reloadToken={reloadToken} onLoaded={setViewExecution} />
+        <ExecutionView key={`${machine}|${execution}`} shell={shell} machineArn={machineRef?.arn ?? null} name={execution} reloadToken={reloadToken} onLoaded={setViewExecution} onOpenMapRun={(arn) => void openMapRun(arn)} />
       </div>
     );
-    status = `${machine} › ${execution}${viewExecution?.name === execution ? ` · ${viewExecution.status.toLowerCase().replace(/_/g, " ")}` : ""} · ${region}`;
+    status = `${machine} › ${execution}${viewExecution && executionPlaceName(viewExecution.arn) === execution ? ` · ${viewExecution.status.toLowerCase().replace(/_/g, " ")}` : ""} · ${region}`;
   } else if (active && machine) {
     content = (
       <div className="service-pane scroll-pane">
@@ -349,13 +398,23 @@ export function useSfnService(shell: Shell): ServiceUi {
   }
 
   const ro = shell.readOnly;
-  const openExecution = execution && viewExecution?.name === execution ? viewExecution : null;
-  const redrivable = !!openExecution && REDRIVABLE.includes(openExecution.status) && openExecution.redriveStatus !== "NOT_REDRIVABLE" && openExecution.redriveStatus !== "REDRIVABLE_BY_MAP_RUN";
+  const openExecution = execution && !mapRun && viewExecution && executionPlaceName(viewExecution.arn) === execution ? viewExecution : null;
+  const openMapRunDetails = mapRun && viewMapRun?.id === mapRun ? viewMapRun : null;
+  // A map run's children are redriven through the map run (by redriving its parent), not one by one.
+  const redrivable = !!openExecution && !isChildExecution(execution ?? "") && REDRIVABLE.includes(openExecution.status) && openExecution.redriveStatus !== "NOT_REDRIVABLE" && openExecution.redriveStatus !== "REDRIVABLE_BY_MAP_RUN";
   const commands = active ? (
     <>
-      {openExecution && machineRef ? (
+      {mapRun ? (
+        <CommandButton
+          icon={<EditIcon />}
+          label="Settings"
+          title="Max concurrency and tolerated failures (while the run is running)"
+          disabled={ro || openMapRunDetails?.status !== "RUNNING"}
+          onClick={() => openMapRunDetails && setMapRunSettings(openMapRunDetails)}
+        />
+      ) : openExecution && machineRef ? (
         <>
-          <CommandButton icon={<PlayIcon />} label="Re-run" title="Start a new execution with this one's input" disabled={ro} onClick={() => void rerun(machineRef, openExecution)} />
+          {!isChildExecution(execution ?? "") && <CommandButton icon={<PlayIcon />} label="Re-run" title="Start a new execution with this one's input" disabled={ro} onClick={() => void rerun(machineRef, openExecution)} />}
           <CommandButton icon={<StopIcon />} label="Stop" title="Stop the running execution" disabled={ro || openExecution.status !== "RUNNING"} onClick={() => stopExecution(openExecution)} />
           <CommandButton
             icon={<RedriveIcon />}
@@ -391,6 +450,17 @@ export function useSfnService(shell: Shell): ServiceUi {
               shell.showFlash(`Started ${name}.`);
               go(m.name, name);
             }
+            refresh();
+          }}
+        />
+      )}
+      {mapRunSettings && (
+        <MapRunSettingsDialog
+          run={mapRunSettings}
+          onClose={() => setMapRunSettings(null)}
+          onDone={(msg) => {
+            setMapRunSettings(null);
+            shell.showFlash(msg);
             refresh();
           }}
         />
