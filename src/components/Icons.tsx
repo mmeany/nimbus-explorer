@@ -494,3 +494,55 @@ export function ActivityIcon({ size = 16 }: P) {
     </svg>
   );
 }
+
+/** ElastiCache: a lightning bolt on a memory chip. */
+export function ElastiCacheIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="2" y="2" width="12" height="12" rx="2" fill="#3e6fd8" stroke="#24479a" strokeWidth="0.8" />
+      <path d="M2 5 H0.8 M2 8 H0.8 M2 11 H0.8 M14 5 H15.2 M14 8 H15.2 M14 11 H15.2" stroke="#24479a" strokeWidth="1" />
+      <path d="M8.8 3.6 L5.6 8.6 H7.8 L7 12.4 L10.4 7.2 H8.2 Z" fill="#fff" />
+    </svg>
+  );
+}
+
+/** A replication group (several nodes). */
+export function CacheGroupIcon({ size = 16, cluster = false }: P & { cluster?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="1.5" y="2.5" width="6" height="5" rx="1" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" />
+      <rect x="8.5" y="2.5" width="6" height="5" rx="1" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" />
+      <rect x="5" y="8.5" width="6" height="5" rx="1" fill={cluster ? "#3e6fd8" : "#dbe6fb"} stroke="#3e6fd8" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** One cache node (a member cluster); the primary is filled. */
+export function CacheNodeIcon({ size = 16, primary = false }: P & { primary?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="3" y="3" width="10" height="10" rx="1.5" fill={primary ? "#3e6fd8" : "#dbe6fb"} stroke="#3e6fd8" strokeWidth="0.9" />
+      <path d="M5.5 6 H10.5 M5.5 8 H10.5 M5.5 10 H8.5" stroke={primary ? "#fff" : "#3e6fd8"} strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** A shard (node group) of a cluster-mode group. */
+export function CacheShardIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M2 4.5 L8 2 L14 4.5 L8 7 Z" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.8" />
+      <path d="M2 8 L8 10.5 L14 8 M2 11.5 L8 14 L14 11.5" fill="none" stroke="#3e6fd8" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** A serverless cache: a cloud with a bolt. */
+export function ServerlessCacheIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M4.2 12.5 H12 A2.6 2.6 0 0 0 11.6 7.3 A3.6 3.6 0 0 0 4.7 6.5 A3 3 0 0 0 4.2 12.5 Z" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" />
+      <path d="M8.6 6.4 L6.8 9.4 H8.1 L7.6 11.6 L9.6 8.6 H8.3 Z" fill="#3e6fd8" />
+    </svg>
+  );
+}

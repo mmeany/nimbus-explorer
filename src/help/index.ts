@@ -5,6 +5,7 @@ import type { Place } from "../shell/places";
 import { bookmarksTopics } from "./topics/bookmarks";
 import { dynamodbTopics } from "./topics/dynamodb";
 import { ecsTopics } from "./topics/ecs";
+import { elasticacheTopics } from "./topics/elasticache";
 import { generalTopics } from "./topics/general";
 import { lambdaTopics } from "./topics/lambda";
 import { logsTopics } from "./topics/logs";
@@ -31,6 +32,7 @@ export const HELP_TOPICS = {
   ...snsTopics,
   ...dynamodbTopics,
   ...rdsTopics,
+  ...elasticacheTopics,
   ...ecsTopics,
   ...lambdaTopics,
   ...sfnTopics,
@@ -57,6 +59,8 @@ export function placeTopic(p: Place): HelpTopicId {
       return p.table ? "dynamodb.items" : "dynamodb.tables";
     case "rds":
       return p.id ? "rds.details" : "rds.databases";
+    case "elasticache":
+      return p.kind === "group" ? "elasticache.group" : p.kind === "serverless" ? "elasticache.serverless" : "elasticache.caches";
     case "ecs":
       if (p.view === "taskdefs") return p.id ? "ecs.family.details" : "ecs.taskdefs";
       if (p.view === "service") return "ecs.service.details";

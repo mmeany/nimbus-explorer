@@ -1,7 +1,7 @@
 [package]
 name = "nimbus-explorer"
 version = "0.1.0"
-description = "Explorer-style desktop app that works with Amazon Web Services: S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ECS, Lambda, Step Functions, CloudWatch Logs and Secrets Manager (and emulators such as LocalStack)"
+description = "Explorer-style desktop app that works with Amazon Web Services: S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ElastiCache, ECS, Lambda, Step Functions, CloudWatch Logs and Secrets Manager (and emulators such as LocalStack)"
 license = "MIT"
 edition = "2021"
 rust-version = "1.85"
@@ -50,6 +50,7 @@ aws-sdk-cloudwatchlogs = { version = "1", default-features = false, features = [
 aws-sdk-lambda = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
 aws-sdk-ecs = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
 aws-sdk-sfn = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-elasticache = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
 
 [profile.release]
 codegen-units = 1

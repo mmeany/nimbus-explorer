@@ -2,7 +2,7 @@
 // a location inside a service. History, the address bar and Up work on places.
 import { breadcrumbs as s3Crumbs, parentOf as s3Parent, sameLocation, toS3Uri, type Location } from "../state/navigation";
 
-export type ServiceId = "s3" | "ssm" | "sqs" | "sns" | "dynamodb" | "rds" | "ecs" | "lambda" | "sfn" | "logs" | "secrets";
+export type ServiceId = "s3" | "ssm" | "sqs" | "sns" | "dynamodb" | "rds" | "elasticache" | "ecs" | "lambda" | "sfn" | "logs" | "secrets";
 
 export type Place =
   | { service: "home" }
@@ -17,6 +17,9 @@ export type Place =
   | { service: "dynamodb"; table: string | null }
   /** RDS: the database list (kind null) or one cluster / instance. */
   | { service: "rds"; kind: "cluster" | "instance" | null; id: string | null }
+  /** ElastiCache: the cache list (kind null), a replication group or a serverless cache
+   *  (by id / name), or the region's snapshots or users (kind set, id null). */
+  | { service: "elasticache"; kind: "group" | "serverless" | "snapshots" | "users" | null; id: string | null }
   /** ECS: clusters (cluster null), a cluster, or one of its services / tasks;
    *  or task definitions (cluster null, view "taskdefs", id = family or null). */
   | { service: "ecs"; cluster: string | null; view: "service" | "task" | "taskdefs" | null; id: string | null }
@@ -38,6 +41,7 @@ export const SQS_ROOT: Place = { service: "sqs", queue: null };
 export const SNS_ROOT: Place = { service: "sns", topic: null };
 export const DDB_ROOT: Place = { service: "dynamodb", table: null };
 export const RDS_ROOT: Place = { service: "rds", kind: null, id: null };
+export const EC_ROOT: Place & { service: "elasticache" } = { service: "elasticache", kind: null, id: null };
 export const ECS_ROOT: Place = { service: "ecs", cluster: null, view: null, id: null };
 export const LAMBDA_ROOT: Place = { service: "lambda", fn: null };
 export const SFN_ROOT: Place & { service: "sfn" } = { service: "sfn", view: null, machine: null, execution: null, mapRun: null };
@@ -59,6 +63,7 @@ export const SERVICES: ServiceInfo[] = [
   { id: "sns", name: "SNS", description: "Topics and subscriptions", root: SNS_ROOT },
   { id: "dynamodb", name: "DynamoDB", description: "Tables and items", root: DDB_ROOT },
   { id: "rds", name: "RDS", description: "Relational databases: instances, Aurora clusters, snapshots", root: RDS_ROOT },
+  { id: "elasticache", name: "ElastiCache", description: "Valkey and Redis OSS caches: replication groups and serverless", root: EC_ROOT },
   { id: "ecs", name: "ECS", description: "Clusters, services, tasks and task definitions", root: ECS_ROOT },
   { id: "lambda", name: "Lambda", description: "Functions: configuration, triggers, invoke, logs", root: LAMBDA_ROOT },
   { id: "sfn", name: "Step Functions", description: "State machines, executions and their history", root: SFN_ROOT },
@@ -74,6 +79,7 @@ export function samePlace(a: Place, b: Place): boolean {
   if (a.service === "sns" && b.service === "sns") return a.topic === b.topic;
   if (a.service === "dynamodb" && b.service === "dynamodb") return a.table === b.table;
   if (a.service === "rds" && b.service === "rds") return a.kind === b.kind && a.id === b.id;
+  if (a.service === "elasticache" && b.service === "elasticache") return a.kind === b.kind && a.id === b.id;
   if (a.service === "ecs" && b.service === "ecs") return a.cluster === b.cluster && a.view === b.view && a.id === b.id;
   if (a.service === "lambda" && b.service === "lambda") return a.fn === b.fn;
   if (a.service === "sfn" && b.service === "sfn") return a.view === b.view && a.machine === b.machine && a.execution === b.execution && a.mapRun === b.mapRun;
@@ -101,6 +107,8 @@ export function placeCrumbs(p: Place): { label: string; place: Place }[] {
   if (p.service === "sns" && p.topic) out.push({ label: p.topic, place: p });
   if (p.service === "dynamodb" && p.table) out.push({ label: p.table, place: p });
   if (p.service === "rds" && p.id) out.push({ label: p.id, place: p });
+  if (p.service === "elasticache" && (p.kind === "snapshots" || p.kind === "users")) out.push({ label: p.kind === "snapshots" ? "Snapshots" : "Users", place: p });
+  if (p.service === "elasticache" && p.id) out.push({ label: p.id, place: p });
   if (p.service === "ecs" && p.view === "taskdefs") {
     out.push({ label: "Task definitions", place: { service: "ecs", cluster: null, view: "taskdefs", id: null } });
     if (p.id) out.push({ label: p.id, place: p });
@@ -143,6 +151,7 @@ export function parentPlace(p: Place): Place | null {
   if (p.service === "sns") return p.topic ? SNS_ROOT : HOME;
   if (p.service === "dynamodb") return p.table ? DDB_ROOT : HOME;
   if (p.service === "rds") return p.id ? RDS_ROOT : HOME;
+  if (p.service === "elasticache") return p.kind ? EC_ROOT : HOME;
   if (p.service === "ecs" && p.view === "taskdefs") return p.id ? { service: "ecs", cluster: null, view: "taskdefs", id: null } : ECS_ROOT;
   if (p.service === "ecs") return p.view ? { service: "ecs", cluster: p.cluster, view: null, id: null } : p.cluster ? ECS_ROOT : HOME;
   if (p.service === "lambda") return p.fn ? LAMBDA_ROOT : HOME;
@@ -168,6 +177,7 @@ export function placeUri(p: Place): string {
   if (p.service === "sns") return p.topic ?? "";
   if (p.service === "dynamodb") return p.table ?? "";
   if (p.service === "rds") return p.id ?? "";
+  if (p.service === "elasticache") return p.id ?? "";
   if (p.service === "ecs") return p.id ?? p.cluster ?? "";
   if (p.service === "lambda") return p.fn ?? "";
   if (p.service === "sfn") return p.mapRun ?? p.execution ?? p.machine ?? "";
@@ -184,6 +194,7 @@ export function placeKey(p: Place): string {
   if (p.service === "sns") return `sns:${p.topic ?? ""}`;
   if (p.service === "dynamodb") return `ddb:${p.table ?? ""}`;
   if (p.service === "rds") return `rds:${p.kind ?? ""}:${p.id ?? ""}`;
+  if (p.service === "elasticache") return `ec:${p.kind ?? ""}:${p.id ?? ""}`;
   if (p.service === "ecs") return `ecs:${p.cluster ?? ""}:${p.view ?? ""}:${p.id ?? ""}`;
   if (p.service === "lambda") return `lambda:${p.fn ?? ""}`;
   if (p.service === "sfn") return `sfn:${p.view ?? ""}:${p.machine ?? ""}:${p.execution ?? ""}:${p.mapRun ?? ""}`;

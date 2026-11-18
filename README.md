@@ -1,7 +1,7 @@
 # Nimbus Explorer
 
 A classic Explorer-style desktop app that works with Amazon Web Services, using your AWS
-profiles: Amazon S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ECS, Lambda, Step Functions, CloudWatch Logs and Secrets Manager. Works with emulators such
+profiles: Amazon S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ElastiCache, ECS, Lambda, Step Functions, CloudWatch Logs and Secrets Manager. Works with emulators such
 as LocalStack and MiniStack.
 
 Built with Tauri 2 (Rust backend), React and TypeScript. See `CLAUDE.md` for
@@ -78,6 +78,7 @@ GitHub Release. Each version is then submitted to winget by hand. See
 | Parameter Store | [docs/parameter-store.md](docs/parameter-store.md): folders, prefix filter with history, create/edit/delete, SecureString reveal, history/diff/labels/restore, tags/tier/policies, copy/move/rename, export/import                                                                                                                                                                                               |
 | DynamoDB        | [docs/dynamodb.md](docs/dynamodb.md): tables with filter history, scan & query (filters, projection, paging), results grid, item editor (JSON / DynamoDB JSON), PartiQL, export / import, create / delete tables, indexes, settings, backups                                                                                                                                                                     |
 | RDS             | [docs/rds.md](docs/rds.md): instances and Aurora / Multi-AZ clusters with filter history, start / stop / reboot / fail over, modify (class, backups, deletion protection), delete with final snapshot, snapshots (create, copy, delete, restore, point in time), events, log files (tail, download), connection details and client commands, SQL on Aurora via the Data API (read-only runs rolled back, export) |
+| ElastiCache     | In progress (guide to follow): Valkey and Redis OSS replication groups (shards and nodes in the tree) and serverless caches, details, endpoints, encryption, network and backups                                                                                                                                                                                                                                 |
 | ECS             | [docs/ecs.md](docs/ecs.md): clusters, services (counts, deployments and events, load balancing, network), tasks (containers, stop reasons), scale / redeploy / change revision / roll back, stop and run tasks with overrides, task definitions (details, JSON, compare, new revision from JSON, deregister), container logs, ECS Exec command                                                                   |
 | Lambda          | [docs/lambda.md](docs/lambda.md): functions (paged, filter history), details (environment variables revealed on demand, function URL, async settings, layers, VPC), invoke with saved test events and templates, logs, triggers (event sources on / off, resource-policy invokers), versions and aliases with traffic splits, settings (memory, timeout, env vars, concurrency), code download / upload, delete  |
 | Step Functions  | [docs/step-functions.md](docs/step-functions.md): state machines (paged, filter history), graph (collapsible Parallel / Map, SVG export), executions coloured on the graph, event history, start / stop / redrive / re-run with saved inputs, Distributed Map runs, edit with live graph and validation, create / delete, versions and aliases, activities, export                                               |
@@ -107,7 +108,7 @@ Each service is a node in the tree under the profile. Shared controls:
   week / month / year (your choice) or at a size limit. See
   [docs/history.md](docs/history.md).
 - **Region** list in the toolbar for the regional services (Parameter Store,
-  SQS, SNS, DynamoDB, RDS, ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager); remembered per profile. S3 always
+  SQS, SNS, DynamoDB, RDS, ElastiCache, ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager); remembered per profile. S3 always
   uses each bucket's own region.
 - **Read-only lock** in the toolbar: on, nothing that changes AWS is allowed
   (enforced in the app's backend, not just hidden in the UI). The app always

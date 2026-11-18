@@ -5,6 +5,7 @@ mod ddb_items;
 mod ddb_tables;
 mod dynamo;
 mod ecs;
+mod elasticache;
 mod ecs_actions;
 mod ecs_taskdefs;
 mod error;
@@ -193,6 +194,10 @@ pub fn run() {
             commands::logs::logs_list_streams,
             commands::logs::logs_latest,
             commands::logs::logs_download,
+            commands::elasticache::ec_list_groups,
+            commands::elasticache::ec_list_serverless,
+            commands::elasticache::ec_group,
+            commands::elasticache::ec_serverless,
             commands::sfn::sfn_list,
             commands::sfn::sfn_details_many,
             commands::sfn::sfn_describe,
