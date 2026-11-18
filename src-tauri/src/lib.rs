@@ -25,6 +25,7 @@ mod settings;
 mod sfn;
 mod sfn_activities;
 mod sfn_admin;
+mod sfn_export;
 mod sfn_map;
 mod sfn_run;
 mod sfn_versions;
@@ -202,6 +203,8 @@ pub fn run() {
             commands::sfn::sfn_history_all,
             commands::sfn::sfn_execution_definition,
             commands::sfn::sfn_export_svg,
+            commands::sfn::sfn_export_executions,
+            commands::sfn::sfn_export_history,
             commands::sfn::sfn_start,
             commands::sfn::sfn_stop,
             commands::sfn::sfn_redrive,

@@ -119,7 +119,13 @@ export const sfnApi = {
   activity: (arn: string) => call<Activity>("sfn_activity", { arn }),
   createActivity: (name: string) => call<string>("sfn_create_activity", { name }),
   deleteActivity: (arn: string) => call<void>("sfn_delete_activity", { arn }),
+  /** Every execution of a machine or map run to `dest` (local write); returns the count. */
+  exportExecutions: (arn: string, status: string | null, format: ExportFormat, dest: string) => call<number>("sfn_export_executions", { arn, status, format, dest }),
+  /** An execution's whole event history to `dest` (local write); returns the count. */
+  exportHistory: (arn: string, format: ExportFormat, dest: string) => call<number>("sfn_export_history", { arn, format, dest }),
 };
+
+export type ExportFormat = "jsonl" | "csv";
 
 export interface Activity {
   name: string;

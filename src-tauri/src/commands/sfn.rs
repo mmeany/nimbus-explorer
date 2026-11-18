@@ -8,6 +8,7 @@ use crate::sfn::{
 };
 use crate::sfn_activities::{self as activities, Activity};
 use crate::sfn_admin::{self as admin, CreateRequest, UpdateOutcome, UpdateRequest, Validation};
+use crate::sfn_export::{self as export, Format};
 use crate::sfn_map::{self as map, MapRunChange, MapRunDetails, MapRunRef};
 use crate::sfn_run::{self as run, SavedInput, StartRequest, Started};
 use crate::sfn_versions::{self as versions, AliasRequest};
@@ -294,4 +295,34 @@ pub async fn sfn_create_activity(
 pub async fn sfn_delete_activity(state: State<'_, AppState>, arn: String) -> Result<(), AppError> {
     state.ensure_writable()?;
     activities::delete(&*state.connection()?, &arn).await
+}
+
+/// Every execution of a machine or map run to a file (a local write; allowed in read-only mode).
+#[tauri::command]
+pub async fn sfn_export_executions(
+    state: State<'_, AppState>,
+    arn: String,
+    status: Option<String>,
+    format: Format,
+    dest: String,
+) -> Result<usize, AppError> {
+    export::export_executions(
+        &*state.connection()?,
+        &arn,
+        status.as_deref().filter(|s| !s.is_empty()),
+        format,
+        &dest,
+    )
+    .await
+}
+
+/// An execution's event history to a file (a local write; allowed in read-only mode).
+#[tauri::command]
+pub async fn sfn_export_history(
+    state: State<'_, AppState>,
+    arn: String,
+    format: Format,
+    dest: String,
+) -> Result<usize, AppError> {
+    export::export_history(&*state.connection()?, &arn, format, &dest).await
 }

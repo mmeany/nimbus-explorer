@@ -421,6 +421,13 @@ export const RULES: Record<string, Rule> = {
   sfn_delete: (a) => ({ service: "sfn", action: "Delete state machine", target: lastAfter(String(a.arn), ":"), place: SFN_ROOT, select: lastAfter(String(a.arn), ":") }),
   sfn_create_activity: (a) => ({ service: "sfn", action: "Create activity", target: String(a.name).trim(), place: { service: "sfn", view: "activities", machine: null, execution: null, mapRun: null }, select: String(a.name).trim() }),
   sfn_delete_activity: (a) => ({ service: "sfn", action: "Delete activity", target: lastAfter(String(a.arn), ":"), place: { service: "sfn", view: "activities", machine: null, execution: null, mapRun: null } }),
+  sfn_export_executions: (a, r) => ({
+    service: "sfn",
+    action: "Export executions",
+    target: String(a.arn).includes(":mapRun:") ? `map run ${String(a.arn).split("/").pop()}` : lastAfter(String(a.arn), ":"),
+    detail: [a.status ? `status ${a.status}` : "", typeof r === "number" ? plural(r, "execution") : "", `to ${a.dest}`].filter(Boolean).join(", "),
+  }),
+  sfn_export_history: (a, r) => ({ service: "sfn", action: "Export event history", target: sfnExecName(String(a.arn)), place: sfnExecPlace(String(a.arn)), detail: [typeof r === "number" ? plural(r, "event") : "", `to ${a.dest}`].filter(Boolean).join(", ") }),
   sfn_export_svg: (a) => ({ service: "sfn", action: "Export graph", target: base(a.path), detail: `to ${a.path}` }),
   lambda_download_code: (a) => ({ service: "lambda", action: "Download code", target: a.qualifier ? `${a.name}:${a.qualifier}` : a.name, place: fnPlace(a.name), detail: `to ${a.dest}` }),
 

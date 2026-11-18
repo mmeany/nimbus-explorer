@@ -13,6 +13,7 @@ import { useTokenPages } from "../../state/paged";
 import { duration, Pill, PropsTable } from "./MachineView";
 import { itemProcessorDefinition, runStatus } from "./graph/asl";
 import { GraphView } from "./graph/GraphView";
+import { exportHistory } from "./exports";
 
 const EVENT_COLUMNS: Column[] = [
   { id: "id", label: "ID", width: 60, align: "right" },
@@ -250,6 +251,13 @@ function History({ shell, arn, start, refreshKey }: { shell: Shell; arn: string;
   if (page.error) return <ErrorPanel error={page.error} profile={shell.profile} onRetry={() => setRetry((x) => x + 1)} />;
   return (
     <div className="sfn-history">
+      <div className="row">
+        <span className="hint">Oldest first. Select an event to see its details.</span>
+        <div className="spacer" />
+        <button className="btn small" title="Save every event as JSON lines or CSV" onClick={() => void exportHistory(shell, arn, arn.slice(arn.indexOf(":execution:") + 11).replace(/[/:]/g, "-"))}>
+          Export…
+        </button>
+      </div>
       <div className="ecs-list">
         <FileList
           storageKey="sfn.history"

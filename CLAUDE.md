@@ -936,7 +936,11 @@ tab / dialog.
   worker CLI commands (profile and region filled in; `--endpoint-url` only
   for the app's own endpoint override, since the CLI reads a profile's
   endpoint_url itself)) Activities (tree node): list, describe, create, delete (asks).
-- 14.9 Export the executions list or one execution's history to JSON lines /
+- 14.9 ✅ (`src-tauri/src/sfn_export.rs` with a `PartFile` that renames on
+  finish and removes the part file if dropped; `services/sfn/exports.tsx`;
+  Export… on the executions list (with its status filter), a map run's
+  child executions and the event history; JSON lines keep records as AWS
+  sends them, CSV has fixed columns with event details as JSON) Export the executions list or one execution's history to JSON lines /
   CSV (`.s3x-part` then rename; local write, allowed in read-only mode).
 - 14.10 Docs (`docs/step-functions.md`, README, help topics).
 

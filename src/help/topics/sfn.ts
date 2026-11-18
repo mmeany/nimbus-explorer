@@ -52,7 +52,7 @@ A stopped Standard execution can be **redriven**: restarted from the state where
     title: "Map run",
     body: `A Distributed Map state runs each item (or batch of items) as a child execution. The map run shows the counts of items and child executions by status, its settings and its child executions. While it runs, the view checks again every 5 seconds.
 
-- **Child executions**: filter by status; open one (Enter or double-click) to see its graph, input, output and history. Right-click to stop a running one.
+- **Child executions**: filter by status; **Export…** saves them all; open one (Enter or double-click) to see its graph, input, output and history. Right-click to stop a running one.
 - **Settings** (command bar, while the run is running): max concurrency and tolerated failures.
 - **Open parent execution** goes back to the execution that started the run.
 
@@ -113,6 +113,7 @@ The header shows the type, status and query language (JSONPath or JSONata). **Co
 - **Status**: show only running, succeeded, failed, timed out, aborted or pending-redrive executions.
 - **Open** an execution: Enter or double-click.
 - **Page size**: 100, 500 or 1,000. Ctrl+PgUp / Ctrl+PgDn turn pages.
+- **Export…**: every execution (with the status filter), not just the page, as JSON lines or CSV. Saving works in read-only mode.
 
 - **Right-click** an execution to re-run it with the same input, stop it (running) or redrive it (failed, aborted or timed out).
 
@@ -155,6 +156,6 @@ If logging is off, the tab says so. Turn it on in the machine's settings (level 
 
 Commands: **Re-run** starts a new execution with this one's input (and the version or alias it ran), **Stop** ends a running execution, **Redrive** restarts a failed, aborted or timed-out one from the state where it stopped (within 14 days; not for executions a Map Run started). All three are disabled in read-only mode.
 
-**Event history** lists every event oldest first, a page at a time. Select an event to see its details (state input and output, task parameters, errors). AWS leaves out input or output that's too large, and the view says so.`,
+**Event history** lists every event oldest first, a page at a time; **Export…** saves all of them as JSON lines (each event as AWS sent it) or CSV (id, time, type, state and the details as JSON). Select an event to see its details (state input and output, task parameters, errors). AWS leaves out input or output that's too large, and the view says so.`,
   },
 };

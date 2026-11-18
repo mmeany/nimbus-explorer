@@ -12,6 +12,7 @@ import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
 import { useTokenPages } from "../../state/paged";
 import { duration, Pill, PropsTable } from "./MachineView";
+import { exportExecutions } from "./exports";
 
 const COUNT_COLUMNS: [keyof MapRunCounts, string][] = [
   ["pending", "Pending"],
@@ -183,6 +184,9 @@ function ChildExecutions({ shell, run, refreshKey, onOpen, onMenu }: { shell: Sh
             ))}
           </select>
         </label>
+        <button className="btn small" title="Save every child execution (with this status filter) as JSON lines or CSV" onClick={() => void exportExecutions(shell, run.arn, status, `map-run-${run.label}`)}>
+          Export…
+        </button>
       </div>
       {run.executions.total === 0 && run.items.total > 0 && <p className="hint">This run uses Express child workflows, which AWS doesn't list; look in the child workflow's log group.</p>}
       {page.error ? (

@@ -15,6 +15,7 @@ import type { Shell } from "../../shell/shell";
 import { useTokenPages } from "../../state/paged";
 import { LogViewer } from "../logs/LogViewer";
 import { GraphView } from "./graph/GraphView";
+import { exportExecutions } from "./exports";
 import { VersionsTab } from "./VersionsTab";
 
 type Tab = "graph" | "definition" | "executions" | "config" | "versions" | "logs";
@@ -146,7 +147,7 @@ export function MachineView({ shell, arn, reloadToken, onLoaded, onOpenExecution
       ) : tab === "definition" ? (
         <DefinitionTab m={m} />
       ) : tab === "executions" ? (
-        <ExecutionsTab shell={shell} arn={m.arn} reloadToken={reloadToken} onOpen={onOpenExecution} onMenu={executionMenu} />
+        <ExecutionsTab shell={shell} arn={m.arn} name={m.name} reloadToken={reloadToken} onOpen={onOpenExecution} onMenu={executionMenu} />
       ) : tab === "config" ? (
         <ConfigTab m={m} shell={shell} />
       ) : tab === "versions" ? (
@@ -213,7 +214,7 @@ const EXEC_COLUMNS: Column[] = [
   { id: "redrives", label: "Redrives", width: 70, align: "right" },
 ];
 
-function ExecutionsTab({ shell, arn, reloadToken, onOpen, onMenu }: { shell: Shell; arn: string; reloadToken: number; onOpen: (name: string) => void; onMenu: (e: ExecutionSummary, x: number, y: number) => void }) {
+function ExecutionsTab({ shell, arn, name, reloadToken, onOpen, onMenu }: { shell: Shell; arn: string; name: string; reloadToken: number; onOpen: (name: string) => void; onMenu: (e: ExecutionSummary, x: number, y: number) => void }) {
   const [status, setStatus] = useState("");
   const [retry, setRetry] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -252,6 +253,10 @@ function ExecutionsTab({ shell, arn, reloadToken, onOpen, onMenu }: { shell: She
             ))}
           </select>
         </label>
+        <div className="spacer" />
+        <button className="btn small" title="Save every execution (with this status filter) as JSON lines or CSV" onClick={() => void exportExecutions(shell, arn, status, name)}>
+          Export…
+        </button>
       </div>
       {page.error ? (
         <ErrorPanel error={page.error} profile={shell.profile} onRetry={() => setRetry((x) => x + 1)} />
