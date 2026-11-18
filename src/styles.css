@@ -823,3 +823,10 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .bmm-table tr.selected td { background: var(--sel); }
 .bmm-table td svg { vertical-align: -3px; }
 .bmm-right-buttons { flex-wrap: wrap; }
+
+/* Step Functions */
+.sfn-states { max-height: 320px; }
+.sfn-states .qbadge { margin-left: 6px; }
+.sfn-history { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.sfn-history .ecs-list { flex: 3; min-height: 160px; }
+.sfn-event { flex: 2; min-height: 120px; overflow: auto; border: 1px solid var(--border-light); padding: 6px 8px; }

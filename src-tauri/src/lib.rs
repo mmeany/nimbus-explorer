@@ -22,6 +22,7 @@ mod rds_snapshots;
 mod s3;
 mod secrets;
 mod settings;
+mod sfn;
 mod sns;
 mod sns_publish;
 mod sns_watch;
@@ -186,6 +187,13 @@ pub fn run() {
             commands::logs::logs_list_streams,
             commands::logs::logs_latest,
             commands::logs::logs_download,
+            commands::sfn::sfn_list,
+            commands::sfn::sfn_details_many,
+            commands::sfn::sfn_describe,
+            commands::sfn::sfn_executions,
+            commands::sfn::sfn_execution,
+            commands::sfn::sfn_history,
+            commands::sfn::sfn_versions,
             commands::lambda::lambda_list,
             commands::lambda::lambda_get,
             commands::lambda::lambda_env_values,

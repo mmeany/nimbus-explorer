@@ -11,6 +11,7 @@ import { logsTopics } from "./topics/logs";
 import { rdsTopics } from "./topics/rds";
 import { s3Topics } from "./topics/s3";
 import { secretsTopics } from "./topics/secrets";
+import { sfnTopics } from "./topics/sfn";
 import { snsTopics } from "./topics/sns";
 import { sqsTopics } from "./topics/sqs";
 import { ssmTopics } from "./topics/ssm";
@@ -32,6 +33,7 @@ export const HELP_TOPICS = {
   ...rdsTopics,
   ...ecsTopics,
   ...lambdaTopics,
+  ...sfnTopics,
   ...logsTopics,
   ...secretsTopics,
 };
@@ -62,6 +64,9 @@ export function placeTopic(p: Place): HelpTopicId {
       return p.cluster ? "ecs.cluster.services" : "ecs.clusters";
     case "lambda":
       return p.fn ? "lambda.details" : "lambda.functions";
+    case "sfn":
+      if (p.execution) return "sfn.execution";
+      return p.machine ? "sfn.machine" : "sfn.machines";
     case "logs":
       return p.group ? "logs.events" : "logs.groups";
     case "secrets":

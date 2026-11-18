@@ -110,7 +110,7 @@ pub async fn revisions(
 
 /// Keeps a copy of the raw response body (read after the SDK has loaded it).
 #[derive(Debug, Clone, Default)]
-struct CaptureBody(Arc<Mutex<Option<Vec<u8>>>>);
+pub(crate) struct CaptureBody(pub(crate) Arc<Mutex<Option<Vec<u8>>>>);
 
 impl Intercept for CaptureBody {
     fn name(&self) -> &'static str {

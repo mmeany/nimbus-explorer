@@ -736,6 +736,7 @@ mod tests {
             include_str!("commands/rds.rs"),
             include_str!("commands/ecs.rs"),
             include_str!("commands/lambda.rs"),
+            include_str!("commands/sfn.rs"),
             include_str!("commands/logs.rs"),
             include_str!("commands/secrets.rs"),
         ];

@@ -2,7 +2,7 @@
 // a location inside a service. History, the address bar and Up work on places.
 import { breadcrumbs as s3Crumbs, parentOf as s3Parent, sameLocation, toS3Uri, type Location } from "../state/navigation";
 
-export type ServiceId = "s3" | "ssm" | "sqs" | "sns" | "dynamodb" | "rds" | "ecs" | "lambda" | "logs" | "secrets";
+export type ServiceId = "s3" | "ssm" | "sqs" | "sns" | "dynamodb" | "rds" | "ecs" | "lambda" | "sfn" | "logs" | "secrets";
 
 export type Place =
   | { service: "home" }
@@ -22,6 +22,10 @@ export type Place =
   | { service: "ecs"; cluster: string | null; view: "service" | "task" | "taskdefs" | null; id: string | null }
   /** Lambda: the function list (null) or one function. */
   | { service: "lambda"; fn: string | null }
+  /** Step Functions: state machines (machine null) or activities (view "activities"); one
+   *  machine, one of its executions (by name), or one Map Run of that execution (id after
+   *  "mapRun:", null otherwise). */
+  | { service: "sfn"; view: "activities" | null; machine: string | null; execution: string | null; mapRun: string | null }
   /** CloudWatch Logs: the log group list (null) or one group. */
   | { service: "logs"; group: string | null }
   /** Secrets Manager folder: "" (root) or a name prefix ending in "/" ("prod/app/"). */
@@ -36,6 +40,7 @@ export const DDB_ROOT: Place = { service: "dynamodb", table: null };
 export const RDS_ROOT: Place = { service: "rds", kind: null, id: null };
 export const ECS_ROOT: Place = { service: "ecs", cluster: null, view: null, id: null };
 export const LAMBDA_ROOT: Place = { service: "lambda", fn: null };
+export const SFN_ROOT: Place & { service: "sfn" } = { service: "sfn", view: null, machine: null, execution: null, mapRun: null };
 export const LOGS_ROOT: Place = { service: "logs", group: null };
 export const SECRETS_ROOT: Place = { service: "secrets", path: "" };
 
@@ -56,6 +61,7 @@ export const SERVICES: ServiceInfo[] = [
   { id: "rds", name: "RDS", description: "Relational databases: instances, Aurora clusters, snapshots", root: RDS_ROOT },
   { id: "ecs", name: "ECS", description: "Clusters, services, tasks and task definitions", root: ECS_ROOT },
   { id: "lambda", name: "Lambda", description: "Functions: configuration, triggers, invoke, logs", root: LAMBDA_ROOT },
+  { id: "sfn", name: "Step Functions", description: "State machines, executions and their history", root: SFN_ROOT },
   { id: "logs", name: "CloudWatch Logs", description: "Log groups, streams and events", root: LOGS_ROOT },
   { id: "secrets", name: "Secrets Manager", description: "Secrets, versions and rotation", root: SECRETS_ROOT },
 ];
@@ -70,6 +76,7 @@ export function samePlace(a: Place, b: Place): boolean {
   if (a.service === "rds" && b.service === "rds") return a.kind === b.kind && a.id === b.id;
   if (a.service === "ecs" && b.service === "ecs") return a.cluster === b.cluster && a.view === b.view && a.id === b.id;
   if (a.service === "lambda" && b.service === "lambda") return a.fn === b.fn;
+  if (a.service === "sfn" && b.service === "sfn") return a.view === b.view && a.machine === b.machine && a.execution === b.execution && a.mapRun === b.mapRun;
   if (a.service === "logs" && b.service === "logs") return a.group === b.group;
   if (a.service === "secrets" && b.service === "secrets") return a.path === b.path;
   return true;
@@ -103,6 +110,12 @@ export function placeCrumbs(p: Place): { label: string; place: Place }[] {
     if (p.view && p.id) out.push({ label: p.view === "task" ? `task ${p.id.slice(0, 8)}` : p.id, place: p });
   }
   if (p.service === "lambda" && p.fn) out.push({ label: p.fn, place: p });
+  if (p.service === "sfn") {
+    if (p.view === "activities") out.push({ label: "Activities", place: { ...SFN_ROOT, view: "activities" } });
+    if (p.machine) out.push({ label: p.machine, place: { ...SFN_ROOT, machine: p.machine } });
+    if (p.machine && p.execution) out.push({ label: p.execution, place: { ...SFN_ROOT, machine: p.machine, execution: p.execution } });
+    if (p.mapRun) out.push({ label: `map run ${p.mapRun.slice(-8)}`, place: p });
+  }
   if (p.service === "logs" && p.group) out.push({ label: p.group, place: p });
   if (p.service === "secrets") {
     let acc = "";
@@ -133,6 +146,11 @@ export function parentPlace(p: Place): Place | null {
   if (p.service === "ecs" && p.view === "taskdefs") return p.id ? { service: "ecs", cluster: null, view: "taskdefs", id: null } : ECS_ROOT;
   if (p.service === "ecs") return p.view ? { service: "ecs", cluster: p.cluster, view: null, id: null } : p.cluster ? ECS_ROOT : HOME;
   if (p.service === "lambda") return p.fn ? LAMBDA_ROOT : HOME;
+  if (p.service === "sfn") {
+    if (p.mapRun) return { ...p, mapRun: null };
+    if (p.execution) return { ...p, execution: null };
+    return p.machine || p.view ? SFN_ROOT : HOME;
+  }
   if (p.service === "logs") return p.group ? LOGS_ROOT : HOME;
   if (p.service === "secrets") {
     if (!p.path) return HOME;
@@ -152,6 +170,7 @@ export function placeUri(p: Place): string {
   if (p.service === "rds") return p.id ?? "";
   if (p.service === "ecs") return p.id ?? p.cluster ?? "";
   if (p.service === "lambda") return p.fn ?? "";
+  if (p.service === "sfn") return p.mapRun ?? p.execution ?? p.machine ?? "";
   if (p.service === "logs") return p.group ?? "";
   if (p.service === "secrets") return p.path;
   return "";
@@ -167,6 +186,7 @@ export function placeKey(p: Place): string {
   if (p.service === "rds") return `rds:${p.kind ?? ""}:${p.id ?? ""}`;
   if (p.service === "ecs") return `ecs:${p.cluster ?? ""}:${p.view ?? ""}:${p.id ?? ""}`;
   if (p.service === "lambda") return `lambda:${p.fn ?? ""}`;
+  if (p.service === "sfn") return `sfn:${p.view ?? ""}:${p.machine ?? ""}:${p.execution ?? ""}:${p.mapRun ?? ""}`;
   if (p.service === "logs") return `logs:${p.group ?? ""}`;
   if (p.service === "secrets") return `sm:${p.path}`;
   return p.service;

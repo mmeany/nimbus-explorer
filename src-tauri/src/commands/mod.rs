@@ -11,6 +11,7 @@ pub mod logs;
 pub mod rds;
 pub mod s3;
 pub mod secrets;
+pub mod sfn;
 pub mod sns;
 pub mod sqs;
 pub mod ssm;

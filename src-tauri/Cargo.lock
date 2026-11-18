@@ -384,6 +384,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-sdk-sfn"
+version = "1.123.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c149c59d61748e843ef40e47db88a884148300dfa560c0d84b0fcf04f0c85c2f"
+dependencies = [
+ "arc-swap",
+ "aws-credential-types",
+ "aws-runtime",
+ "aws-smithy-async",
+ "aws-smithy-http",
+ "aws-smithy-json",
+ "aws-smithy-observability",
+ "aws-smithy-runtime",
+ "aws-smithy-runtime-api",
+ "aws-smithy-schema",
+ "aws-smithy-types",
+ "aws-types",
+ "bytes",
+ "fastrand",
+ "http",
+ "regex-lite",
+ "tracing",
+]
+
+[[package]]
 name = "aws-sdk-sns"
 version = "1.119.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2761,6 +2786,7 @@ dependencies = [
  "aws-sdk-rdsdata",
  "aws-sdk-s3",
  "aws-sdk-secretsmanager",
+ "aws-sdk-sfn",
  "aws-sdk-sns",
  "aws-sdk-sqs",
  "aws-sdk-ssm",

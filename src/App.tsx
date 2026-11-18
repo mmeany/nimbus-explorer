@@ -19,7 +19,7 @@ import { BookmarkImportDialog, exportBookmarks, pickImport } from "./components/
 import { bookmarksApi, type Bookmark } from "./api/bookmarks";
 import { currentBookmarks, findBookmark, isPlaceBookmarked, loadBookmarks, useBookmarks } from "./state/bookmarks";
 import { currentSelection } from "./state/selection";
-import { BucketIcon, CloudIcon, LockIcon, ParamStoreIcon, ServerIcon, SqsIcon, DynamoIcon, SecretsIcon, SnsIcon, RdsIcon, LogsIcon, LambdaIcon, EcsIcon } from "./components/Icons";
+import { BucketIcon, CloudIcon, LockIcon, ParamStoreIcon, ServerIcon, SqsIcon, DynamoIcon, SecretsIcon, SnsIcon, RdsIcon, LogsIcon, LambdaIcon, EcsIcon, StepFunctionsIcon } from "./components/Icons";
 import { PromptDialog } from "./components/PromptDialog";
 import { TypedConfirmDialog } from "./components/TypedConfirmDialog";
 import { StatusBar } from "./components/StatusBar";
@@ -34,6 +34,7 @@ import { useDynamoService } from "./services/dynamodb/useDynamoService";
 import { useRdsService } from "./services/rds/useRdsService";
 import { useLogsService } from "./services/logs/useLogsService";
 import { useLambdaService } from "./services/lambda/useLambdaService";
+import { useSfnService } from "./services/sfn/useSfnService";
 import { useEcsService } from "./services/ecs/useEcsService";
 import { useSecretsService } from "./services/secrets/useSecretsService";
 import { DEFAULT_HISTORY_SETTINGS, type HistoryEntry } from "./api/history";
@@ -86,6 +87,7 @@ const SERVICE_ICONS: Record<ServiceId, ReactNode> = {
   rds: <RdsIcon />,
   ecs: <EcsIcon />,
   lambda: <LambdaIcon />,
+  sfn: <StepFunctionsIcon />,
   logs: <LogsIcon />,
   dynamodb: <DynamoIcon />,
   secrets: <SecretsIcon />,
@@ -257,9 +259,10 @@ export default function App() {
   const rds = useRdsService(shell);
   const ecs = useEcsService(shell);
   const lambda = useLambdaService(shell);
+  const sfn = useSfnService(shell);
   const logs = useLogsService(shell);
   const secrets = useSecretsService(shell);
-  const services: Record<ServiceId, ServiceUi> = { s3, ssm, sqs, sns, dynamodb, rds, ecs, lambda, logs, secrets };
+  const services: Record<ServiceId, ServiceUi> = { s3, ssm, sqs, sns, dynamodb, rds, ecs, lambda, sfn, logs, secrets };
   const active: ServiceUi | null = place.service === "home" ? null : services[place.service];
 
   const servicesRef = useRef(services);

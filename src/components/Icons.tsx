@@ -447,3 +447,39 @@ export function StopIcon({ size = 16 }: P) {
     </svg>
   );
 }
+
+/** Step Functions: three steps joined in a flow. */
+export function StepFunctionsIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="1.5" y="1.5" width="13" height="13" rx="2" fill="#e7457b" stroke="#b02a58" strokeWidth="0.8" />
+      <rect x="5.5" y="3" width="5" height="2.6" rx="0.6" fill="#fff" />
+      <rect x="3" y="10.4" width="4" height="2.6" rx="0.6" fill="#fff" />
+      <rect x="9" y="10.4" width="4" height="2.6" rx="0.6" fill="#fff" />
+      <path d="M8 5.6 V8 M5 8 H11 M5 8 V10.4 M11 8 V10.4" fill="none" stroke="#fff" strokeWidth="1" />
+    </svg>
+  );
+}
+
+/** One state machine (Express ones get a small bolt). */
+export function StateMachineIcon({ size = 16, express = false }: P & { express?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="5" y="1.5" width="6" height="3.2" rx="0.8" fill="#fbdbe6" stroke="#c43a69" strokeWidth="0.9" />
+      <rect x="1.5" y="11.3" width="5" height="3.2" rx="0.8" fill="#fbdbe6" stroke="#c43a69" strokeWidth="0.9" />
+      <rect x="9.5" y="11.3" width="5" height="3.2" rx="0.8" fill="#fbdbe6" stroke="#c43a69" strokeWidth="0.9" />
+      <path d="M8 4.7 V8 M4 8 H12 M4 8 V11.3 M12 8 V11.3" fill="none" stroke="#c43a69" strokeWidth="0.9" />
+      {express && <path d="M13 1 L10.8 4.4 H12.6 L11.4 7.2 L14.2 3.6 H12.4 Z" fill="#f0a020" />}
+    </svg>
+  );
+}
+
+/** One execution of a state machine. */
+export function ExecutionIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy="8" r="6.2" fill="#fbdbe6" stroke="#c43a69" strokeWidth="0.9" />
+      <path d="M6.5 5 L11 8 L6.5 11 Z" fill="#c43a69" />
+    </svg>
+  );
+}
