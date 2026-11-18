@@ -104,6 +104,13 @@ export const sfnApi = {
   validate: (definition: string, kind: string) => call<Validation>("sfn_validate", { definition, kind }),
   /** Saves the changed fields; "changed" means someone else saved first and nothing was written. */
   update: (request: UpdateRequest) => call<UpdateOutcome>("sfn_update", { request }),
+  /** With revisionId, AWS refuses if the machine changed since it was read. */
+  publishVersion: (arn: string, description: string | null, revisionId: string | null) => call<string>("sfn_publish_version", { arn, description, revisionId }),
+  /** Creates the alias, or updates it when `update`; routing is one version, or two with weights adding up to 100. */
+  saveAlias: (alias: { machineArn: string; name: string; description: string | null; routing: { versionArn: string; weight: number }[] }, update: boolean) => call<void>("sfn_save_alias", { alias, update }),
+  deleteAlias: (arn: string) => call<void>("sfn_delete_alias", { arn }),
+  /** Refused while an alias routes to the version. */
+  deleteVersion: (arn: string) => call<void>("sfn_delete_version", { arn }),
 };
 
 export interface Validation {
@@ -287,4 +294,12 @@ export function logGroupArn(machineArn: string, value: string): string {
   if (!v || v.startsWith("arn:")) return v;
   const [, partition, , region, account] = machineArn.split(":");
   return `arn:${partition}:logs:${region}:${account}:log-group:${v}:*`;
+}
+
+/** Why AWS would refuse an alias name (the backend checks too). */
+export function aliasNameProblem(name: string): string | null {
+  if (!name || [...name].length > 80) return "Alias names are 1 to 80 characters";
+  if (!/^[A-Za-z0-9_.-]+$/.test(name)) return "Alias names use letters, digits, -, _ and .";
+  if (/^\d+$/.test(name)) return "An alias name can't be only digits (it would look like a version)";
+  return null;
 }

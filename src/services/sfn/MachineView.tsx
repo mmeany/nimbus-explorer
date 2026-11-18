@@ -2,7 +2,7 @@
 // Versions and aliases, Logs).
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppError } from "../../api/core";
-import { arnTail, definitionStates, EXECUTION_STATUSES, sfnApi, statusTone, type ExecutionSummary, type MachineDetails, type Versions } from "../../api/sfn";
+import { arnTail, definitionStates, EXECUTION_STATUSES, sfnApi, statusTone, type ExecutionSummary, type MachineDetails } from "../../api/sfn";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { HelpTopic } from "../../components/HelpDialog";
@@ -15,6 +15,7 @@ import type { Shell } from "../../shell/shell";
 import { useTokenPages } from "../../state/paged";
 import { LogViewer } from "../logs/LogViewer";
 import { GraphView } from "./graph/GraphView";
+import { VersionsTab } from "./VersionsTab";
 
 type Tab = "graph" | "definition" | "executions" | "config" | "versions" | "logs";
 
@@ -149,7 +150,7 @@ export function MachineView({ shell, arn, reloadToken, onLoaded, onOpenExecution
       ) : tab === "config" ? (
         <ConfigTab m={m} shell={shell} />
       ) : tab === "versions" ? (
-        <VersionsTab shell={shell} arn={m.arn} reloadToken={reloadToken} />
+        <VersionsTab shell={shell} m={m} reloadToken={reloadToken} onChanged={() => setTick((x) => x + 1)} />
       ) : (
         <LogsTab shell={shell} m={m} reloadToken={reloadToken} />
       )}
@@ -311,88 +312,6 @@ function ConfigTab({ m, shell }: { m: MachineDetails; shell: Shell }) {
         <p className="hint">No tags.</p>
       ) : (
         <PropsTable rows={m.tags.map(([k, v]) => [k, v] as [string, ReactNode])} />
-      )}
-    </div>
-  );
-}
-
-function VersionsTab({ shell, arn, reloadToken }: { shell: Shell; arn: string; reloadToken: number }) {
-  const [state, setState] = useState<{ key: string; v: Versions | null; error: AppError | null }>({ key: "", v: null, error: null });
-  const [tick, setTick] = useState(0);
-  const key = `${arn}|${reloadToken}|${tick}`;
-  useEffect(() => {
-    let stale = false;
-    sfnApi
-      .versions(arn)
-      .then((v) => !stale && setState({ key, v, error: null }))
-      .catch((e) => !stale && setState({ key, v: null, error: e as AppError }));
-    return () => {
-      stale = true;
-    };
-  }, [arn, key]);
-  if (state.key === key && state.error) return <ErrorPanel error={state.error} profile={shell.profile} onRetry={() => setTick((x) => x + 1)} />;
-  const v = state.key === key ? state.v : null;
-  if (!v) return <p className="hint">Loading…</p>;
-  return (
-    <div className="lambda-details">
-      <div className="props-section">Aliases</div>
-      {v.aliases.length === 0 ? (
-        <p className="hint">No aliases.</p>
-      ) : (
-        <table className="sync-table">
-          <thead>
-            <tr>
-              <th>Alias</th>
-              <th>Routing</th>
-              <th>Description</th>
-              <th>Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            {v.aliases.map((a) => (
-              <tr key={a.arn}>
-                <td className="mono">{a.name}</td>
-                <td>{a.routing.map((r) => `version ${r.version} (${r.weight}%)`).join(", ")}</td>
-                <td>{a.description ?? ""}</td>
-                <td>{formatDate(a.created)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      <div className="props-section">Versions</div>
-      {v.versions.length === 0 ? (
-        <p className="hint">No published versions. Executions run the latest definition.</p>
-      ) : (
-        <table className="sync-table">
-          <thead>
-            <tr>
-              <th>Version</th>
-              <th>Published</th>
-              <th>Used by</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {v.versions.map((ver) => (
-              <tr key={ver.arn}>
-                <td>{ver.version}</td>
-                <td>{formatDate(ver.created)}</td>
-                <td>
-                  {v.aliases
-                    .filter((a) => a.routing.some((r) => r.versionArn === ver.arn))
-                    .map((a) => a.name)
-                    .join(", ")}
-                </td>
-                <td className="right">
-                  <button className="link-btn" onClick={() => void shell.copyText(ver.arn)}>
-                    Copy ARN
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       )}
     </div>
   );

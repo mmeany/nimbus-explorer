@@ -915,7 +915,11 @@ tab / dialog.
   their states), role ARN, logging, tracing; optional publish on save.
   UpdateStateMachine has no condition, so the backend re-describes first and
   warns if the machine changed since the editor opened (SSM pattern).
-- 14.6 Versions & aliases: publish version; alias create / edit with routing
+- 14.6 ✅ (`src-tauri/src/sfn_versions.rs`, `services/sfn/VersionsTab.tsx`;
+  publish sends the revision the view loaded, so AWS refuses a definition
+  that changed meanwhile; a single route is always sent as 100%; alias names
+  checked in both layers; deleting a version an alias uses is refused in the
+  backend before calling AWS) Versions & aliases: publish version; alias create / edit with routing
   between two versions (an update always sends the full routing map);
   delete alias (asks); delete version (typed; refused while an alias uses it).
 - 14.7 Create / delete state machines: Standard or Express, from a template

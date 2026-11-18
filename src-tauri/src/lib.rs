@@ -26,6 +26,7 @@ mod sfn;
 mod sfn_admin;
 mod sfn_map;
 mod sfn_run;
+mod sfn_versions;
 mod sns;
 mod sns_publish;
 mod sns_watch;
@@ -211,6 +212,10 @@ pub fn run() {
             commands::sfn::sfn_update_map_run,
             commands::sfn::sfn_validate,
             commands::sfn::sfn_update,
+            commands::sfn::sfn_publish_version,
+            commands::sfn::sfn_save_alias,
+            commands::sfn::sfn_delete_alias,
+            commands::sfn::sfn_delete_version,
             commands::lambda::lambda_list,
             commands::lambda::lambda_get,
             commands::lambda::lambda_env_values,

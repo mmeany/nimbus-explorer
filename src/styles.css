@@ -889,5 +889,6 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .sfn-editor-right .sfn-graph { min-height: 320px; }
 .sfn-diagnostics { display: flex; flex-direction: column; gap: 2px; max-height: 140px; overflow: auto; }
 .sfn-publish { gap: 8px; }
+.nowrap { white-space: nowrap; }
 .sfn-publish .text-input { flex: 1; }
 .sfn-counts th, .sfn-counts td { padding-right: 14px; }

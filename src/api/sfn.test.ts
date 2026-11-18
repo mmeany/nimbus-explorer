@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { definitionStates, executionArn, executionNameProblem, executionPlaceName, isChildExecution, logGroupArn, mapRunArn, statusTone } from "./sfn";
+import { aliasNameProblem, definitionStates, executionArn, executionNameProblem, executionPlaceName, isChildExecution, logGroupArn, mapRunArn, statusTone } from "./sfn";
 
 describe("executionNameProblem", () => {
   it("accepts names AWS accepts and blank (AWS picks one)", () => {
@@ -56,5 +56,16 @@ describe("logGroupArn", () => {
     const arn = "arn:aws:logs:eu-west-2:1:log-group:g:*";
     expect(logGroupArn(m, arn)).toBe(arn);
     expect(logGroupArn(m, "  ")).toBe("");
+  });
+});
+
+describe("aliasNameProblem", () => {
+  it("follows AWS's alias rules", () => {
+    expect(aliasNameProblem("live")).toBeNull();
+    expect(aliasNameProblem("prod-v2.1_b")).toBeNull();
+    expect(aliasNameProblem("")).not.toBeNull();
+    expect(aliasNameProblem("12")).toContain("only digits");
+    expect(aliasNameProblem("a b")).not.toBeNull();
+    expect(aliasNameProblem("a".repeat(81))).not.toBeNull();
   });
 });

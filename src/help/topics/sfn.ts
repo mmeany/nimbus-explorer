@@ -100,7 +100,19 @@ Express machines don't keep executions that AWS can list. Their runs appear in t
   },
   "sfn.versions": {
     title: "Versions and aliases",
-    body: `Published versions (newest first) and aliases. An alias can split executions between two versions by weight. The table shows each alias's routing.`,
+    body: `A **version** freezes the definition and settings at the time it's published, with a number that never changes. An **alias** is a name (\`live\`, \`prod\`) that points at one version, or splits executions between two by weight, so callers don't change when you release.
+
+- **Publish version…**: publishes the current definition. If the machine changed since this view loaded, AWS refuses; refresh first.
+- **New alias…** / **Edit**: choose a version, and optionally a second one with its share (for a gradual rollout).
+- **Delete** an alias (asks) or a version (you type its number). A version an alias uses can't be deleted; change the alias first.
+
+Start an execution on a version or alias from **Start execution** (Run).`,
+  },
+  "sfn.alias": {
+    title: "Alias",
+    body: `An alias points at a published version. To roll out gradually, tick **Send part of the executions to a second version** and give its share (1 to 99%); the first version gets the rest. Clearing the tick sends everything to the first version again.
+
+Names are 1 to 80 letters, digits, -, _ or ., and can't be only digits (that would look like a version number). A name can't be changed; create a new alias instead.`,
   },
   "sfn.logs": {
     title: "Machine logs",

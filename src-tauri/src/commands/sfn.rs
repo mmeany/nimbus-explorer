@@ -9,6 +9,7 @@ use crate::sfn::{
 use crate::sfn_admin::{self as admin, UpdateOutcome, UpdateRequest, Validation};
 use crate::sfn_map::{self as map, MapRunChange, MapRunDetails, MapRunRef};
 use crate::sfn_run::{self as run, SavedInput, StartRequest, Started};
+use crate::sfn_versions::{self as versions, AliasRequest};
 use tauri::State;
 
 /// Every state machine in the region (names, types, ARNs); details come per page.
@@ -205,4 +206,50 @@ pub async fn sfn_update(
 ) -> Result<UpdateOutcome, AppError> {
     state.ensure_writable()?;
     admin::update(&*state.connection()?, &request).await
+}
+
+#[tauri::command]
+pub async fn sfn_publish_version(
+    state: State<'_, AppState>,
+    arn: String,
+    description: Option<String>,
+    revision_id: Option<String>,
+) -> Result<String, AppError> {
+    state.ensure_writable()?;
+    versions::publish(
+        &*state.connection()?,
+        &arn,
+        description.as_deref(),
+        revision_id.as_deref(),
+    )
+    .await
+}
+
+/// Creates the alias, or updates it when `update` (the routing is always sent in full).
+#[tauri::command]
+pub async fn sfn_save_alias(
+    state: State<'_, AppState>,
+    alias: AliasRequest,
+    update: bool,
+) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    let conn = state.connection()?;
+    if update {
+        versions::update_alias(&conn, &alias).await
+    } else {
+        versions::create_alias(&conn, &alias).await.map(|_| ())
+    }
+}
+
+#[tauri::command]
+pub async fn sfn_delete_alias(state: State<'_, AppState>, arn: String) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    versions::delete_alias(&*state.connection()?, &arn).await
+}
+
+/// Refused while an alias routes to the version.
+#[tauri::command]
+pub async fn sfn_delete_version(state: State<'_, AppState>, arn: String) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    versions::delete_version(&*state.connection()?, &arn).await
 }
