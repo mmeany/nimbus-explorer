@@ -3,7 +3,8 @@
 use super::AppState;
 use crate::error::AppError;
 use crate::sfn::{
-    self, ExecutionDetails, ExecutionPage, HistoryPage, MachineDetails, MachineRef, Versions,
+    self, ExecutionDetails, ExecutionPage, FullHistory, HistoryPage, MachineDetails, MachineRef,
+    Versions,
 };
 use tauri::State;
 
@@ -69,4 +70,27 @@ pub async fn sfn_history(
 #[tauri::command]
 pub async fn sfn_versions(state: State<'_, AppState>, arn: String) -> Result<Versions, AppError> {
     sfn::versions(&*state.connection()?, &arn).await
+}
+
+/// Every event (up to 25,000), for colouring the graph.
+#[tauri::command]
+pub async fn sfn_history_all(
+    state: State<'_, AppState>,
+    arn: String,
+) -> Result<FullHistory, AppError> {
+    sfn::history_all(&*state.connection()?, &arn, sfn::HISTORY_LIMIT).await
+}
+
+#[tauri::command]
+pub async fn sfn_execution_definition(
+    state: State<'_, AppState>,
+    arn: String,
+) -> Result<String, AppError> {
+    sfn::execution_definition(&*state.connection()?, &arn).await
+}
+
+/// Saves an exported graph (a local write; allowed in read-only mode).
+#[tauri::command]
+pub async fn sfn_export_svg(path: String, svg: String) -> Result<(), AppError> {
+    sfn::save_svg(&path, &svg).await
 }

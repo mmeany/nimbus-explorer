@@ -14,10 +14,12 @@ import type { HelpTopicId } from "../../help";
 import type { Shell } from "../../shell/shell";
 import { useTokenPages } from "../../state/paged";
 import { LogViewer } from "../logs/LogViewer";
+import { GraphView } from "./graph/GraphView";
 
-type Tab = "definition" | "executions" | "config" | "versions" | "logs";
+type Tab = "graph" | "definition" | "executions" | "config" | "versions" | "logs";
 
 const TAB_HELP: Record<Tab, HelpTopicId> = {
+  graph: "sfn.graph",
   definition: "sfn.machine",
   executions: "sfn.executions",
   config: "sfn.configuration",
@@ -72,7 +74,7 @@ interface Props {
 export function MachineView({ shell, arn, reloadToken, onLoaded, onOpenExecution, executionMenu }: Props) {
   const [data, setData] = useState<{ arn: string; m: MachineDetails | null; error: AppError | null } | null>(null);
   const [tick, setTick] = useState(0);
-  const [tab, setTab] = useState<Tab>("definition");
+  const [tab, setTab] = useState<Tab>("graph");
 
   useEffect(() => {
     if (!arn) return;
@@ -107,8 +109,9 @@ export function MachineView({ shell, arn, reloadToken, onLoaded, onOpenExecution
   if (data?.arn === arn && data.error) return <ErrorPanel error={data.error} profile={shell.profile} onRetry={() => setTick((x) => x + 1)} />;
   if (!m) return <div className="empty-note">Loading…</div>;
   const parsed = definitionStates(m.definition);
-  const fill = tab === "executions" || tab === "logs";
+  const fill = tab === "graph" || tab === "executions" || tab === "logs";
   const tabs: { id: Tab; label: string }[] = [
+    { id: "graph", label: "Graph" },
     { id: "definition", label: "Definition" },
     ...(express ? [] : [{ id: "executions" as Tab, label: "Executions" }]),
     { id: "config", label: "Configuration" },
@@ -137,7 +140,9 @@ export function MachineView({ shell, arn, reloadToken, onLoaded, onOpenExecution
           </button>
         ))}
       </div>
-      {tab === "definition" ? (
+      {tab === "graph" ? (
+        <GraphView shell={shell} definition={m.definition} runs={null} exportName={m.name} />
+      ) : tab === "definition" ? (
         <DefinitionTab m={m} />
       ) : tab === "executions" ? (
         <ExecutionsTab shell={shell} arn={m.arn} reloadToken={reloadToken} onOpen={onOpenExecution} onMenu={executionMenu} />

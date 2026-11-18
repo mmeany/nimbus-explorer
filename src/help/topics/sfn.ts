@@ -6,6 +6,27 @@ export const sfnTopics = {
 - **Filter**: type the start of a name and press Enter.
 - **Open** a machine: Enter or double-click.`,
   },
+  "sfn.graph": {
+    title: "Graph",
+    body: `The machine drawn as a flow, top to bottom, from **Start** to **End**. Choice rules are labelled with their condition, dotted lines are a Choice's default, red dashed lines are Catch routes, and loops come back up on the right.
+
+- **Move**: drag. **Zoom**: mouse wheel or the − / + buttons. **Fit** shows the whole graph; **100%** is actual size.
+- **Parallel and Map** states are boxes holding their branches. The − / + button in a box's corner collapses or expands it; **Expand all** opens every one.
+- **Click a state** to see its definition on the right.
+- **Export SVG…** saves the graph in the current theme's colours.
+
+Problems in the definition, like a transition to a state that doesn't exist, are listed above the graph.`,
+  },
+  "sfn.execution.graph": {
+    title: "Execution graph",
+    body: `The definition this execution ran with, coloured by what happened: green succeeded, blue running, red failed, amber failed but caught (a Catch moved on to another state). States without colour didn't run. While the execution runs, the graph updates every 5 seconds.
+
+- **Click a state** to see how it ran: when it was entered and exited, how long it took, failed attempts (retries), the error and cause, and its input and output.
+- A state entered more than once (a loop, or Map iterations) shows ×n; the details are from the last time.
+- A distributed Map's items run as child executions, so the states inside it aren't coloured here.
+
+The colours come from the execution's event history; for very long histories, only the first 25,000 events are read.`,
+  },
   "sfn.machine": {
     title: "Definition",
     body: `The machine's definition (Amazon States Language). The states table lists every state, including the ones inside Parallel branches and Map item processors, with the next state, the resource a Task calls, and its comment. **Definition** shows the ASL itself as a tree or as text.

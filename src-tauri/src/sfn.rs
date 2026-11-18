@@ -406,6 +406,74 @@ pub async fn history(
     history_page(&body)
 }
 
+/// Most events read for an execution's graph (25 pages of 1,000).
+pub const HISTORY_LIMIT: usize = 25_000;
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct FullHistory {
+    pub events: Vec<Value>,
+    /// More events exist than were read (see HISTORY_LIMIT).
+    pub truncated: bool,
+}
+
+/// Every event of an execution, oldest first, up to `limit` (for the graph).
+pub async fn history_all(
+    conn: &Connection,
+    arn: &str,
+    limit: usize,
+) -> Result<FullHistory, AppError> {
+    let mut events = Vec::new();
+    let mut token: Option<String> = None;
+    loop {
+        let page = history(conn, arn, token.take(), 1000).await?;
+        events.extend(page.events);
+        match page.next_token {
+            Some(t) if events.len() < limit => token = Some(t),
+            Some(_) => {
+                events.truncate(limit);
+                return Ok(FullHistory {
+                    events,
+                    truncated: true,
+                });
+            }
+            None => {
+                return Ok(FullHistory {
+                    events,
+                    truncated: false,
+                })
+            }
+        }
+    }
+}
+
+/// The definition the execution ran with (its version may be older than the machine's).
+pub async fn execution_definition(conn: &Connection, arn: &str) -> Result<String, AppError> {
+    let out = client(conn)
+        .describe_state_machine_for_execution()
+        .execution_arn(arn)
+        .send()
+        .await
+        .map_err(|e| err(conn, e))?;
+    Ok(out.definition().to_string())
+}
+
+/// Writes an exported graph: to `<dest>.s3x-part`, renamed when complete.
+pub async fn save_svg(dest: &str, svg: &str) -> Result<(), AppError> {
+    if !svg.trim_start().starts_with("<?xml") && !svg.trim_start().starts_with("<svg") {
+        return Err(other("That isn't an SVG document."));
+    }
+    let part = format!("{dest}.s3x-part");
+    tokio::fs::write(&part, svg)
+        .await
+        .map_err(|e| other(format!("Couldn't save {dest}: {e}")))?;
+    if let Err(e) = tokio::fs::rename(&part, dest).await {
+        let _ = tokio::fs::remove_file(&part).await;
+        return Err(other(format!("Couldn't save {dest}: {e}")));
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct VersionInfo {
@@ -563,6 +631,20 @@ mod tests {
         assert_eq!(history_page(br#"{"events":[]}"#).unwrap().next_token, None);
     }
 
+    #[tokio::test]
+    async fn saves_svg_and_refuses_other_text() {
+        let dir = std::env::temp_dir().join(format!("s3x-sfn-svg-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let dest = dir.join("graph.svg").to_string_lossy().into_owned();
+        save_svg(&dest, "<?xml version=\"1.0\"?><svg/>")
+            .await
+            .unwrap();
+        assert!(std::fs::read_to_string(&dest).unwrap().contains("<svg/>"));
+        assert!(!std::path::Path::new(&format!("{dest}.s3x-part")).exists());
+        assert!(save_svg(&dest, "hello").await.is_err());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn version_numbers_from_arns() {
         assert_eq!(
@@ -664,6 +746,12 @@ pub(crate) mod emulator_tests {
             Some("ExecutionStarted")
         );
         assert!(h.events[0]["timestamp"].is_string());
+
+        let all_events = history_all(&conn, &exec_arn, HISTORY_LIMIT).await.unwrap();
+        assert!(!all_events.truncated);
+        assert_eq!(all_events.events.len(), h.events.len());
+        let def = execution_definition(&conn, &exec_arn).await.unwrap();
+        assert!(def.contains("\"Hello\""));
 
         // Every machine has $LATEST only until a version is published.
         let v = versions(&conn, &arn).await.unwrap();

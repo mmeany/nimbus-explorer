@@ -859,7 +859,17 @@ tab / dialog.
   re-checks every 5 s while RUNNING. Express machines can't list executions:
   a Logs tab on their log group (shared `LogViewer`) plus a note explaining
   why, or how to turn logging on.
-- 14.2 Graph (`services/sfn/graph/`: ASL → layered layout → SVG, own code).
+- 14.2 ✅ Graph (`services/sfn/graph/`: `asl.ts` model + `runStatus`, `layout.ts`
+  layered layout (DFS back edges, longest-path ranks, dummy nodes, barycentre
+  ordering), `StateGraph.tsx` SVG, `GraphView.tsx` tab with side panel; Graph
+  is the first tab of the machine and execution views; colours are `--sfn-*`
+  tokens as inline `var()` styles, resolved when exporting). Execution
+  graphs use DescribeStateMachineForExecution (the version that ran) and
+  `sfn_history_all` (up to 25,000 events). `runStatus` follows
+  previousEventId, falls back to event order (MiniStack sends none), and
+  pins ParallelState* / MapState* events (no name) on the innermost open
+  Parallel / Map. MiniStack logs a caught Parallel failure as an exit, so
+  there the Parallel shows green, not amber.
   Choice, Parallel, Map (inline and distributed), Catch edges; JSONPath and
   JSONata machines. Pan / zoom / Fit; Parallel and Map branches collapsible.
   Clicking a state opens a side panel with its ASL and, in an execution, its

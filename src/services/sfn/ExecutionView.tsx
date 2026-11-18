@@ -11,6 +11,8 @@ import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
 import { useTokenPages } from "../../state/paged";
 import { duration, Pill, PropsTable } from "./MachineView";
+import { runStatus } from "./graph/asl";
+import { GraphView } from "./graph/GraphView";
 
 const EVENT_COLUMNS: Column[] = [
   { id: "id", label: "ID", width: 60, align: "right" },
@@ -41,7 +43,7 @@ export function ExecutionView({ shell, machineArn, name, reloadToken, onLoaded }
   const arn = machineArn ? executionArn(machineArn, name) : null;
   const [data, setData] = useState<{ arn: string; e: ExecutionDetails | null; error: AppError | null } | null>(null);
   const [tick, setTick] = useState(0);
-  const [tab, setTab] = useState<"overview" | "history">("overview");
+  const [tab, setTab] = useState<"graph" | "overview" | "history">("graph");
 
   useEffect(() => {
     if (!arn) return;
@@ -79,7 +81,7 @@ export function ExecutionView({ shell, machineArn, name, reloadToken, onLoaded }
   if (!e) return <div className="empty-note">Loading…</div>;
 
   return (
-    <div className={`queue-view db-view${tab === "history" ? " fill" : ""}`}>
+    <div className={`queue-view db-view${tab !== "overview" ? " fill" : ""}`}>
       <div className="qv-head">
         <span className="qv-name">{e.name}</span>
         <Pill status={e.status} />
@@ -89,8 +91,11 @@ export function ExecutionView({ shell, machineArn, name, reloadToken, onLoaded }
           Copy ARN
         </button>
       </div>
-      <HelpTopic id="sfn.execution" />
+      <HelpTopic id={tab === "graph" ? "sfn.execution.graph" : "sfn.execution"} />
       <div className="segmented small db-tabs">
+        <button className={tab === "graph" ? "active" : ""} onClick={() => setTab("graph")}>
+          Graph
+        </button>
         <button className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>
           Overview
         </button>
@@ -98,7 +103,13 @@ export function ExecutionView({ shell, machineArn, name, reloadToken, onLoaded }
           Event history
         </button>
       </div>
-      {tab === "overview" ? <Overview e={e} /> : <History shell={shell} arn={e.arn} start={e.start} refreshKey={`${reloadToken}|${running ? tick : "done"}`} />}
+      {tab === "graph" ? (
+        <ExecutionGraph shell={shell} e={e} machineArn={machineArn} refreshKey={`${reloadToken}|${running ? tick : "done"}`} />
+      ) : tab === "overview" ? (
+        <Overview e={e} />
+      ) : (
+        <History shell={shell} arn={e.arn} start={e.start} refreshKey={`${reloadToken}|${running ? tick : "done"}`} />
+      )}
     </div>
   );
 }
@@ -217,4 +228,58 @@ function EventDetails({ details }: { details: Record<string, unknown> }) {
 function looksJson(s: string): boolean {
   const t = s.trim();
   return (t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"));
+}
+
+/**
+ * The graph coloured by how each state ran. The definition is the one the
+ * execution used (DescribeStateMachineForExecution, else the machine's); the
+ * whole history is read again on every poll while the execution runs.
+ */
+function ExecutionGraph({ shell, e, machineArn, refreshKey }: { shell: Shell; e: ExecutionDetails; machineArn: string | null; refreshKey: string }) {
+  const [definition, setDefinition] = useState<{ arn: string; text: string | null; error: AppError | null } | null>(null);
+  const [history, setHistory] = useState<{ key: string; events: HistoryEvent[]; truncated: boolean; error: AppError | null } | null>(null);
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    let stale = false;
+    (async () => {
+      try {
+        const text = await sfnApi.executionDefinition(e.arn).catch(async (err) => {
+          if (!machineArn) throw err;
+          return (await sfnApi.describe(machineArn)).definition;
+        });
+        if (!stale) setDefinition({ arn: e.arn, text, error: null });
+      } catch (err) {
+        if (!stale) setDefinition({ arn: e.arn, text: null, error: err as AppError });
+      }
+    })();
+    return () => {
+      stale = true;
+    };
+  }, [e.arn, machineArn, retry]);
+
+  const key = `${e.arn}|${refreshKey}|${retry}`;
+  useEffect(() => {
+    let stale = false;
+    sfnApi
+      .historyAll(e.arn)
+      .then((h) => !stale && setHistory({ key, events: h.events, truncated: h.truncated, error: null }))
+      .catch((err) => !stale && setHistory((p) => ({ key, events: p?.events ?? [], truncated: false, error: err as AppError })));
+    return () => {
+      stale = true;
+    };
+  }, [e.arn, key]);
+
+  const runs = useMemo(() => (history ? runStatus(history.events) : null), [history]);
+  const def = definition?.arn === e.arn ? definition : null;
+  if (def?.error) return <ErrorPanel error={def.error} profile={shell.profile} onRetry={() => setRetry((x) => x + 1)} />;
+  if (!def?.text) return <p className="hint">Loading…</p>;
+  const note = history?.error
+    ? `Couldn't read the event history: ${history.error.message}`
+    : !history
+      ? "Reading the event history…"
+      : history.truncated
+        ? `Coloured from the first ${history.events.length.toLocaleString()} events; the execution has more.`
+        : null;
+  return <GraphView shell={shell} definition={def.text} runs={runs ?? new Map()} note={note} exportName={e.name} />;
 }

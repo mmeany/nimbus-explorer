@@ -375,6 +375,7 @@ export const RULES: Record<string, Rule> = {
     place: fnPlace(a.request.name),
     detail: `${a.request.source.kind === "zip" ? a.request.source.path : s3Uri(a.request.source.bucket, a.request.source.key)}${a.request.publish ? ", published" : ""}`,
   }),
+  sfn_export_svg: (a) => ({ service: "sfn", action: "Export graph", target: base(a.path), detail: `to ${a.path}` }),
   lambda_download_code: (a) => ({ service: "lambda", action: "Download code", target: a.qualifier ? `${a.name}:${a.qualifier}` : a.name, place: fnPlace(a.name), detail: `to ${a.dest}` }),
 
   // CloudWatch Logs

@@ -80,6 +80,12 @@ export const sfnApi = {
   execution: (arn: string) => call<ExecutionDetails>("sfn_execution", { arn }),
   history: (arn: string, token: string | null, pageSize: number) => call<{ events: HistoryEvent[]; nextToken: string | null }>("sfn_history", { arn, token, pageSize }),
   versions: (arn: string) => call<Versions>("sfn_versions", { arn }),
+  /** Every event (up to 25,000), for the graph. */
+  historyAll: (arn: string) => call<{ events: HistoryEvent[]; truncated: boolean }>("sfn_history_all", { arn }),
+  /** The definition the execution ran with. */
+  executionDefinition: (arn: string) => call<string>("sfn_execution_definition", { arn }),
+  /** Saves an exported graph (a local write). */
+  exportSvg: (path: string, svg: string) => call<void>("sfn_export_svg", { path, svg }),
 };
 
 /** "arn:aws:states:r:a:stateMachine:orders" + "run-1" → "arn:aws:states:r:a:execution:orders:run-1". */
