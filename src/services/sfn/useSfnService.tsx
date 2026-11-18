@@ -9,7 +9,7 @@ import type { MenuItem } from "../../components/ContextMenu";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { FilterBox } from "../../components/FilterBox";
-import { EditIcon, PlayIcon, RedriveIcon, RefreshIcon, StateMachineIcon, StepFunctionsIcon, StopIcon } from "../../components/Icons";
+import { DeleteIcon, EditIcon, NewItemIcon, PlayIcon, RedriveIcon, RefreshIcon, StateMachineIcon, StepFunctionsIcon, StopIcon } from "../../components/Icons";
 import { PageBar } from "../../components/PageBar";
 import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { formatDate } from "../../format";
@@ -59,6 +59,7 @@ export function useSfnService(shell: Shell): ServiceUi {
   const [viewMapRun, setViewMapRun] = useState<MapRunDetails | null>(null);
   const [mapRunSettings, setMapRunSettings] = useState<MapRunDetails | null>(null);
   const [editing, setEditing] = useState<MachineDetails | null>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     setListing(null);
@@ -163,6 +164,41 @@ export function useSfnService(shell: Shell): ServiceUi {
     }
   }
 
+  function newMachine() {
+    if (shell.readOnly) return denied();
+    setCreating(true);
+  }
+
+  async function deleteMachine(m: MachineRef) {
+    if (shell.readOnly) return denied();
+    const ok = await shell.confirmTyped(
+      "Delete state machine",
+      <>
+        <p>
+          <span className="mono">{m.name}</span>, with all its versions and aliases, will be deleted. This can't be undone.
+        </p>
+        <p className="hint">
+          Running executions don't finish normally: AWS removes each one at its next state transition, so stop them first if you want them recorded as stopped. Anything that starts it (EventBridge rules, schedules, API Gateway, other workflows) will start failing. Its log group and IAM role stay.
+        </p>
+      </>,
+      m.name,
+      "Delete state machine",
+    );
+    if (!ok) return;
+    shell.setWorking(`Deleting ${m.name}…`);
+    try {
+      await sfnApi.deleteMachine(m.arn);
+      shell.showFlash(`Deleted ${m.name}. AWS removes it shortly (it shows as deleting until then).`);
+      if (machine === m.name) go(null);
+      setSelected(new Set());
+    } catch (e) {
+      shell.showError(e);
+    } finally {
+      shell.setWorking(null);
+      refresh();
+    }
+  }
+
   function startExecution(m: MachineRef, preset: StartPreset | null = null) {
     if (shell.readOnly) return denied();
     setStartFor({ machine: m, preset });
@@ -258,6 +294,7 @@ export function useSfnService(shell: Shell): ServiceUi {
         "separator",
         { label: "Start execution…", disabled: shell.readOnly, onClick: () => startExecution(m) },
         { label: "Edit…", shortcut: "Ctrl+E", disabled: shell.readOnly, onClick: () => void editMachine(m) },
+        { label: "Delete…", shortcut: "Del", disabled: shell.readOnly, onClick: () => void deleteMachine(m) },
         "separator",
         { label: "Copy name", onClick: () => void shell.copyText(m.name) },
         { label: "Copy ARN", onClick: () => void shell.copyText(m.arn) },
@@ -265,7 +302,7 @@ export function useSfnService(shell: Shell): ServiceUi {
         "separator",
       );
     }
-    items.push({ label: "Refresh", shortcut: "F5", onClick: refresh });
+    items.push({ label: "New state machine…", disabled: shell.readOnly, onClick: newMachine }, "separator", { label: "Refresh", shortcut: "F5", onClick: refresh });
     shell.openMenu(x, y, items);
   }
 
@@ -286,8 +323,8 @@ export function useSfnService(shell: Shell): ServiceUi {
     ]);
   }
 
-  const keyOps = useRef({ active, modal: false, target: targetMachine, edit: editMachine, execution });
-  keyOps.current = { active, modal: !!(editing || startFor || stopFor || mapRunSettings), target: targetMachine, edit: editMachine, execution };
+  const keyOps = useRef({ active, modal: false, target: targetMachine, edit: editMachine, remove: deleteMachine, execution });
+  keyOps.current = { active, modal: !!(editing || creating || startFor || stopFor || mapRunSettings), target: targetMachine, edit: editMachine, remove: deleteMachine, execution };
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const o = keyOps.current;
@@ -296,6 +333,9 @@ export function useSfnService(shell: Shell): ServiceUi {
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "e") {
         e.preventDefault();
         void o.edit(o.target);
+      } else if (e.key === "Delete" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        void o.remove(o.target);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -457,6 +497,13 @@ export function useSfnService(shell: Shell): ServiceUi {
         <>
           <CommandButton icon={<PlayIcon />} label="Start execution" title="Start an execution of the state machine" disabled={ro || !targetMachine} onClick={() => targetMachine && startExecution(targetMachine)} />
           <CommandButton icon={<EditIcon />} label="Edit" title="Definition, role, logging and tracing (Ctrl+E)" disabled={ro || !targetMachine} onClick={() => targetMachine && void editMachine(targetMachine)} />
+          <CommandButton icon={<DeleteIcon />} label="Delete" title="Delete the state machine (Del)" disabled={ro || !targetMachine} onClick={() => targetMachine && void deleteMachine(targetMachine)} />
+          {listView && (
+            <>
+              <CommandSeparator />
+              <CommandButton icon={<NewItemIcon />} label="New state machine" title="Create a state machine from a template or your own definition" disabled={ro} onClick={newMachine} />
+            </>
+          )}
         </>
       )}
       <CommandSeparator />
@@ -483,6 +530,20 @@ export function useSfnService(shell: Shell): ServiceUi {
               go(m.name, name);
             }
             refresh();
+          }}
+        />
+      )}
+      {creating && (
+        <MachineEditorDialog
+          shell={shell}
+          machine={null}
+          create={{ region, taken: (all ?? []).map((x) => x.name) }}
+          onClose={() => setCreating(false)}
+          onDone={(msg, name) => {
+            setCreating(false);
+            shell.showFlash(msg);
+            refresh();
+            if (name) go(name);
           }}
         />
       )}

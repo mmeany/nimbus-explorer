@@ -8,7 +8,7 @@
 // (history.rs, every_write_command_has_a_history_rule) checks it. Keep each
 // rule key indented by two spaces and followed by a colon.
 import type { HistoryService } from "../api/history";
-import { DDB_ROOT, LAMBDA_ROOT, RDS_ROOT, SNS_ROOT, SQS_ROOT, type Place } from "../shell/places";
+import { DDB_ROOT, LAMBDA_ROOT, RDS_ROOT, SFN_ROOT, SNS_ROOT, SQS_ROOT, type Place } from "../shell/places";
 
 export interface Described {
   service: HistoryService;
@@ -417,6 +417,8 @@ export const RULES: Record<string, Rule> = {
   }),
   sfn_delete_alias: (a) => ({ service: "sfn", action: "Delete alias", target: String(a.arn).split(":").slice(-2).join(":"), place: sfnMachinePlace(String(a.arn).slice(0, String(a.arn).lastIndexOf(":"))) }),
   sfn_delete_version: (a) => ({ service: "sfn", action: "Delete version", target: String(a.arn).split(":").slice(-2).join(":"), place: sfnMachinePlace(String(a.arn).slice(0, String(a.arn).lastIndexOf(":"))) }),
+  sfn_create: (a) => ({ service: "sfn", action: "Create state machine", target: String(a.request.name), place: { service: "sfn", view: null, machine: String(a.request.name), execution: null, mapRun: null }, detail: a.request.kind === "EXPRESS" ? "Express" : "Standard" }),
+  sfn_delete: (a) => ({ service: "sfn", action: "Delete state machine", target: lastAfter(String(a.arn), ":"), place: SFN_ROOT, select: lastAfter(String(a.arn), ":") }),
   sfn_export_svg: (a) => ({ service: "sfn", action: "Export graph", target: base(a.path), detail: `to ${a.path}` }),
   lambda_download_code: (a) => ({ service: "lambda", action: "Download code", target: a.qualifier ? `${a.name}:${a.qualifier}` : a.name, place: fnPlace(a.name), detail: `to ${a.dest}` }),
 

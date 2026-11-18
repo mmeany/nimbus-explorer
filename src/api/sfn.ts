@@ -111,6 +111,10 @@ export const sfnApi = {
   deleteAlias: (arn: string) => call<void>("sfn_delete_alias", { arn }),
   /** Refused while an alias routes to the version. */
   deleteVersion: (arn: string) => call<void>("sfn_delete_version", { arn }),
+  /** Creates a state machine; returns its ARN. */
+  create: (request: { name: string; kind: string; definition: string; roleArn: string; logging: { level: string; includeExecutionData: boolean; logGroupArn: string | null } | null; tracing: boolean; publish: boolean; versionDescription: string | null }) =>
+    call<string>("sfn_create", { request }),
+  deleteMachine: (arn: string) => call<void>("sfn_delete", { arn }),
 };
 
 export interface Validation {

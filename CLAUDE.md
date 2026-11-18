@@ -922,7 +922,12 @@ tab / dialog.
   backend before calling AWS) Versions & aliases: publish version; alias create / edit with routing
   between two versions (an update always sends the full routing map);
   delete alias (asks); delete version (typed; refused while an alias uses it).
-- 14.7 Create / delete state machines: Standard or Express, from a template
+- 14.7 ✅ (`sfn_admin.rs` create / delete; `MachineEditorDialog` gains a create
+  mode (machine null): name (execution-name rules, not taken), type, five
+  templates (`MACHINE_TEMPLATES`, a test checks they parse cleanly); a log
+  group given by name gets its ARN from the role's account + the connection's
+  region; New state machine on the list, Delete in the command bar / menu /
+  Del with typed confirmation) Create / delete state machines: Standard or Express, from a template
   or pasted ASL, role ARN as a text field (no IAM crate), logging; delete
   with typed confirmation.
 - 14.8 Activities (tree node): list, describe, create, delete (asks).

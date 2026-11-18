@@ -69,3 +69,16 @@ describe("aliasNameProblem", () => {
     expect(aliasNameProblem("a".repeat(81))).not.toBeNull();
   });
 });
+
+describe("machine templates", () => {
+  it("are all valid definitions with no problems", async () => {
+    const { MACHINE_TEMPLATES } = await import("../services/sfn/MachineEditorDialog");
+    const { parseMachine } = await import("../services/sfn/graph/asl");
+    expect(MACHINE_TEMPLATES.length).toBeGreaterThan(3);
+    for (const [name, def] of MACHINE_TEMPLATES) {
+      const p = parseMachine(def);
+      expect(p, name).not.toBeNull();
+      expect(p!.warnings, name).toEqual([]);
+    }
+  });
+});

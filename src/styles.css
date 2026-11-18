@@ -890,5 +890,8 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .sfn-diagnostics { display: flex; flex-direction: column; gap: 2px; max-height: 140px; overflow: auto; }
 .sfn-publish { gap: 8px; }
 .nowrap { white-space: nowrap; }
+.sfn-create-bar { gap: 8px; flex-wrap: wrap; }
+.sfn-create-bar .form-label { margin-top: 0; }
+.sfn-create-bar #sc-name { width: 240px; }
 .sfn-publish .text-input { flex: 1; }
 .sfn-counts th, .sfn-counts td { padding-right: 14px; }

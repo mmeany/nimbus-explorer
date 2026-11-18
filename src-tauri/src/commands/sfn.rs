@@ -6,7 +6,7 @@ use crate::sfn::{
     self, ExecutionDetails, ExecutionPage, FullHistory, HistoryPage, MachineDetails, MachineRef,
     Versions,
 };
-use crate::sfn_admin::{self as admin, UpdateOutcome, UpdateRequest, Validation};
+use crate::sfn_admin::{self as admin, CreateRequest, UpdateOutcome, UpdateRequest, Validation};
 use crate::sfn_map::{self as map, MapRunChange, MapRunDetails, MapRunRef};
 use crate::sfn_run::{self as run, SavedInput, StartRequest, Started};
 use crate::sfn_versions::{self as versions, AliasRequest};
@@ -252,4 +252,19 @@ pub async fn sfn_delete_alias(state: State<'_, AppState>, arn: String) -> Result
 pub async fn sfn_delete_version(state: State<'_, AppState>, arn: String) -> Result<(), AppError> {
     state.ensure_writable()?;
     versions::delete_version(&*state.connection()?, &arn).await
+}
+
+#[tauri::command]
+pub async fn sfn_create(
+    state: State<'_, AppState>,
+    request: CreateRequest,
+) -> Result<String, AppError> {
+    state.ensure_writable()?;
+    admin::create(&*state.connection()?, &request).await
+}
+
+#[tauri::command]
+pub async fn sfn_delete(state: State<'_, AppState>, arn: String) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    admin::delete(&*state.connection()?, &arn).await
 }

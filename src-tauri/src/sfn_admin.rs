@@ -236,6 +236,80 @@ pub async fn update(conn: &Connection, r: &UpdateRequest) -> Result<UpdateOutcom
     })
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateRequest {
+    pub name: String,
+    /// STANDARD or EXPRESS.
+    pub kind: String,
+    pub definition: String,
+    pub role_arn: String,
+    pub logging: Option<LoggingChange>,
+    #[serde(default)]
+    pub tracing: bool,
+    #[serde(default)]
+    pub publish: bool,
+    pub version_description: Option<String>,
+}
+
+/// Why AWS would refuse to create the machine, if it would. Machine names
+/// follow the same rules as execution names.
+pub fn create_problem(c: &CreateRequest) -> Option<String> {
+    if let Some(p) = crate::sfn_run::name_problem(c.name.trim()) {
+        return Some(p.replace("Execution names", "State machine names"));
+    }
+    if c.kind != "STANDARD" && c.kind != "EXPRESS" {
+        return Some("The type is Standard or Express".into());
+    }
+    request_problem(&UpdateRequest {
+        arn: String::new(),
+        expected_revision: None,
+        overwrite: false,
+        definition: Some(c.definition.clone()),
+        role_arn: Some(c.role_arn.trim().to_string()),
+        logging: c.logging.clone(),
+        tracing: None,
+        publish: c.publish,
+        version_description: c.version_description.clone(),
+    })
+}
+
+/// Creates the machine; returns its ARN.
+pub async fn create(conn: &Connection, c: &CreateRequest) -> Result<String, AppError> {
+    if let Some(p) = create_problem(c) {
+        return Err(other(p));
+    }
+    let mut req = client(conn)
+        .create_state_machine()
+        .name(c.name.trim())
+        .r#type(StateMachineType::from(c.kind.as_str()))
+        .definition(&c.definition)
+        .role_arn(c.role_arn.trim())
+        .set_logging_configuration(c.logging.as_ref().map(logging_config))
+        .tracing_configuration(TracingConfiguration::builder().enabled(c.tracing).build());
+    if c.publish {
+        req = req.publish(true).set_version_description(
+            c.version_description
+                .clone()
+                .filter(|d| !d.trim().is_empty()),
+        );
+    }
+    let out = req.send().await.map_err(|e| err(conn, e))?;
+    Ok(out.state_machine_arn().to_string())
+}
+
+/// Deletes the machine (with its versions and aliases). AWS marks it
+/// DELETING and removes it shortly after.
+pub async fn delete(conn: &Connection, arn: &str) -> Result<(), AppError> {
+    client(conn)
+        .delete_state_machine()
+        .state_machine_arn(arn)
+        .send()
+        .await
+        .map_err(|e| err(conn, e))?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -432,6 +506,114 @@ mod emulator_tests {
                 .unwrap()
                 .definition
                 .contains("\"Hello\""));
+        }
+    }
+}
+
+#[cfg(test)]
+mod create_tests {
+    use super::*;
+
+    fn create_req() -> CreateRequest {
+        CreateRequest {
+            name: "orders".into(),
+            kind: "STANDARD".into(),
+            definition: r#"{"StartAt":"A","States":{"A":{"Type":"Pass","End":true}}}"#.into(),
+            role_arn: "arn:aws:iam::1:role/r".into(),
+            logging: None,
+            tracing: false,
+            publish: false,
+            version_description: None,
+        }
+    }
+
+    #[test]
+    fn checks_new_machines() {
+        assert_eq!(create_problem(&create_req()), None);
+        assert_eq!(
+            create_problem(&CreateRequest {
+                name: "my machine".into(),
+                ..create_req()
+            })
+            .as_deref(),
+            Some("State machine names can't contain spaces")
+        );
+        assert!(create_problem(&CreateRequest {
+            kind: "FAST".into(),
+            ..create_req()
+        })
+        .is_some());
+        assert!(create_problem(&CreateRequest {
+            role_arn: "".into(),
+            ..create_req()
+        })
+        .unwrap()
+        .contains("role"));
+        assert!(create_problem(&CreateRequest {
+            definition: "{".into(),
+            ..create_req()
+        })
+        .unwrap()
+        .contains("JSON"));
+    }
+}
+
+#[cfg(test)]
+mod create_emulator_tests {
+    use super::*;
+    use crate::sfn::emulator_tests::connect;
+
+    #[tokio::test]
+    #[ignore]
+    async fn creates_and_deletes_machines() {
+        let conn = connect().await;
+        for m in crate::sfn::list(&conn)
+            .await
+            .unwrap()
+            .iter()
+            .filter(|m| m.name == "s3x-sfn-created")
+        {
+            let _ = delete(&conn, &m.arn).await;
+        }
+        let role = crate::lambda::emulator_tests::lambda_role();
+        let arn = create(
+            &conn,
+            &CreateRequest {
+                name: "s3x-sfn-created".into(),
+                kind: "EXPRESS".into(),
+                definition: crate::sfn::emulator_tests::PASS_DEFINITION.into(),
+                role_arn: role,
+                logging: Some(LoggingChange {
+                    level: "OFF".into(),
+                    include_execution_data: false,
+                    log_group_arn: None,
+                }),
+                tracing: true,
+                publish: true,
+                version_description: Some("first".into()),
+            },
+        )
+        .await
+        .unwrap();
+        let d = crate::sfn::describe(&conn, &arn).await.unwrap();
+        assert_eq!(d.kind, "EXPRESS");
+        assert!(d.tracing);
+        assert_eq!(
+            crate::sfn::versions(&conn, &arn)
+                .await
+                .unwrap()
+                .versions
+                .len(),
+            1
+        );
+        delete(&conn, &arn).await.unwrap();
+        // Gone, or on its way out.
+        let left = crate::sfn::list(&conn).await.unwrap();
+        if let Some(m) = left.iter().find(|m| m.arn == arn) {
+            let d = crate::sfn::describe(&conn, &m.arn).await;
+            assert!(d
+                .map(|d| d.status.as_deref() == Some("DELETING"))
+                .unwrap_or(true));
         }
     }
 }

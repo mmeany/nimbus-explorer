@@ -5,7 +5,9 @@ export const sfnTopics = {
 
 - **Filter**: type the start of a name and press Enter.
 - **Open** a machine: Enter or double-click.
-- **Edit** (Ctrl+E): definition, role, logging and tracing.`,
+- **Edit** (Ctrl+E): definition, role, logging and tracing.
+- **New state machine**: from a template or your own definition.
+- **Delete** (Del): you type the name to confirm; versions and aliases go with it.`,
   },
   "sfn.graph": {
     title: "Graph",
@@ -64,6 +66,18 @@ Without a Label on the Map state, AWS names the run with a generated id instead 
 - **Tolerated failures**: as a percentage of items, a number of items, or both. Once failures pass either, the run (and the Map state) fails. 0 for both fails it at the first failure.
 
 Only this run changes; the next run uses the Map state's definition again.`,
+  },
+  "sfn.create": {
+    title: "New state machine",
+    body: `Create a state machine from a template or your own definition.
+
+- **Name**: 1 to 80 characters, no spaces or special characters; unique in the region.
+- **Type**: **Standard** runs up to a year, exactly once, with a full execution history (kept 90 days). **Express** runs up to 5 minutes at high volume, at least once, and keeps no history: turn logging on to see its runs. The type can't be changed later.
+- **Start from a template…**: a Pass state, a Lambda call with retry and catch, Choice and Wait, Parallel branches, or a Map over items. Edit the definition as you like; the graph and Step Functions' checks follow as you type.
+- **Role, logging and tracing**: the execution role is required (the IAM role Step Functions assumes, allowed to call what your states use). A log group can be given by name.
+- **Publish as a new version** publishes version 1 straight away.
+
+Creating IAM roles isn't part of this app; use the console, the CLI or your infrastructure code.`,
   },
   "sfn.edit": {
     title: "Edit state machine",

@@ -1,10 +1,11 @@
-// Edit a state machine: the definition (with a live graph and AWS's
-// validation), execution role, logging and tracing, and optionally publish
-// the result as a new version. Only changed fields are sent; a machine that
-// changed since the editor opened is not overwritten without asking.
+// Edit or create a state machine: the definition (with a live graph and
+// AWS's validation), execution role, logging and tracing, and optionally
+// publish the result as a new version. Editing sends only changed fields, and
+// a machine that changed since the editor opened is not overwritten without
+// asking. Creating adds the name, the type and templates to start from.
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppError } from "../../api/core";
-import { logGroupArn, sfnApi, type MachineDetails, type UpdateRequest, type Validation } from "../../api/sfn";
+import { executionNameProblem, logGroupArn, sfnApi, type MachineDetails, type UpdateRequest, type Validation } from "../../api/sfn";
 import { DialogHelp } from "../../components/HelpDialog";
 import { ValueEditor } from "../../components/ValueEditor";
 import type { Shell } from "../../shell/shell";
@@ -26,21 +27,109 @@ function definitionProblem(text: string): string | null {
   }
 }
 
+const pass = (comment: string, states: Record<string, unknown>, startAt: string) => JSON.stringify({ Comment: comment, StartAt: startAt, States: states }, null, 2);
+
+/** Starting points for a new machine. */
+export const MACHINE_TEMPLATES: [string, string][] = [
+  ["Hello world (Pass)", pass("A single Pass state", { Hello: { Type: "Pass", Result: { message: "Hello" }, End: true } }, "Hello")],
+  [
+    "Call a Lambda function, with retry and catch",
+    pass(
+      "Invokes a function; retries throttling, sends other errors to a handler",
+      {
+        Invoke: {
+          Type: "Task",
+          Resource: "arn:aws:states:::lambda:invoke",
+          Parameters: { FunctionName: "my-function", "Payload.$": "$" },
+          OutputPath: "$.Payload",
+          Retry: [{ ErrorEquals: ["Lambda.TooManyRequestsException", "Lambda.ServiceException"], IntervalSeconds: 2, MaxAttempts: 3, BackoffRate: 2 }],
+          Catch: [{ ErrorEquals: ["States.ALL"], Next: "Failed", ResultPath: "$.error" }],
+          End: true,
+        },
+        Failed: { Type: "Fail", Error: "InvokeFailed", Cause: "The function failed" },
+      },
+      "Invoke",
+    ),
+  ],
+  [
+    "Choice and Wait",
+    pass(
+      "Waits until an item is ready, then continues",
+      {
+        Check: { Type: "Choice", Choices: [{ Variable: "$.ready", BooleanEquals: true, Next: "Done" }], Default: "Wait" },
+        Wait: { Type: "Wait", Seconds: 10, Next: "Check" },
+        Done: { Type: "Succeed" },
+      },
+      "Check",
+    ),
+  ],
+  [
+    "Parallel branches",
+    pass(
+      "Runs two branches at once and collects both results",
+      {
+        Both: {
+          Type: "Parallel",
+          Branches: [
+            { StartAt: "Left", States: { Left: { Type: "Pass", Result: "left", End: true } } },
+            { StartAt: "Right", States: { Right: { Type: "Pass", Result: "right", End: true } } },
+          ],
+          End: true,
+        },
+      },
+      "Both",
+    ),
+  ],
+  [
+    "Map over items",
+    pass(
+      "Processes each item of $.items, five at a time",
+      { Each: { Type: "Map", ItemsPath: "$.items", MaxConcurrency: 5, ItemProcessor: { ProcessorConfig: { Mode: "INLINE" }, StartAt: "Process", States: { Process: { Type: "Pass", End: true } } }, End: true } },
+      "Each",
+    ),
+  ],
+];
+
 interface Props {
   shell: Shell;
-  machine: MachineDetails;
+  /** The machine to edit; null creates a new one. */
+  machine: MachineDetails | null;
+  /** Creating: the region it goes in, and names already taken there. */
+  create?: { region: string; taken: string[] };
   onClose: () => void;
-  onDone: (msg: string) => void;
+  /** `name` is the machine created (when creating). */
+  onDone: (msg: string, name?: string) => void;
 }
 
-export function MachineEditorDialog({ shell, machine: m, onClose, onDone }: Props) {
+export function MachineEditorDialog({ shell, machine, create, onClose, onDone }: Props) {
+  const creating = !machine;
+  const [newName, setNewName] = useState("");
+  const [newKind, setNewKind] = useState("STANDARD");
+  const m: MachineDetails = machine ?? {
+    name: newName.trim(),
+    arn: "",
+    kind: newKind,
+    status: null,
+    description: null,
+    created: null,
+    roleArn: null,
+    revisionId: null,
+    definition: MACHINE_TEMPLATES[0][1],
+    logging: null,
+    tracing: false,
+    encryption: null,
+    tags: [],
+    error: null,
+  };
   const original = useMemo(() => {
     try {
       return JSON.stringify(JSON.parse(m.definition), null, 2);
     } catch {
       return m.definition;
     }
-  }, [m.definition]);
+    // The template a new machine starts from doesn't change while it's open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [machine?.definition]);
   const [tab, setTab] = useState<"definition" | "settings">("definition");
   const [definition, setDefinition] = useState(original);
   const [role, setRole] = useState(m.roleArn ?? "");
@@ -86,21 +175,31 @@ export function MachineEditorDialog({ shell, machine: m, onClose, onDone }: Prop
     return s;
   }, [diagnostics, parsed]);
 
-  const loggingChanged = level !== (m.logging?.level ?? "OFF") || includeData !== (m.logging?.includeExecutionData ?? false) || (level !== "OFF" && logGroupArn(m.arn, logGroup) !== (m.logging?.logGroupArn ?? ""));
+  // A new machine has no ARN yet: take the partition and account from the role, the region from the connection.
+  const roleParts = role.trim().split(":");
+  const arnForLogs = creating ? `arn:${roleParts[1] || "aws"}:states:${create?.region ?? ""}:${roleParts[4] ?? ""}:stateMachine:${m.name}` : m.arn;
+  const loggingChanged = level !== (m.logging?.level ?? "OFF") || includeData !== (m.logging?.includeExecutionData ?? false) || (level !== "OFF" && logGroupArn(arnForLogs, logGroup) !== (m.logging?.logGroupArn ?? ""));
   const request: UpdateRequest = {
     arn: m.arn,
     expectedRevision: m.revisionId,
     overwrite: false,
     definition: definition !== original ? definition : null,
     roleArn: role.trim() !== (m.roleArn ?? "") ? role.trim() : null,
-    logging: loggingChanged ? { level, includeExecutionData: includeData, logGroupArn: level === "OFF" ? null : logGroupArn(m.arn, logGroup) } : null,
+    logging: loggingChanged ? { level, includeExecutionData: includeData, logGroupArn: level === "OFF" ? null : logGroupArn(arnForLogs, logGroup) } : null,
     tracing: tracing !== m.tracing ? tracing : null,
     publish,
     versionDescription: publish && versionDescription.trim() ? versionDescription.trim() : null,
   };
   const changed = !!(request.definition || request.roleArn || request.logging || request.tracing !== null);
+  const nameProblem = !creating
+    ? null
+    : !m.name
+      ? "Enter a name"
+      : (executionNameProblem(m.name)?.replace("Execution names", "State machine names") ?? (create?.taken.includes(m.name) ? `There's already a state machine called ${m.name}` : null));
   const settingsProblem =
-    request.roleArn !== null && !/^arn:[^:]+:iam::\d*:role\/.+/.test(request.roleArn)
+    creating && !role.trim()
+      ? "A state machine needs an execution role (its IAM role ARN, on the Role tab)"
+      : request.roleArn !== null && !/^arn:[^:]+:iam::\d*:role\/.+/.test(request.roleArn)
       ? "The execution role is an IAM role ARN (arn:aws:iam::<account>:role/<name>)"
       : level !== "OFF" && !logGroup.trim()
         ? "Logging needs a log group (its name or ARN)"
@@ -109,13 +208,32 @@ export function MachineEditorDialog({ shell, machine: m, onClose, onDone }: Prop
           : null;
   // Our own checks (a transition to a missing state, no StartAt) are always invalid ASL, so they block saving.
   const aslProblem = parsed?.warnings.length ? "Fix the problems listed under the definition first" : null;
-  const problem = defProblem ?? aslProblem ?? settingsProblem ?? (!changed && !publish ? "Nothing changed yet" : null);
+  const problem = nameProblem ?? defProblem ?? aslProblem ?? settingsProblem ?? (!creating && !changed && !publish ? "Nothing changed yet" : null);
   const awsErrors = diagnostics.filter((d) => d.severity === "ERROR").length;
 
   async function save(overwrite = false) {
     if (problem || busy || shell.readOnly) return;
     setBusy(true);
     setError(null);
+    if (creating) {
+      try {
+        await sfnApi.create({
+          name: m.name,
+          kind: m.kind,
+          definition,
+          roleArn: role.trim(),
+          logging: level === "OFF" ? null : { level, includeExecutionData: includeData, logGroupArn: logGroupArn(arnForLogs, logGroup) },
+          tracing,
+          publish,
+          versionDescription: request.versionDescription,
+        });
+        onDone(`Created ${m.name}${publish ? " and published version 1" : ""}.`, m.name);
+      } catch (e) {
+        setError((e as AppError).message ?? String(e));
+        setBusy(false);
+      }
+      return;
+    }
     try {
       const r = await sfnApi.update({ ...request, overwrite });
       if (r.outcome === "changed") {
@@ -146,10 +264,41 @@ export function MachineEditorDialog({ shell, machine: m, onClose, onDone }: Prop
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog sfn-editor-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
         <div className="dialog-title">
-          <DialogHelp topic="sfn.edit" />
-          Edit {m.name}
+          <DialogHelp topic={creating ? "sfn.create" : "sfn.edit"} />
+          {creating ? "New state machine" : `Edit ${m.name}`}
         </div>
         <div className="dialog-body sfn-editor-body">
+          {creating && (
+            <div className="row sfn-create-bar">
+              <label className="form-label" htmlFor="sc-name">
+                Name
+              </label>
+              <input id="sc-name" className="text-input mono" value={newName} autoFocus onChange={(e) => setNewName(e.target.value)} placeholder="order-processing" />
+              <label className="form-label" htmlFor="sc-kind">
+                Type
+              </label>
+              <select id="sc-kind" className="text-input" value={newKind} onChange={(e) => setNewKind(e.target.value)} title="Can't be changed later">
+                <option value="STANDARD">Standard (up to a year; history kept 90 days)</option>
+                <option value="EXPRESS">Express (up to 5 minutes; high volume; logs only)</option>
+              </select>
+              <select
+                className="text-input"
+                aria-label="Template"
+                value=""
+                onChange={(e) => {
+                  const t = MACHINE_TEMPLATES.find(([n]) => n === e.target.value);
+                  if (t) setDefinition(t[1]);
+                }}
+              >
+                <option value="">Start from a template…</option>
+                {MACHINE_TEMPLATES.map(([n]) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="segmented small db-tabs">
             <button className={tab === "definition" ? "active" : ""} onClick={() => setTab("definition")}>
               Definition
@@ -239,7 +388,7 @@ export function MachineEditorDialog({ shell, machine: m, onClose, onDone }: Prop
           {awsErrors > 0 && <span className="field-error">Step Functions reports {awsErrors} error{awsErrors === 1 ? "" : "s"}; saving will likely fail.</span>}
           <div className="spacer" />
           <button className="btn primary" disabled={!!problem || busy || shell.readOnly} title="Ctrl+Enter" onClick={() => void save()}>
-            {busy ? "Saving…" : publish ? "Save and publish" : "Save"}
+            {busy ? (creating ? "Creating…" : "Saving…") : creating ? (publish ? "Create and publish" : "Create") : publish ? "Save and publish" : "Save"}
           </button>
           <button className="btn" onClick={onClose}>
             Cancel
