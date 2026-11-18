@@ -970,7 +970,12 @@ connections, no Redis client crate), metrics.
   note, `redis-cli` / `valkey-cli` commands to copy (`--tls`, `-c` for
   cluster mode, `--user`). Auth tokens are never shown (the API can't
   return them).
-- 15.3 Actions: reboot selected nodes (cluster mode off only), TestFailover
+- 15.3 ✅ (`src-tauri/src/elasticache_actions.rs`; checks in the backend before
+  calling AWS: cluster mode off, available, nodes belong to the group;
+  failover needs automatic failover, a replica and an available group;
+  MiniStack lacks TestFailover, which gets a plain message; on the Shards and
+  nodes tab: node checkboxes + Reboot selected…, Test failover… per group /
+  shard) Actions: reboot selected nodes (cluster mode off only), TestFailover
   per shard; re-checks every 15 s while the status is changing.
 - 15.4 Snapshots (like RDS 6.3, replication groups and serverless caches):
   region-wide and per-cache lists; create, copy, delete (manual only,

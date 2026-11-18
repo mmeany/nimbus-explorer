@@ -428,6 +428,8 @@ export const RULES: Record<string, Rule> = {
     detail: [a.status ? `status ${a.status}` : "", typeof r === "number" ? plural(r, "execution") : "", `to ${a.dest}`].filter(Boolean).join(", "),
   }),
   sfn_export_history: (a, r) => ({ service: "sfn", action: "Export event history", target: sfnExecName(String(a.arn)), place: sfnExecPlace(String(a.arn)), detail: [typeof r === "number" ? plural(r, "event") : "", `to ${a.dest}`].filter(Boolean).join(", ") }),
+  ec_reboot_nodes: (a) => ({ service: "elasticache", action: "Reboot nodes", target: String(a.group), place: { service: "elasticache", kind: "group", id: String(a.group) }, detail: (a.nodes ?? []).join(", ") }),
+  ec_test_failover: (a) => ({ service: "elasticache", action: "Test failover", target: String(a.group), place: { service: "elasticache", kind: "group", id: String(a.group) }, detail: `shard ${a.shard}` }),
   sfn_export_svg: (a) => ({ service: "sfn", action: "Export graph", target: base(a.path), detail: `to ${a.path}` }),
   lambda_download_code: (a) => ({ service: "lambda", action: "Download code", target: a.qualifier ? `${a.name}:${a.qualifier}` : a.name, place: fnPlace(a.name), detail: `to ${a.dest}` }),
 

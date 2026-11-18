@@ -14,6 +14,8 @@ The app manages caches through the ElastiCache API only; it doesn't connect to a
     body: `A Valkey or Redis OSS replication group: engine and version, node type, shards and nodes, endpoints, failover and Multi-AZ, encryption in transit and at rest, AUTH token or RBAC user groups, network, parameter group, maintenance window, backups, log delivery and tags. While its status is changing, the view checks again every 15 seconds.
 
 - **Shards and nodes**: each node's role (primary or replica), availability zone and endpoint. With cluster mode off, write to the primary endpoint and read from the reader endpoint; with cluster mode on, clients use the configuration endpoint.
+- **Reboot selected…** (cluster mode off): tick nodes and reboot them. Each comes back empty and copies the data again from the primary; rebooting the primary stops writes for a while and can lose recent data, so test a failover first.
+- **Test failover…**: promotes a replica (of the group, or of one shard in cluster mode) as if the primary had failed. Needs automatic failover and a replica; AWS limits how many you can run per day.
 - **Changes waiting to apply** are listed under the header (they wait for the maintenance window, or are in progress).`,
   },
   "elasticache.connect": {

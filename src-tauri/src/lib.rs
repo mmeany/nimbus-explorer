@@ -6,6 +6,7 @@ mod ddb_tables;
 mod dynamo;
 mod ecs;
 mod elasticache;
+mod elasticache_actions;
 mod ecs_actions;
 mod ecs_taskdefs;
 mod error;
@@ -198,6 +199,8 @@ pub fn run() {
             commands::elasticache::ec_list_serverless,
             commands::elasticache::ec_group,
             commands::elasticache::ec_serverless,
+            commands::elasticache::ec_reboot_nodes,
+            commands::elasticache::ec_test_failover,
             commands::sfn::sfn_list,
             commands::sfn::sfn_details_many,
             commands::sfn::sfn_describe,

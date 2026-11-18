@@ -2,6 +2,7 @@
 
 use super::AppState;
 use crate::elasticache::{self as ec, Group, GroupDetails, Serverless};
+use crate::elasticache_actions as actions;
 use crate::error::AppError;
 use tauri::State;
 
@@ -28,4 +29,26 @@ pub async fn ec_serverless(
     name: String,
 ) -> Result<Serverless, AppError> {
     ec::serverless_details(&*state.connection()?, &name).await
+}
+
+/// Reboots nodes of a cluster-mode-off group.
+#[tauri::command]
+pub async fn ec_reboot_nodes(
+    state: State<'_, AppState>,
+    group: String,
+    nodes: Vec<String>,
+) -> Result<Vec<String>, AppError> {
+    state.ensure_writable()?;
+    actions::reboot_nodes(&*state.connection()?, &group, &nodes).await
+}
+
+/// Promotes a replica of the shard, as if its primary had failed.
+#[tauri::command]
+pub async fn ec_test_failover(
+    state: State<'_, AppState>,
+    group: String,
+    shard: String,
+) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    actions::test_failover(&*state.connection()?, &group, &shard).await
 }

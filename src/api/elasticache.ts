@@ -98,6 +98,10 @@ export const ecApi = {
   listServerless: () => call<Serverless[]>("ec_list_serverless"),
   group: (id: string) => call<GroupDetails>("ec_group", { id }),
   serverless: (name: string) => call<Serverless>("ec_serverless", { name }),
+  /** Reboots nodes (member cluster ids) of a cluster-mode-off group; returns those rebooted. */
+  rebootNodes: (group: string, nodes: string[]) => call<string[]>("ec_reboot_nodes", { group, nodes }),
+  /** Promotes a replica of the shard ("0001" when cluster mode is off). */
+  testFailover: (group: string, shard: string) => call<void>("ec_test_failover", { group, shard }),
 };
 
 /** "valkey" → "Valkey", "redis" → "Redis OSS". */

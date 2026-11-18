@@ -95,7 +95,7 @@ export function GroupView({ shell, id, reloadToken, onLoaded, tabs = [] }: { she
           </button>
         ))}
       </div>
-      {current ? current.render(g) : tab === "nodes" ? <Nodes g={g} /> : <GroupDetailsTab g={g} />}
+      {current ? current.render(g) : tab === "nodes" ? <Nodes g={g} shell={shell} onChanged={retry} /> : <GroupDetailsTab g={g} />}
     </div>
   );
 }
@@ -151,21 +151,124 @@ function GroupDetailsTab({ g }: { g: GroupDetails }) {
   );
 }
 
-function Nodes({ g }: { g: GroupDetails }) {
+function Nodes({ g, shell, onChanged }: { g: GroupDetails; shell: Shell; onChanged: () => void }) {
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const ro = shell.readOnly;
+  const busy = g.status !== "available";
+  const toggle = (id: string) =>
+    setPicked((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+
+  async function reboot() {
+    const nodes = [...picked];
+    const primary = g.shards.flatMap((x) => x.members).filter((m) => nodes.includes(m.clusterId) && m.role === "primary");
+    const ok = await shell.ask(
+      "Reboot nodes",
+      <>
+        <p>
+          Reboot {nodes.length === 1 ? "node" : `${nodes.length} nodes`} <span className="mono">{nodes.join(", ")}</span>?
+        </p>
+        <p className="hint">
+          Each node is unavailable for a short while and comes back empty: a replica copies the data again from the primary.
+          {primary.length ? " This includes the primary: writes stop while it restarts, and data that hadn't reached a replica can be lost. Consider Test failover first, so a replica takes over." : ""}
+        </p>
+      </>,
+      [
+        { label: "Reboot", value: "yes", danger: true },
+        { label: "Cancel", value: "no" },
+      ],
+      "no",
+    );
+    if (ok !== "yes") return;
+    shell.setWorking("Rebooting…");
+    try {
+      const done = await ecApi.rebootNodes(g.id, nodes);
+      shell.showFlash(`Rebooting ${done.join(", ")}.`);
+      setPicked(new Set());
+    } catch (e) {
+      shell.showError(e);
+    } finally {
+      shell.setWorking(null);
+      onChanged();
+    }
+  }
+
+  async function failover(shard: string) {
+    const ok = await shell.ask(
+      "Test failover",
+      <>
+        <p>
+          Promote a replica of {g.clusterMode ? `shard ${shard}` : <span className="mono">{g.id}</span>} to primary, as if the primary had failed?
+        </p>
+        <p className="hint">Writes to this shard pause until the new primary takes over (usually under a minute); the old primary comes back as a replica. AWS limits how many tests you can run in a day.</p>
+      </>,
+      [
+        { label: "Test failover", value: "yes", danger: true },
+        { label: "Cancel", value: "no" },
+      ],
+      "no",
+    );
+    if (ok !== "yes") return;
+    shell.setWorking("Starting the failover test…");
+    try {
+      await ecApi.testFailover(g.id, shard);
+      shell.showFlash(`Testing failover of ${g.clusterMode ? `shard ${shard}` : g.id}; the view refreshes while it runs.`);
+    } catch (e) {
+      shell.showError(e);
+    } finally {
+      shell.setWorking(null);
+      onChanged();
+    }
+  }
+
+  const failoverOff = g.automaticFailover !== "enabled";
+  const replicas = (n: number) => n >= 2;
   return (
     <div className="lambda-details">
+      {!g.clusterMode && (
+        <div className="row">
+          <button className="btn" disabled={ro || busy || picked.size === 0} title={busy ? `The group is ${g.status}` : "Reboot the ticked nodes"} onClick={() => void reboot()}>
+            Reboot selected…
+          </button>
+          <button
+            className="btn"
+            disabled={ro || busy || failoverOff || !replicas(g.shards[0]?.members.length ?? 0)}
+            title={failoverOff ? "Automatic failover is off" : !replicas(g.shards[0]?.members.length ?? 0) ? "No replica to promote" : "Promote a replica, as if the primary failed"}
+            onClick={() => void failover(g.shards[0]?.id ?? "0001")}
+          >
+            Test failover…
+          </button>
+          {busy && <span className="hint">The group is {g.status}; actions wait until it's available.</span>}
+        </div>
+      )}
       {g.shards.map((s) => (
         <div key={s.id}>
           {g.clusterMode && (
-            <div className="props-section">
-              Shard {s.id}
-              {s.slots ? <span className="hint"> · slots {s.slots}</span> : null}
-              {s.status && s.status !== "available" ? <span className="hint"> · {s.status}</span> : null}
+            <div className="props-section row">
+              <span>
+                Shard {s.id}
+                {s.slots ? <span className="hint"> · slots {s.slots}</span> : null}
+                {s.status && s.status !== "available" ? <span className="hint"> · {s.status}</span> : null}
+              </span>
+              <div className="spacer" />
+              <button
+                className="btn small"
+                disabled={ro || busy || failoverOff || !replicas(s.members.length)}
+                title={failoverOff ? "Automatic failover is off" : !replicas(s.members.length) ? "No replica to promote" : "Promote a replica of this shard"}
+                onClick={() => void failover(s.id)}
+              >
+                Test failover…
+              </button>
             </div>
           )}
           <table className="sync-table">
             <thead>
               <tr>
+                {!g.clusterMode && <th />}
                 <th>Node</th>
                 <th>Role</th>
                 <th>Availability zone</th>
@@ -175,6 +278,11 @@ function Nodes({ g }: { g: GroupDetails }) {
             <tbody>
               {s.members.map((m) => (
                 <tr key={m.clusterId}>
+                  {!g.clusterMode && (
+                    <td>
+                      <input type="checkbox" aria-label={`Select ${m.clusterId}`} checked={picked.has(m.clusterId)} disabled={ro} onChange={() => toggle(m.clusterId)} />
+                    </td>
+                  )}
                   <td className="mono">{m.clusterId}</td>
                   <td>{m.role ?? (g.clusterMode ? "" : "replica")}</td>
                   <td>{m.az ?? ""}</td>
@@ -190,7 +298,7 @@ function Nodes({ g }: { g: GroupDetails }) {
           )}
         </div>
       ))}
-      {g.clusterMode && <p className="hint">Clients connect to the configuration endpoint in cluster mode and are sent to the right shard for each key.</p>}
+      {g.clusterMode && <p className="hint">Clients connect to the configuration endpoint in cluster mode and are sent to the right shard for each key. Nodes of a cluster-mode group can't be rebooted from the API.</p>}
     </div>
   );
 }
