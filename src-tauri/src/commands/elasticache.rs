@@ -3,6 +3,7 @@
 use super::AppState;
 use crate::elasticache::{self as ec, Group, GroupDetails, Serverless};
 use crate::elasticache_actions as actions;
+use crate::elasticache_events::{self as events, Event};
 use crate::elasticache_snapshots::{
     self as snapshots, Kind, RestoreRequest, Restored, Snapshot, SnapshotList,
 };
@@ -107,4 +108,15 @@ pub async fn ec_restore_snapshot(
 ) -> Result<Restored, AppError> {
     state.ensure_writable()?;
     snapshots::restore(&*state.connection()?, &request).await
+}
+
+/// Events of a group (and its nodes) or a serverless cache, newest first.
+#[tauri::command]
+pub async fn ec_events(
+    state: State<'_, AppState>,
+    kind: Kind,
+    id: String,
+    minutes: i32,
+) -> Result<Vec<Event>, AppError> {
+    events::events(&*state.connection()?, kind, &id, minutes).await
 }

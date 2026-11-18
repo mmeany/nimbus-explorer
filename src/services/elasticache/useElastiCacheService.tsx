@@ -17,6 +17,7 @@ import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePaging } from "../../state/paged";
 import { GroupView, ServerlessView, type GroupTab, type ServerlessTab } from "./CacheViews";
 import { ConnectTab } from "./ConnectTab";
+import { EventsTab } from "./EventsTab";
 import { SnapshotList } from "./Snapshots";
 
 const COLUMNS: Column[] = [
@@ -250,10 +251,12 @@ export function useElastiCacheService(shell: Shell): ServiceUi {
   const groupTabs: GroupTab[] = [
     { id: "connect", label: "Connect", help: "elasticache.connect", render: (g) => <ConnectTab shell={shell} t={groupTarget(g)} /> },
     { id: "snapshots", label: "Snapshots", help: "elasticache.snapshots", render: (g) => <SnapshotList shell={shell} cache={{ kind: "group", id: g.id }} reloadToken={reloadToken} /> },
+    { id: "events", label: "Events", help: "elasticache.events", render: (g) => <EventsTab shell={shell} kind="group" id={g.id} reloadToken={reloadToken} /> },
   ];
   const serverlessTabs: ServerlessTab[] = [
     { id: "connect", label: "Connect", help: "elasticache.connect", render: (s) => <ConnectTab shell={shell} t={serverlessTarget(s)} /> },
     { id: "snapshots", label: "Snapshots", help: "elasticache.snapshots", render: (s) => <SnapshotList shell={shell} cache={{ kind: "serverless", id: s.name }} reloadToken={reloadToken} /> },
+    { id: "events", label: "Events", help: "elasticache.events", render: (s) => <EventsTab shell={shell} kind="serverless" id={s.name} reloadToken={reloadToken} /> },
   ];
 
   let content: ReactNode = null;

@@ -49,6 +49,13 @@ While snapshots are being created, copied or deleted, the list checks again ever
 
 The new cache has its own endpoint, and is billed from when it's created.`,
   },
+  "elasticache.events": {
+    title: "Events",
+    body: `What happened to the cache: creation, changes, reboots, failovers, snapshots, maintenance and errors, newest first. For a replication group the list includes its nodes' events too (the Source column says which).
+
+- **Period**: the last hour up to the last 14 days (remembered). AWS keeps events for 14 days.
+- **Refresh** reads them again.`,
+  },
   "elasticache.serverless": {
     title: "Serverless cache",
     body: `A serverless Valkey or Redis OSS cache: endpoint and reader endpoint, usage limits (data storage and ECPUs per second; none means it scales as needed), encryption (always in transit), RBAC user group, network, backups and tags.`,

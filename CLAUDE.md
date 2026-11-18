@@ -989,7 +989,11 @@ connections, no Redis client crate), metrics.
   region-wide and per-cache lists; create, copy, delete (manual only,
   typed), restore to a new cache (copies subnet / security groups from the
   source if it still exists).
-- 15.5 Events: DescribeEvents for the group and its member clusters, merged
+- 15.5 ✅ (`src-tauri/src/elasticache_events.rs`, `services/elasticache/EventsTab.tsx`;
+  a group's own events plus ONE region-wide cache-cluster call filtered to
+  its members (not a call per node); period remembered in localStorage
+  `elasticache.events.minutes`; Events tab on groups and serverless caches)
+  Events: DescribeEvents for the group and its member clusters, merged
   newest first, up to 14 days, paged on screen.
 - 15.6 Parameter group (read only): the group in use, option to show only
   values changed from the default.

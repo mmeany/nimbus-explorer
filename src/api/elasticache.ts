@@ -108,11 +108,21 @@ export const ecApi = {
   copySnapshot: (kind: SnapshotKind, source: string, target: string) => call<void>("ec_copy_snapshot", { kind, source, target }),
   /** Manual snapshots only. */
   deleteSnapshot: (kind: SnapshotKind, name: string) => call<void>("ec_delete_snapshot", { kind, name }),
+  /** Events of a group (and its nodes) or a serverless cache, newest first, for the last `minutes` (≤ 14 days). */
+  events: (kind: SnapshotKind, id: string, minutes: number) => call<EcEvent[]>("ec_events", { kind, id, minutes }),
   restoreSnapshot: (request: { kind: SnapshotKind; snapshot: string; name: string; description: string | null; nodeType: string | null; replicas: number }) =>
     call<{ name: string; copiedFromSource: boolean }>("ec_restore_snapshot", { request }),
 };
 
 export type SnapshotKind = "group" | "serverless";
+
+export interface EcEvent {
+  date: string | null;
+  /** The group, node (member cluster) or serverless cache. */
+  source: string;
+  sourceType: string;
+  message: string;
+}
 
 export interface EcSnapshot {
   name: string;
