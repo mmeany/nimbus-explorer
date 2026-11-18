@@ -827,3 +827,96 @@ Smaller UI improvements, one commit each; more items to be added by the owner.
   and `open_project_page`, which opens only that fixed URL with the OS
   opener (explorer / open / xdg-open), so the UI can't open arbitrary
   addresses and no opener plugin is needed.
+
+### Phases 14–15: Step Functions and ElastiCache (agreed 2026-11-18)
+Agreed in a Q&A with the owner. Step Functions first, then ElastiCache;
+checkpoint after each phase; one commit per numbered item. New crates:
+aws-sdk-sfn, aws-sdk-elasticache (default features off, same rustls+ring
+client; add them to the dependency policy when introduced). No new JS
+packages (the graph is our own SVG code). Tree order: … RDS, ElastiCache,
+ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager. Emulator
+tests target **MiniStack** on `localhost:4566` (it runs ASL, including
+`aws-sdk:*` tasks, and ElastiCache with real Redis); check its docs per item,
+and where it lacks an operation the test accepts the refusal. Usual rules:
+`ensure_writable` + a `rules.ts` entry for every write, "Add bookmark…" in
+row and tree menus, `storageKey` on every `FileList`, help topic per view /
+tab / dialog.
+
+### Phase 14: Step Functions
+- 14.1 Browse (`src-tauri/src/sfn.rs`, `services/sfn/`; Place
+  `{service:"sfn", view:"machines"|"activities"|null, machine, execution,
+  mapRun}`). State machine names in full, DescribeStateMachine for the
+  visible page only (Phase 7 pattern). Machine view tabs: Definition (states
+  table + ASL in DataTree), Executions, Configuration (role, logging,
+  tracing, encryption, tags), Versions & aliases (read only here).
+  Standard executions: ListExecutions with a status filter, token paging
+  (`useTokenPages`). Execution view: status, input / output (ValueView),
+  error + cause, event history (GetExecutionHistory, token paging);
+  re-checks every 5 s while RUNNING. Express machines can't list executions:
+  a Logs tab on their log group (shared `LogViewer`) plus a note explaining
+  why, or how to turn logging on.
+- 14.2 Graph (`services/sfn/graph/`: ASL → layered layout → SVG, own code).
+  Choice, Parallel, Map (inline and distributed), Catch edges; JSONPath and
+  JSONata machines. Pan / zoom / Fit; Parallel and Map branches collapsible.
+  Clicking a state opens a side panel with its ASL and, in an execution, its
+  input / output / error / retries from the history. The execution view
+  colours states from the history, live while RUNNING. Export SVG (save
+  dialog from Rust; local write with a history rule).
+- 14.3 Run: Start execution (name, input editor, qualifier version / alias);
+  saved inputs in `<settings dir>/sfn-inputs.json` keyed
+  "profile|region|machine" (own file, atomic write, lock; allowed in
+  read-only mode), built-in templates, "Re-run with this input" from any
+  execution. Stop (asks; optional error and cause). Redrive (Standard;
+  failed / aborted / timed out, within AWS's redrive window).
+- 14.4 Distributed Map runs: Map runs list per execution, map-run place with
+  child execution counts and failures; UpdateMapRun (tolerated failure
+  count / percentage, max concurrency).
+- 14.5 Edit: definition editor (ValueEditor + live graph preview while the
+  JSON parses; ValidateStateMachineDefinition diagnostics shown against
+  their states), role ARN, logging, tracing; optional publish on save.
+  UpdateStateMachine has no condition, so the backend re-describes first and
+  warns if the machine changed since the editor opened (SSM pattern).
+- 14.6 Versions & aliases: publish version; alias create / edit with routing
+  between two versions (an update always sends the full routing map);
+  delete alias (asks); delete version (typed; refused while an alias uses it).
+- 14.7 Create / delete state machines: Standard or Express, from a template
+  or pasted ASL, role ARN as a text field (no IAM crate), logging; delete
+  with typed confirmation.
+- 14.8 Activities (tree node): list, describe, create, delete (asks).
+- 14.9 Export the executions list or one execution's history to JSON lines /
+  CSV (`.s3x-part` then rename; local write, allowed in read-only mode).
+- 14.10 Docs (`docs/step-functions.md`, README, help topics).
+
+### Phase 15: ElastiCache
+Out of scope: Memcached clusters (skipped, like Neptune in RDS), global
+datastores (membership shown as a field only), creating / modifying /
+scaling caches, RBAC edits, any key or data browser (no direct
+connections, no Redis client crate), metrics.
+- 15.1 Browse (`src-tauri/src/elasticache.rs`, `services/elasticache/`;
+  Place `{service:"elasticache", kind:"group"|"serverless"|"snapshots"|
+  "users"|null, id}`). Redis / Valkey replication groups (shards → nodes as
+  children) and serverless caches in the tree and list; listings load in
+  full, paged on screen. Group details: engine / version, node type, cluster
+  mode, shards / replicas, endpoints, TLS and at-rest encryption, auth mode
+  (token / RBAC user groups), Multi-AZ / auto-failover, subnet and security
+  groups, snapshot and maintenance windows, log delivery, pending changes,
+  tags. Serverless: endpoints, usage limits (ECPU / storage), security groups.
+- 15.2 Connect tab: endpoints, port, TLS, auth mode, VPC-only reachability
+  note, `redis-cli` / `valkey-cli` commands to copy (`--tls`, `-c` for
+  cluster mode, `--user`). Auth tokens are never shown (the API can't
+  return them).
+- 15.3 Actions: reboot selected nodes (cluster mode off only), TestFailover
+  per shard; re-checks every 15 s while the status is changing.
+- 15.4 Snapshots (like RDS 6.3, replication groups and serverless caches):
+  region-wide and per-cache lists; create, copy, delete (manual only,
+  typed), restore to a new cache (copies subnet / security groups from the
+  source if it still exists).
+- 15.5 Events: DescribeEvents for the group and its member clusters, merged
+  newest first, up to 14 days, paged on screen.
+- 15.6 Parameter group (read only): the group in use, option to show only
+  values changed from the default.
+- 15.7 Service updates: pending updates per cache (severity, status,
+  apply-by date); "Apply now" via BatchApplyUpdateAction (a write).
+- 15.8 Users & user groups (tree node, view only): users (access string,
+  auth type), groups (members), which caches use each group.
+- 15.9 Docs (`docs/elasticache.md`, README, help topics).
