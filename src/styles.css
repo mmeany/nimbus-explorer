@@ -891,6 +891,10 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .sfn-publish { gap: 8px; }
 .nowrap { white-space: nowrap; }
 .sfn-create-bar { gap: 8px; flex-wrap: wrap; }
+.ec-snap-bar { gap: 6px; margin: 4px 0; flex-wrap: wrap; }
+.service-pane > .ec-snap-bar { margin: 6px 10px; }
+.ec-snap-list { height: 360px; display: flex; flex-direction: column; border: 1px solid var(--border-light); }
+.ec-snap-list.region { flex: 1; height: auto; min-height: 0; border: none; }
 .sfn-activities-note { margin: 6px 10px; }
 .sfn-snippet { margin: 0; padding: 6px 8px; border: 1px solid var(--border-light); background: var(--panel-bg); white-space: pre-wrap; }
 .sfn-cmd { gap: 8px; align-items: flex-start; }

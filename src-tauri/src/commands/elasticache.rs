@@ -3,6 +3,9 @@
 use super::AppState;
 use crate::elasticache::{self as ec, Group, GroupDetails, Serverless};
 use crate::elasticache_actions as actions;
+use crate::elasticache_snapshots::{
+    self as snapshots, Kind, RestoreRequest, Restored, Snapshot, SnapshotList,
+};
 use crate::error::AppError;
 use tauri::State;
 
@@ -51,4 +54,57 @@ pub async fn ec_test_failover(
 ) -> Result<(), AppError> {
     state.ensure_writable()?;
     actions::test_failover(&*state.connection()?, &group, &shard).await
+}
+
+/// Snapshots in the region, or of one cache (`kind` + `cache`).
+#[tauri::command]
+pub async fn ec_snapshots(
+    state: State<'_, AppState>,
+    kind: Option<Kind>,
+    cache: Option<String>,
+) -> Result<SnapshotList, AppError> {
+    snapshots::list(&*state.connection()?, kind.zip(cache)).await
+}
+
+#[tauri::command]
+pub async fn ec_create_snapshot(
+    state: State<'_, AppState>,
+    kind: Kind,
+    cache: String,
+    name: String,
+) -> Result<Snapshot, AppError> {
+    state.ensure_writable()?;
+    snapshots::create(&*state.connection()?, kind, &cache, &name).await
+}
+
+#[tauri::command]
+pub async fn ec_copy_snapshot(
+    state: State<'_, AppState>,
+    kind: Kind,
+    source: String,
+    target: String,
+) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    snapshots::copy(&*state.connection()?, kind, &source, &target).await
+}
+
+/// Manual snapshots only.
+#[tauri::command]
+pub async fn ec_delete_snapshot(
+    state: State<'_, AppState>,
+    kind: Kind,
+    name: String,
+) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    snapshots::delete(&*state.connection()?, kind, &name).await
+}
+
+/// Restores a snapshot into a new cache.
+#[tauri::command]
+pub async fn ec_restore_snapshot(
+    state: State<'_, AppState>,
+    request: RestoreRequest,
+) -> Result<Restored, AppError> {
+    state.ensure_writable()?;
+    snapshots::restore(&*state.connection()?, &request).await
 }

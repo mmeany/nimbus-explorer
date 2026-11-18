@@ -28,6 +28,27 @@ The app manages caches through the ElastiCache API only; it doesn't connect to a
 - **From code**: a URI for client libraries, without the password.
 - **Reaching it**: ElastiCache endpoints are private to their VPC. Connect from inside it, over a VPN, or through a Session Manager port-forwarding tunnel (command included; in cluster mode a single tunnel isn't enough, because nodes redirect clients to their own addresses).`,
   },
+  "elasticache.snapshots": {
+    title: "Snapshots",
+    body: `Backups of replication groups and serverless caches: the region's under **Snapshots** in the tree, one cache's on its **Snapshots** tab. *Automated* snapshots are taken daily when backups are on and expire after the retention period; *manual* ones stay until you delete them.
+
+- **Create snapshot…** (on a cache's tab): a manual snapshot now. Taking one can slow the cache a little while it runs.
+- **Restore…** (or Enter): a new cache with the snapshot's data (see the restore dialog's help).
+- **Copy…**: a manual copy (an automated snapshot copied this way doesn't expire).
+- **Delete…**: manual snapshots only; you type the name to confirm.
+
+While snapshots are being created, copied or deleted, the list checks again every 15 seconds.`,
+  },
+  "elasticache.restore": {
+    title: "Restore snapshot",
+    body: `Creates a new cache from the snapshot; the original isn't touched.
+
+- **New cache name**: 1 to 40 letters, digits and single hyphens, starting with a letter.
+- **Node type** and **replicas per shard** (replication groups): the snapshot's node type unless you change it (it must hold the data); with one or more replicas, automatic failover is turned on. Cluster-mode snapshots keep their number of shards.
+- Network settings (subnet group or subnets, security groups) and encryption in transit are copied from the cache the snapshot came from, if it still exists; otherwise AWS's defaults apply.
+
+The new cache has its own endpoint, and is billed from when it's created.`,
+  },
   "elasticache.serverless": {
     title: "Serverless cache",
     body: `A serverless Valkey or Redis OSS cache: endpoint and reader endpoint, usage limits (data storage and ECPUs per second; none means it scales as needed), encryption (always in transit), RBAC user group, network, backups and tags.`,

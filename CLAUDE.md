@@ -977,7 +977,15 @@ connections, no Redis client crate), metrics.
   nodes tab: node checkboxes + Reboot selected…, Test failover… per group /
   shard) Actions: reboot selected nodes (cluster mode off only), TestFailover
   per shard; re-checks every 15 s while the status is changing.
-- 15.4 Snapshots (like RDS 6.3, replication groups and serverless caches):
+- 15.4 ✅ (`src-tauri/src/elasticache_snapshots.rs`, `services/elasticache/Snapshots.tsx`
+  `SnapshotList` for the region (tree node, Place kind "snapshots") and per
+  cache (Snapshots tab); restore copies subnet group / subnets, security
+  groups and encryption in transit from the source cache if it exists;
+  "Unknown action" (MiniStack has no CopySnapshot or serverless snapshots)
+  gives plain messages / `serverlessUnsupported`. Emulator fix: for custom
+  endpoints only, the ElastiCache client wraps its HTTP client to rewrite
+  epoch-number dates in XML (`fix_epoch_dates`), since MiniStack sends
+  `<SnapshotCreateTime>1795044334.8</…>`, which the SDK refuses) Snapshots (like RDS 6.3, replication groups and serverless caches):
   region-wide and per-cache lists; create, copy, delete (manual only,
   typed), restore to a new cache (copies subnet / security groups from the
   source if it still exists).

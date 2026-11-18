@@ -49,3 +49,17 @@ describe("connect commands", () => {
     );
   });
 });
+
+describe("snapshot and cache names", () => {
+  it("follow AWS's rules", async () => {
+    const { snapshotNameProblem, cacheNameProblem } = await import("../services/elasticache/Snapshots");
+    expect(snapshotNameProblem("nightly-2026-11-18")).toBeNull();
+    expect(snapshotNameProblem("1st")).not.toBeNull();
+    expect(snapshotNameProblem("a_b")).not.toBeNull();
+    expect(snapshotNameProblem("a--b")).not.toBeNull();
+    expect(snapshotNameProblem("end-")).not.toBeNull();
+    expect(cacheNameProblem("orders-restored")).toBeNull();
+    expect(cacheNameProblem("a".repeat(41))).not.toBeNull();
+    expect(cacheNameProblem("9lives")).not.toBeNull();
+  });
+});

@@ -102,7 +102,35 @@ export const ecApi = {
   rebootNodes: (group: string, nodes: string[]) => call<string[]>("ec_reboot_nodes", { group, nodes }),
   /** Promotes a replica of the shard ("0001" when cluster mode is off). */
   testFailover: (group: string, shard: string) => call<void>("ec_test_failover", { group, shard }),
+  /** The region's snapshots, or one cache's (`kind` + `cache`). */
+  snapshots: (kind: SnapshotKind | null, cache: string | null) => call<{ items: EcSnapshot[]; serverlessUnsupported: boolean }>("ec_snapshots", { kind, cache }),
+  createSnapshot: (kind: SnapshotKind, cache: string, name: string) => call<EcSnapshot>("ec_create_snapshot", { kind, cache, name }),
+  copySnapshot: (kind: SnapshotKind, source: string, target: string) => call<void>("ec_copy_snapshot", { kind, source, target }),
+  /** Manual snapshots only. */
+  deleteSnapshot: (kind: SnapshotKind, name: string) => call<void>("ec_delete_snapshot", { kind, name }),
+  restoreSnapshot: (request: { kind: SnapshotKind; snapshot: string; name: string; description: string | null; nodeType: string | null; replicas: number }) =>
+    call<{ name: string; copiedFromSource: boolean }>("ec_restore_snapshot", { request }),
 };
+
+export type SnapshotKind = "group" | "serverless";
+
+export interface EcSnapshot {
+  name: string;
+  arn: string | null;
+  kind: SnapshotKind;
+  /** manual or automated. */
+  source: string;
+  cache: string | null;
+  status: string | null;
+  created: string | null;
+  size: string | null;
+  engine: string | null;
+  engineVersion: string | null;
+  nodeType: string | null;
+  shards: number | null;
+  kmsKeyId: string | null;
+  expires: string | null;
+}
 
 /** "valkey" → "Valkey", "redis" → "Redis OSS". */
 export function engineLabel(engine: string | null | undefined): string {

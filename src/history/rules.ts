@@ -430,6 +430,10 @@ export const RULES: Record<string, Rule> = {
   sfn_export_history: (a, r) => ({ service: "sfn", action: "Export event history", target: sfnExecName(String(a.arn)), place: sfnExecPlace(String(a.arn)), detail: [typeof r === "number" ? plural(r, "event") : "", `to ${a.dest}`].filter(Boolean).join(", ") }),
   ec_reboot_nodes: (a) => ({ service: "elasticache", action: "Reboot nodes", target: String(a.group), place: { service: "elasticache", kind: "group", id: String(a.group) }, detail: (a.nodes ?? []).join(", ") }),
   ec_test_failover: (a) => ({ service: "elasticache", action: "Test failover", target: String(a.group), place: { service: "elasticache", kind: "group", id: String(a.group) }, detail: `shard ${a.shard}` }),
+  ec_create_snapshot: (a) => ({ service: "elasticache", action: "Create snapshot", target: String(a.name), place: { service: "elasticache", kind: a.kind, id: String(a.cache) }, detail: `of ${a.cache}` }),
+  ec_copy_snapshot: (a) => ({ service: "elasticache", action: "Copy snapshot", target: String(a.target), place: { service: "elasticache", kind: "snapshots", id: null }, select: `${a.kind}:${a.target}`, detail: `from ${a.source}` }),
+  ec_delete_snapshot: (a) => ({ service: "elasticache", action: "Delete snapshot", target: String(a.name), place: { service: "elasticache", kind: "snapshots", id: null } }),
+  ec_restore_snapshot: (a) => ({ service: "elasticache", action: "Restore snapshot", target: String(a.request.name), place: { service: "elasticache", kind: a.request.kind, id: String(a.request.name) }, detail: `from ${a.request.snapshot}` }),
   sfn_export_svg: (a) => ({ service: "sfn", action: "Export graph", target: base(a.path), detail: `to ${a.path}` }),
   lambda_download_code: (a) => ({ service: "lambda", action: "Download code", target: a.qualifier ? `${a.name}:${a.qualifier}` : a.name, place: fnPlace(a.name), detail: `to ${a.dest}` }),
 

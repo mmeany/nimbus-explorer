@@ -7,6 +7,7 @@ mod dynamo;
 mod ecs;
 mod elasticache;
 mod elasticache_actions;
+mod elasticache_snapshots;
 mod ecs_actions;
 mod ecs_taskdefs;
 mod error;
@@ -201,6 +202,11 @@ pub fn run() {
             commands::elasticache::ec_serverless,
             commands::elasticache::ec_reboot_nodes,
             commands::elasticache::ec_test_failover,
+            commands::elasticache::ec_snapshots,
+            commands::elasticache::ec_create_snapshot,
+            commands::elasticache::ec_copy_snapshot,
+            commands::elasticache::ec_delete_snapshot,
+            commands::elasticache::ec_restore_snapshot,
             commands::sfn::sfn_list,
             commands::sfn::sfn_details_many,
             commands::sfn::sfn_describe,

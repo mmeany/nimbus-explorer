@@ -5,10 +5,128 @@ use crate::error::{AppError, ErrorKind};
 use crate::s3::Connection;
 use aws_sdk_elasticache::types::{Endpoint as SdkEndpoint, ReplicationGroup, ServerlessCache};
 use aws_sdk_elasticache::Client;
+use aws_smithy_runtime_api::client::http::{
+    HttpClient, HttpConnector, HttpConnectorFuture, HttpConnectorSettings, SharedHttpClient,
+    SharedHttpConnector,
+};
+use aws_smithy_runtime_api::client::orchestrator::HttpRequest;
+use aws_smithy_runtime_api::client::result::ConnectorError;
+use aws_smithy_runtime_api::client::runtime_components::RuntimeComponents;
+use aws_smithy_types::body::SdkBody;
+use aws_smithy_types::byte_stream::ByteStream;
 use serde::Serialize;
 
 pub fn client(conn: &Connection) -> Client {
-    Client::new(&conn.service_config())
+    let cfg = conn.service_config();
+    // Emulators (custom endpoints only) may send dates as epoch numbers in
+    // their XML, which the SDK refuses; real AWS responses pass through as is.
+    match (&conn.info.endpoint_url, cfg.http_client()) {
+        (Some(_), Some(http)) => Client::from_conf(
+            aws_sdk_elasticache::config::Builder::from(&cfg)
+                .http_client(EpochDatesClient(http))
+                .build(),
+        ),
+        _ => Client::new(&cfg),
+    }
+}
+
+/// An HTTP client that rewrites epoch-number dates in responses (see `fix_epoch_dates`).
+#[derive(Debug)]
+struct EpochDatesClient(SharedHttpClient);
+
+impl HttpClient for EpochDatesClient {
+    fn http_connector(
+        &self,
+        settings: &HttpConnectorSettings,
+        components: &RuntimeComponents,
+    ) -> SharedHttpConnector {
+        SharedHttpConnector::new(EpochDatesConnector(
+            self.0.http_connector(settings, components),
+        ))
+    }
+}
+
+#[derive(Debug)]
+struct EpochDatesConnector(SharedHttpConnector);
+
+impl HttpConnector for EpochDatesConnector {
+    fn call(&self, request: HttpRequest) -> HttpConnectorFuture {
+        let inner = self.0.call(request);
+        HttpConnectorFuture::new(async move {
+            let mut resp = inner.await?;
+            let body = resp.take_body();
+            let bytes = ByteStream::new(body)
+                .collect()
+                .await
+                .map_err(|e| ConnectorError::io(e.into()))?
+                .into_bytes();
+            *resp.body_mut() = SdkBody::from(fix_epoch_dates(&bytes));
+            Ok(resp)
+        })
+    }
+}
+
+/// In XML, `<SomethingTime>1795044334.83</SomethingTime>` (or `…Date`) becomes
+/// an ISO date. Anything else, including non-UTF-8 bodies, is left alone.
+pub fn fix_epoch_dates(body: &[u8]) -> Vec<u8> {
+    let Ok(text) = std::str::from_utf8(body) else {
+        return body.to_vec();
+    };
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(open) = rest.find('<') {
+        out.push_str(&rest[..open]);
+        rest = &rest[open..];
+        let Some(gt) = rest.find('>') else { break };
+        let tag = &rest[1..gt];
+        let simple = !tag.is_empty() && tag.chars().all(|c| c.is_ascii_alphanumeric());
+        if simple && (tag.ends_with("Time") || tag.ends_with("Date")) {
+            let after = &rest[gt + 1..];
+            let close = format!("</{tag}>");
+            if let Some(end) = after.find(&close) {
+                let value = &after[..end];
+                let numeric = !value.is_empty()
+                    && value.chars().all(|c| c.is_ascii_digit() || c == '.')
+                    && value.chars().filter(|c| *c == '.').count() <= 1;
+                if numeric {
+                    if let Some(iso) = value
+                        .parse::<f64>()
+                        .ok()
+                        .and_then(|s| iso(Some(&aws_smithy_types::DateTime::from_secs_f64(s))))
+                    {
+                        out.push_str(&format!("<{tag}>{iso}{close}"));
+                        rest = &after[end + close.len()..];
+                        continue;
+                    }
+                }
+            }
+        }
+        out.push_str(&rest[..=gt]);
+        rest = &rest[gt + 1..];
+    }
+    out.push_str(rest);
+    out.into_bytes()
+}
+
+#[cfg(test)]
+mod epoch_tests {
+    use super::fix_epoch_dates;
+
+    #[test]
+    fn rewrites_epoch_dates_only() {
+        let xml = b"<A><SnapshotCreateTime>1767225600.5</SnapshotCreateTime><Name>123</Name><CreateTime>2026-01-01T00:00:00Z</CreateTime><Port>6379</Port><StartTime>1767225600</StartTime></A>";
+        let out = String::from_utf8(fix_epoch_dates(xml)).unwrap();
+        assert_eq!(
+            out,
+            "<A><SnapshotCreateTime>2026-01-01T00:00:00.5Z</SnapshotCreateTime><Name>123</Name><CreateTime>2026-01-01T00:00:00Z</CreateTime><Port>6379</Port><StartTime>2026-01-01T00:00:00Z</StartTime></A>"
+        );
+        assert_eq!(fix_epoch_dates(b"no tags"), b"no tags");
+        assert_eq!(fix_epoch_dates(&[0xff, 0xfe]), vec![0xff, 0xfe]);
+        assert_eq!(
+            fix_epoch_dates(b"<a>1.2.3</a><xTime>1.2.3</xTime><unclosed"),
+            b"<a>1.2.3</a><xTime>1.2.3</xTime><unclosed"
+        );
+    }
 }
 
 pub(crate) fn err(conn: &Connection, e: impl std::error::Error) -> AppError {

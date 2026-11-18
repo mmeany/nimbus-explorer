@@ -546,3 +546,13 @@ export function ServerlessCacheIcon({ size = 16 }: P) {
     </svg>
   );
 }
+
+/** A snapshot: a camera. */
+export function SnapshotIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M2 5 H5 L6.2 3.5 H9.8 L11 5 H14 V13 H2 Z" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" strokeLinejoin="round" />
+      <circle cx="8" cy="8.8" r="2.4" fill="none" stroke="#3e6fd8" strokeWidth="1" />
+    </svg>
+  );
+}
