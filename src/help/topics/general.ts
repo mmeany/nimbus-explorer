@@ -68,6 +68,7 @@ Secret values stay masked until you choose **Reveal** or **Copy**. They're never
 - **RDS**: databases, Aurora clusters and snapshots
 - **ECS**: clusters, services, tasks and task definitions
 - **Lambda**: functions, invoking, triggers and versions
+- **Step Functions**: state machines, executions, graphs and activities
 - **CloudWatch Logs**: log groups, streams and events
 - **Secrets Manager**: secrets, versions and rotation
 
