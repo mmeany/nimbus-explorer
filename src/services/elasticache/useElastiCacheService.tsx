@@ -3,7 +3,7 @@
 // tree (groups expand to shards and nodes), and the cache views.
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, type AppError } from "../../api/s3";
-import { ecApi, endpointText, engineLabel, limitsText, type Group, type GroupDetails, type Serverless } from "../../api/elasticache";
+import { ecApi, endpointText, engineLabel, groupTarget, limitsText, serverlessTarget, type Group, type GroupDetails, type Serverless } from "../../api/elasticache";
 import { CommandButton } from "../../components/CommandButton";
 import type { MenuItem } from "../../components/ContextMenu";
 import { ErrorPanel } from "../../components/ErrorPanel";
@@ -15,7 +15,8 @@ import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { EC_ROOT, type Place } from "../../shell/places";
 import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePaging } from "../../state/paged";
-import { GroupView, ServerlessView } from "./CacheViews";
+import { GroupView, ServerlessView, type GroupTab, type ServerlessTab } from "./CacheViews";
+import { ConnectTab } from "./ConnectTab";
 
 const COLUMNS: Column[] = [
   { id: "name", label: "Cache", width: 240 },
@@ -244,6 +245,9 @@ export function useElastiCacheService(shell: Shell): ServiceUi {
     </TreeRow>
   ) : null;
 
+  const groupTabs: GroupTab[] = [{ id: "connect", label: "Connect", help: "elasticache.connect", render: (g) => <ConnectTab shell={shell} t={groupTarget(g)} /> }];
+  const serverlessTabs: ServerlessTab[] = [{ id: "connect", label: "Connect", help: "elasticache.connect", render: (s) => <ConnectTab shell={shell} t={serverlessTarget(s)} /> }];
+
   let content: ReactNode = null;
   let status = "";
   if (listView) {
@@ -286,14 +290,14 @@ export function useElastiCacheService(shell: Shell): ServiceUi {
   } else if (active && kind === "group" && id) {
     content = (
       <div className="service-pane scroll-pane">
-        <GroupView key={id} shell={shell} id={id} reloadToken={reloadToken} onLoaded={setViewGroup} />
+        <GroupView key={id} shell={shell} id={id} reloadToken={reloadToken} onLoaded={setViewGroup} tabs={groupTabs} />
       </div>
     );
     status = `${id}${viewGroup?.id === id ? ` · ${viewGroup.status ?? ""} · ${viewGroup.memberCount} node${viewGroup.memberCount === 1 ? "" : "s"}` : ""} · ${region}`;
   } else if (active && kind === "serverless" && id) {
     content = (
       <div className="service-pane scroll-pane">
-        <ServerlessView key={id} shell={shell} name={id} reloadToken={reloadToken} onLoaded={setViewServerless} />
+        <ServerlessView key={id} shell={shell} name={id} reloadToken={reloadToken} onLoaded={setViewServerless} tabs={serverlessTabs} />
       </div>
     );
     status = `${id}${viewServerless?.name === id ? ` · ${viewServerless.status ?? ""} · serverless` : ""} · ${region}`;

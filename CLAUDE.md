@@ -963,7 +963,10 @@ connections, no Redis client crate), metrics.
   (token / RBAC user groups), Multi-AZ / auto-failover, subnet and security
   groups, snapshot and maintenance windows, log delivery, pending changes,
   tags. Serverless: endpoints, usage limits (ECPU / storage), security groups.
-- 15.2 Connect tab: endpoints, port, TLS, auth mode, VPC-only reachability
+- 15.2 ✅ (`services/elasticache/ConnectTab.tsx`; `groupTarget` / `serverlessTarget`,
+  `cliCommand`, `connectionUri`, `ssmTunnelCommand` in `api/elasticache.ts`,
+  tested; serverless caches count as TLS + cluster protocol; with a custom
+  endpoint the tunnel part is replaced by a note) Connect tab: endpoints, port, TLS, auth mode, VPC-only reachability
   note, `redis-cli` / `valkey-cli` commands to copy (`--tls`, `-c` for
   cluster mode, `--user`). Auth tokens are never shown (the API can't
   return them).

@@ -195,7 +195,15 @@ function Nodes({ g }: { g: GroupDetails }) {
   );
 }
 
-export function ServerlessView({ shell, name, reloadToken, onLoaded }: { shell: Shell; name: string; reloadToken: number; onLoaded: (s: Serverless | null) => void }) {
+export interface ServerlessTab {
+  id: string;
+  label: string;
+  help: HelpTopicId;
+  render: (s: Serverless) => ReactNode;
+}
+
+export function ServerlessView({ shell, name, reloadToken, onLoaded, tabs = [] }: { shell: Shell; name: string; reloadToken: number; onLoaded: (s: Serverless | null) => void; tabs?: ServerlessTab[] }) {
+  const [tab, setTab] = useState("details");
   const { data: s, error, retry } = useLoad(`${name}|${reloadToken}`, () => ecApi.serverless(name), (d) => (d && d.status !== "available" ? 15_000 : null));
   useEffect(() => onLoaded(s), [s, onLoaded]);
   if (error && !s) return <ErrorPanel error={error} profile={shell.profile} onRetry={retry} />;
@@ -215,7 +223,17 @@ export function ServerlessView({ shell, name, reloadToken, onLoaded }: { shell: 
         )}
       </div>
       {s.description && <div className="hint">{s.description}</div>}
-      <HelpTopic id="elasticache.serverless" />
+      <HelpTopic id={tabs.find((t) => t.id === tab)?.help ?? "elasticache.serverless"} />
+      {tabs.length > 0 && (
+        <div className="segmented small db-tabs">
+          {[{ id: "details", label: "Details" }, ...tabs].map((t) => (
+            <button key={t.id} className={tab === t.id ? "active" : ""} onClick={() => setTab(t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {tabs.find((t) => t.id === tab)?.render(s) ?? (
       <div className="lambda-details">
         <PropsTable
           rows={[
@@ -236,6 +254,7 @@ export function ServerlessView({ shell, name, reloadToken, onLoaded }: { shell: 
         <div className="props-section">Tags</div>
         {s.tags.length === 0 ? <p className="hint">No tags.</p> : <PropsTable rows={s.tags.map(([k, v]) => [k, v] as [string, ReactNode])} />}
       </div>
+      )}
     </div>
   );
 }
