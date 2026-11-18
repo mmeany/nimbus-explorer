@@ -399,6 +399,13 @@ export const RULES: Record<string, Rule> = {
     const changed = [a.change?.maxConcurrency != null ? `max concurrency ${a.change.maxConcurrency}` : "", a.change?.toleratedFailurePercentage != null ? `tolerated ${a.change.toleratedFailurePercentage}%` : "", a.change?.toleratedFailureCount != null ? `tolerated ${a.change.toleratedFailureCount} items` : ""].filter(Boolean).join(", ");
     return { service: "sfn", action: "Change map run", target: `${machine} map run ${id.slice(0, id.lastIndexOf(":"))}`, detail: changed || null };
   },
+  sfn_update: (a, r) => {
+    if (r?.outcome === "changed") return null; // nothing was saved
+    const name = lastAfter(String(a.request.arn), ":");
+    const parts = [a.request.definition != null ? "definition" : "", a.request.roleArn != null ? "role" : "", a.request.logging != null ? `logging ${a.request.logging.level}` : "", a.request.tracing != null ? `tracing ${a.request.tracing ? "on" : "off"}` : ""].filter(Boolean);
+    const version = r?.versionArn ? `published version ${lastAfter(r.versionArn, ":")}` : a.request.publish ? "publish" : "";
+    return { service: "sfn", action: "Edit state machine", target: name, place: { service: "sfn", view: null, machine: name, execution: null, mapRun: null }, detail: [parts.join(", "), version].filter(Boolean).join("; ") || null };
+  },
   sfn_export_svg: (a) => ({ service: "sfn", action: "Export graph", target: base(a.path), detail: `to ${a.path}` }),
   lambda_download_code: (a) => ({ service: "lambda", action: "Download code", target: a.qualifier ? `${a.name}:${a.qualifier}` : a.name, place: fnPlace(a.name), detail: `to ${a.dest}` }),
 

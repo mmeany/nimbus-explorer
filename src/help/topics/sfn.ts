@@ -4,7 +4,8 @@ export const sfnTopics = {
     body: `The region's state machines, with type (Standard or Express), status, logging level, tracing, created date and description. The tree lists the first 200. Details are read for the page on screen only.
 
 - **Filter**: type the start of a name and press Enter.
-- **Open** a machine: Enter or double-click.`,
+- **Open** a machine: Enter or double-click.
+- **Edit** (Ctrl+E): definition, role, logging and tracing.`,
   },
   "sfn.graph": {
     title: "Graph",
@@ -63,6 +64,17 @@ Without a Label on the Map state, AWS names the run with a generated id instead 
 - **Tolerated failures**: as a percentage of items, a number of items, or both. Once failures pass either, the run (and the Map state) fails. 0 for both fails it at the first failure.
 
 Only this run changes; the next run uses the Map state's definition again.`,
+  },
+  "sfn.edit": {
+    title: "Edit state machine",
+    body: `Change the machine's definition and settings. Only what you change is sent.
+
+- **Definition**: the Amazon States Language as JSON. The graph on the right redraws as you type (while the text is valid JSON). Step Functions checks the definition when you pause; problems are listed under the editor and outlined in red on the graph. Click a state's name in a problem to find it on the graph.
+- **Role, logging and tracing**: the execution role (an IAM role ARN), the log level and log group (a name or ARN), whether logs include inputs and outputs, and X-Ray tracing. Logging needs the role to be allowed to deliver logs.
+- **Publish as a new version**: saves and freezes the result as a numbered version (with an optional description), for aliases to point at.
+- **Ctrl+Enter** saves.
+
+If someone changes the machine while you edit (in the console, a deployment, another window), saving asks before writing over their changes. Running executions keep the definition they started with.`,
   },
   "sfn.machine": {
     title: "Definition",

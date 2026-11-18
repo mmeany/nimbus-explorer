@@ -1,7 +1,7 @@
 // Step Functions controller: state machine list (names in full, details for
 // the visible page, name-prefix filter with history), the machine view and
 // the execution view.
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, type AppError } from "../../api/s3";
 import { arnTail, executionPlaceName, isChildExecution, mapRunArn, REDRIVABLE, sfnApi, type ExecutionDetails, type ExecutionSummary, type MachineDetails, type MachineRef, type MapRunDetails } from "../../api/sfn";
 import { CommandButton, CommandSeparator } from "../../components/CommandButton";
@@ -18,6 +18,7 @@ import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePagedDetails, usePaging } from "../../state/paged";
 import { ExecutionView } from "./ExecutionView";
 import { MachineView } from "./MachineView";
+import { MachineEditorDialog } from "./MachineEditorDialog";
 import { MapRunSettingsDialog, MapRunView } from "./MapRunView";
 import { StartExecutionDialog, StopExecutionDialog, type StartPreset } from "./RunDialogs";
 
@@ -57,6 +58,7 @@ export function useSfnService(shell: Shell): ServiceUi {
   const [stopFor, setStopFor] = useState<{ arn: string; name: string } | null>(null);
   const [viewMapRun, setViewMapRun] = useState<MapRunDetails | null>(null);
   const [mapRunSettings, setMapRunSettings] = useState<MapRunDetails | null>(null);
+  const [editing, setEditing] = useState<MachineDetails | null>(null);
 
   useEffect(() => {
     setListing(null);
@@ -150,6 +152,16 @@ export function useSfnService(shell: Shell): ServiceUi {
   const denied = () => shell.showFlash("Read-only mode: changes are disabled.");
   /** The machine on screen, or the single selected row of the list. */
   const targetMachine = (machine ? byName.get(machine) : selected.size === 1 && listView ? byName.get([...selected][0]) : undefined) ?? null;
+
+  /** Opens the editor on fresh details (and revision), so the edit starts from what's there now. */
+  async function editMachine(m: MachineRef) {
+    if (shell.readOnly) return denied();
+    try {
+      setEditing(await sfnApi.describe(m.arn));
+    } catch (e) {
+      shell.showError(e);
+    }
+  }
 
   function startExecution(m: MachineRef, preset: StartPreset | null = null) {
     if (shell.readOnly) return denied();
@@ -245,6 +257,7 @@ export function useSfnService(shell: Shell): ServiceUi {
       items.push(
         "separator",
         { label: "Start execution…", disabled: shell.readOnly, onClick: () => startExecution(m) },
+        { label: "Edit…", shortcut: "Ctrl+E", disabled: shell.readOnly, onClick: () => void editMachine(m) },
         "separator",
         { label: "Copy name", onClick: () => void shell.copyText(m.name) },
         { label: "Copy ARN", onClick: () => void shell.copyText(m.arn) },
@@ -272,6 +285,22 @@ export function useSfnService(shell: Shell): ServiceUi {
       { label: "Add bookmark…", onClick: () => shell.addBookmark(machinePlace(machine, e.name), null, null) },
     ]);
   }
+
+  const keyOps = useRef({ active, modal: false, target: targetMachine, edit: editMachine, execution });
+  keyOps.current = { active, modal: !!(editing || startFor || stopFor || mapRunSettings), target: targetMachine, edit: editMachine, execution };
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const o = keyOps.current;
+      if (!o.active || o.modal || !o.target || o.execution) return;
+      if ((e.target as HTMLElement).closest("input, textarea, select, .modal-backdrop")) return;
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "e") {
+        e.preventDefault();
+        void o.edit(o.target);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const tree = connection ? (
     <TreeRow
@@ -425,7 +454,10 @@ export function useSfnService(shell: Shell): ServiceUi {
           />
         </>
       ) : (
-        <CommandButton icon={<PlayIcon />} label="Start execution" title="Start an execution of the state machine" disabled={ro || !targetMachine} onClick={() => targetMachine && startExecution(targetMachine)} />
+        <>
+          <CommandButton icon={<PlayIcon />} label="Start execution" title="Start an execution of the state machine" disabled={ro || !targetMachine} onClick={() => targetMachine && startExecution(targetMachine)} />
+          <CommandButton icon={<EditIcon />} label="Edit" title="Definition, role, logging and tracing (Ctrl+E)" disabled={ro || !targetMachine} onClick={() => targetMachine && void editMachine(targetMachine)} />
+        </>
       )}
       <CommandSeparator />
       <CommandButton icon={<RefreshIcon />} label="Refresh" title="Refresh (F5)" disabled={!connection} onClick={refresh} />
@@ -450,6 +482,19 @@ export function useSfnService(shell: Shell): ServiceUi {
               shell.showFlash(`Started ${name}.`);
               go(m.name, name);
             }
+            refresh();
+          }}
+        />
+      )}
+      {editing && (
+        <MachineEditorDialog
+          key={editing.arn}
+          shell={shell}
+          machine={editing}
+          onClose={() => setEditing(null)}
+          onDone={(msg) => {
+            setEditing(null);
+            shell.showFlash(msg);
             refresh();
           }}
         />

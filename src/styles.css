@@ -880,4 +880,14 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .sfn-key.caught::before { border-color: var(--sfn-caught); background: var(--sfn-caught-bg); }
 .sfn-graph-bar { align-items: center; }
 .sfn-counts { width: auto; }
+.sfn-editor-dialog { width: min(1280px, 96vw); height: 90vh; }
+.sfn-editor-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.sfn-editor-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr); gap: 10px; }
+.sfn-editor-left { min-height: 0; display: flex; flex-direction: column; gap: 4px; overflow: auto; }
+.sfn-editor-left .value-textarea { min-height: 320px; }
+.sfn-editor-right { min-height: 0; display: flex; flex-direction: column; gap: 4px; }
+.sfn-editor-right .sfn-graph { min-height: 320px; }
+.sfn-diagnostics { display: flex; flex-direction: column; gap: 2px; max-height: 140px; overflow: auto; }
+.sfn-publish { gap: 8px; }
+.sfn-publish .text-input { flex: 1; }
 .sfn-counts th, .sfn-counts td { padding-right: 14px; }

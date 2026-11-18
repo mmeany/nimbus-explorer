@@ -100,7 +100,33 @@ export const sfnApi = {
   mapRun: (arn: string) => call<MapRunDetails>("sfn_map_run", { arn }),
   /** Changes a running map run's settings; refused in read-only mode. */
   updateMapRun: (arn: string, change: MapRunChange) => call<void>("sfn_update_map_run", { arn, change }),
+  /** ValidateStateMachineDefinition (reads only). */
+  validate: (definition: string, kind: string) => call<Validation>("sfn_validate", { definition, kind }),
+  /** Saves the changed fields; "changed" means someone else saved first and nothing was written. */
+  update: (request: UpdateRequest) => call<UpdateOutcome>("sfn_update", { request }),
 };
+
+export interface Validation {
+  /** OK or FAIL. */
+  result: string;
+  diagnostics: { severity: string; code: string; message: string; location: string | null; state: string | null }[];
+  truncated: boolean;
+}
+
+export interface UpdateRequest {
+  arn: string;
+  /** The revision the editor opened. */
+  expectedRevision: string | null;
+  overwrite: boolean;
+  definition: string | null;
+  roleArn: string | null;
+  logging: { level: string; includeExecutionData: boolean; logGroupArn: string | null } | null;
+  tracing: boolean | null;
+  publish: boolean;
+  versionDescription: string | null;
+}
+
+export type UpdateOutcome = { outcome: "saved"; revisionId: string | null; versionArn: string | null } | { outcome: "changed"; currentRevision: string | null; updated: string | null };
 
 export interface MapRunRef {
   arn: string;
@@ -253,4 +279,12 @@ export function definitionStates(definition: string): { start: string; rows: Sta
   const root = asl as Record<string, unknown>;
   walk(root, "");
   return { start: String(root.StartAt ?? ""), rows, queryLanguage: typeof root.QueryLanguage === "string" ? root.QueryLanguage : "JSONPath" };
+}
+
+/** A log group name or ARN → the ARN Step Functions wants ("…:log-group:<name>:*"), in the machine's account and region. */
+export function logGroupArn(machineArn: string, value: string): string {
+  const v = value.trim();
+  if (!v || v.startsWith("arn:")) return v;
+  const [, partition, , region, account] = machineArn.split(":");
+  return `arn:${partition}:logs:${region}:${account}:log-group:${v}:*`;
 }

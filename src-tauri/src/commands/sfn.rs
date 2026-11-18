@@ -6,6 +6,7 @@ use crate::sfn::{
     self, ExecutionDetails, ExecutionPage, FullHistory, HistoryPage, MachineDetails, MachineRef,
     Versions,
 };
+use crate::sfn_admin::{self as admin, UpdateOutcome, UpdateRequest, Validation};
 use crate::sfn_map::{self as map, MapRunChange, MapRunDetails, MapRunRef};
 use crate::sfn_run::{self as run, SavedInput, StartRequest, Started};
 use tauri::State;
@@ -184,4 +185,24 @@ pub async fn sfn_update_map_run(
 ) -> Result<(), AppError> {
     state.ensure_writable()?;
     map::update(&*state.connection()?, &arn, &change).await
+}
+
+/// Checks a definition with ValidateStateMachineDefinition (reads only).
+#[tauri::command]
+pub async fn sfn_validate(
+    state: State<'_, AppState>,
+    definition: String,
+    kind: String,
+) -> Result<Validation, AppError> {
+    admin::validate(&*state.connection()?, &definition, &kind).await
+}
+
+/// Saves definition / role / logging / tracing (and publishes, if asked).
+#[tauri::command]
+pub async fn sfn_update(
+    state: State<'_, AppState>,
+    request: UpdateRequest,
+) -> Result<UpdateOutcome, AppError> {
+    state.ensure_writable()?;
+    admin::update(&*state.connection()?, &request).await
 }

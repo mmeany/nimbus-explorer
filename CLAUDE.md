@@ -902,7 +902,15 @@ tab / dialog.
   children can't be redriven one by one) Distributed Map runs: Map runs list per execution, map-run place with
   child execution counts and failures; UpdateMapRun (tolerated failure
   count / percentage, max concurrency).
-- 14.5 Edit: definition editor (ValueEditor + live graph preview while the
+- 14.5 ✅ (`src-tauri/src/sfn_admin.rs`, `services/sfn/MachineEditorDialog.tsx`;
+  Edit in the command bar / row menu / Ctrl+E; the editor opens on a fresh
+  describe; `sfn_validate` runs 0.7 s after typing pauses and diagnostics
+  map to states via their JSON pointer (`state_of`); the app's own ASL
+  checks (missing targets, no StartAt) block saving because emulators accept
+  anything; `sfn_update` sends only changed fields and returns
+  `{outcome: "saved" | "changed"}`: "changed" = the revision moved since the
+  editor opened, nothing written, the UI asks and resends with overwrite;
+  log groups can be given by name, `logGroupArn` builds the ARN) Edit: definition editor (ValueEditor + live graph preview while the
   JSON parses; ValidateStateMachineDefinition diagnostics shown against
   their states), role ARN, logging, tracing; optional publish on save.
   UpdateStateMachine has no condition, so the backend re-describes first and

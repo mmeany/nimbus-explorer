@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { definitionStates, executionArn, executionNameProblem, executionPlaceName, isChildExecution, mapRunArn, statusTone } from "./sfn";
+import { definitionStates, executionArn, executionNameProblem, executionPlaceName, isChildExecution, logGroupArn, mapRunArn, statusTone } from "./sfn";
 
 describe("executionNameProblem", () => {
   it("accepts names AWS accepts and blank (AWS picks one)", () => {
@@ -43,5 +43,18 @@ describe("helpers", () => {
       ["A", "P › branch 1", "(end)"],
     ]);
     expect(definitionStates("{")).toBeNull();
+  });
+});
+
+describe("logGroupArn", () => {
+  const m = "arn:aws:states:eu-west-2:123456789012:stateMachine:orders";
+  it("builds an ARN from a name in the machine's account and region", () => {
+    expect(logGroupArn(m, " /aws/vendedlogs/states/orders ")).toBe("arn:aws:logs:eu-west-2:123456789012:log-group:/aws/vendedlogs/states/orders:*");
+    expect(logGroupArn("arn:aws-cn:states:cn-north-1:1:stateMachine:x", "g")).toBe("arn:aws-cn:logs:cn-north-1:1:log-group:g:*");
+  });
+  it("keeps ARNs and empty values as they are", () => {
+    const arn = "arn:aws:logs:eu-west-2:1:log-group:g:*";
+    expect(logGroupArn(m, arn)).toBe(arn);
+    expect(logGroupArn(m, "  ")).toBe("");
   });
 });

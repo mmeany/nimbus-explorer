@@ -37,9 +37,11 @@ interface Props {
   runs: Map<string, StateRun> | null;
   selected: string | null;
   onSelect: (name: string | null) => void;
+  /** States to outline as having problems (the editor's validation). */
+  problems?: ReadonlySet<string>;
 }
 
-export const StateGraph = forwardRef<StateGraphHandle, Props>(function StateGraph({ graph, runs, selected, onSelect }, ref) {
+export const StateGraph = forwardRef<StateGraphHandle, Props>(function StateGraph({ graph, runs, selected, onSelect, problems }, ref) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const measure = useMemo(() => canvasMeasure(), []);
   const lg = useMemo(() => layout(graph, collapsed, measure), [graph, collapsed, measure]);
@@ -157,7 +159,7 @@ export const StateGraph = forwardRef<StateGraphHandle, Props>(function StateGrap
           <defs dangerouslySetInnerHTML={{ __html: defsMarkup() }} />
           <g transform={`translate(${view.tx},${view.ty}) scale(${view.s})`}>
             <g ref={contentRef}>
-              <GraphBody lg={lg} runs={runs} selected={selected} collapsed={collapsed} />
+              <GraphBody lg={lg} runs={runs} selected={selected} collapsed={collapsed} problems={problems} />
             </g>
           </g>
         </svg>
@@ -199,14 +201,16 @@ function defsMarkup(): string {
   return head("sfn-arrow", "var(--sfn-edge)") + head("sfn-arrow-catch", "var(--sfn-edge-catch)");
 }
 
-function GraphBody({ lg, runs, selected, collapsed }: { lg: LGraph; runs: Map<string, StateRun> | null; selected: string | null; collapsed: Set<string> }) {
+type Marks = { runs: Map<string, StateRun> | null; selected: string | null; collapsed: Set<string>; problems?: ReadonlySet<string> };
+
+function GraphBody({ lg, runs, selected, collapsed, problems }: { lg: LGraph } & Marks) {
   return (
     <>
       {lg.edges.map((e, i) => (
         <Edge key={`e${i}`} e={e} />
       ))}
       {lg.nodes.map((n) => (
-        <Node key={n.id} n={n} runs={runs} selected={selected} collapsed={collapsed} />
+        <Node key={n.id} n={n} runs={runs} selected={selected} collapsed={collapsed} problems={problems} />
       ))}
     </>
   );
@@ -235,7 +239,7 @@ function Edge({ e }: { e: LEdge }) {
   );
 }
 
-function Node({ n, runs, selected, collapsed }: { n: LNode; runs: Map<string, StateRun> | null; selected: string | null; collapsed: Set<string> }) {
+function Node({ n, runs, selected, collapsed, problems }: { n: LNode } & Marks) {
   const g = n.node;
   if (g.type === "start" || g.type === "end") {
     const r = n.w / 2;
@@ -255,7 +259,8 @@ function Node({ n, runs, selected, collapsed }: { n: LNode; runs: Map<string, St
   const run = runs?.get(g.name);
   const isSel = selected === g.name;
   const fill = run ? FILL[run.status] : "var(--sfn-node-bg)";
-  const stroke = isSel ? "var(--sfn-sel)" : run ? STROKE[run.status] : "var(--sfn-node-border)";
+  const bad = !!problems?.has(g.name);
+  const stroke = isSel ? "var(--sfn-sel)" : bad ? "var(--sfn-bad)" : run ? STROKE[run.status] : "var(--sfn-node-border)";
   const compound = g.children.length > 0;
   const extra = [run && run.entered > 1 ? `×${run.entered}` : "", run && run.failures ? `${run.failures} failed` : "", g.distributed ? "distributed" : ""].filter(Boolean).join(" · ");
 
@@ -275,7 +280,7 @@ function Node({ n, runs, selected, collapsed }: { n: LNode; runs: Map<string, St
         <Toggle name={g.name} open />
         {n.inner.map((ig, i) => (
           <g key={i} transform={`translate(${ig.ox},${ig.oy})`}>
-            <GraphBody lg={ig} runs={runs} selected={selected} collapsed={collapsed} />
+            <GraphBody lg={ig} runs={runs} selected={selected} collapsed={collapsed} problems={problems} />
           </g>
         ))}
       </g>
@@ -283,7 +288,7 @@ function Node({ n, runs, selected, collapsed }: { n: LNode; runs: Map<string, St
   }
   return (
     <g transform={`translate(${n.x},${n.y})`} data-state={g.name} style={{ cursor: "pointer" }}>
-      <rect width={n.w} height={n.h} rx={6} style={{ fill, stroke, strokeWidth: isSel ? 2 : 1.1, strokeDasharray: compound ? "4 2" : undefined }} />
+      <rect width={n.w} height={n.h} rx={6} style={{ fill, stroke, strokeWidth: isSel || bad ? 2 : 1.1, strokeDasharray: bad && !isSel ? "5 3" : compound ? "4 2" : undefined }} />
       <text x={n.w / 2} y={16} textAnchor="middle" style={{ fontWeight: 600, fontSize: 12, fill: "var(--text)" }}>
         {g.name}
       </text>
