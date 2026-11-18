@@ -6,6 +6,7 @@ use crate::sfn::{
     self, ExecutionDetails, ExecutionPage, FullHistory, HistoryPage, MachineDetails, MachineRef,
     Versions,
 };
+use crate::sfn_run::{self as run, SavedInput, StartRequest, Started};
 use tauri::State;
 
 /// Every state machine in the region (names, types, ARNs); details come per page.
@@ -93,4 +94,65 @@ pub async fn sfn_execution_definition(
 #[tauri::command]
 pub async fn sfn_export_svg(path: String, svg: String) -> Result<(), AppError> {
     sfn::save_svg(&path, &svg).await
+}
+
+/// Starts an execution (a write: it runs the workflow).
+#[tauri::command]
+pub async fn sfn_start(
+    state: State<'_, AppState>,
+    request: StartRequest,
+) -> Result<Started, AppError> {
+    state.ensure_writable()?;
+    run::start(&*state.connection()?, &request).await
+}
+
+#[tauri::command]
+pub async fn sfn_stop(
+    state: State<'_, AppState>,
+    arn: String,
+    error: Option<String>,
+    cause: Option<String>,
+) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    run::stop(
+        &*state.connection()?,
+        &arn,
+        error.as_deref(),
+        cause.as_deref(),
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn sfn_redrive(
+    state: State<'_, AppState>,
+    arn: String,
+) -> Result<Option<String>, AppError> {
+    state.ensure_writable()?;
+    run::redrive(&*state.connection()?, &arn).await
+}
+
+/// Saved inputs for `key` ("profile|region|machine"); local, allowed in read-only mode.
+#[tauri::command]
+pub fn sfn_inputs(state: State<'_, AppState>, key: String) -> Vec<SavedInput> {
+    run::list_inputs(&state.settings.dir(), &key)
+}
+
+#[tauri::command]
+pub fn sfn_save_input(
+    state: State<'_, AppState>,
+    key: String,
+    name: String,
+    input: String,
+) -> Result<Vec<SavedInput>, AppError> {
+    run::save_input(&state.settings.dir(), &key, &name, &input)
+}
+
+#[tauri::command]
+pub fn sfn_delete_input(
+    state: State<'_, AppState>,
+    key: String,
+    name: String,
+) -> Result<Vec<SavedInput>, AppError> {
+    run::delete_input(&state.settings.dir(), &key, &name)
 }

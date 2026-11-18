@@ -879,7 +879,13 @@ tab / dialog.
   input / output / error / retries from the history. The execution view
   colours states from the history, live while RUNNING. Export SVG (save
   dialog from Rust; local write with a history rule).
-- 14.3 Run: Start execution (name, input editor, qualifier version / alias);
+- 14.3 ✅ (`src-tauri/src/sfn_run.rs`, `services/sfn/RunDialogs.tsx`; command
+  bar: Start execution on a machine, Re-run / Stop / Redrive on an execution,
+  the same in the executions list's menu; names and inputs (JSON, 256 KB)
+  checked in both layers; a redrive the endpoint doesn't know (MiniStack)
+  gets a plain message; history entries for Express starts point at the
+  machine, since Express executions (ARNs with ":express:") can't be looked
+  up) Run: Start execution (name, input editor, qualifier version / alias);
   saved inputs in `<settings dir>/sfn-inputs.json` keyed
   "profile|region|machine" (own file, atomic write, lock; allowed in
   read-only mode), built-in templates, "Re-run with this input" from any

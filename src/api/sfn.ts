@@ -86,7 +86,41 @@ export const sfnApi = {
   executionDefinition: (arn: string) => call<string>("sfn_execution_definition", { arn }),
   /** Saves an exported graph (a local write). */
   exportSvg: (path: string, svg: string) => call<void>("sfn_export_svg", { path, svg }),
+  /** Starts an execution; refused in read-only mode. */
+  start: (request: StartRequest) => call<{ executionArn: string; name: string; start: string | null }>("sfn_start", { request }),
+  stop: (arn: string, error: string | null, cause: string | null) => call<void>("sfn_stop", { arn, error, cause }),
+  /** Restarts a failed / aborted / timed-out Standard execution from where it stopped. */
+  redrive: (arn: string) => call<string | null>("sfn_redrive", { arn }),
+  /** Saved inputs for "profile|region|machine" (on this computer). */
+  inputs: (key: string) => call<SavedInput[]>("sfn_inputs", { key }),
+  saveInput: (key: string, name: string, input: string) => call<SavedInput[]>("sfn_save_input", { key, name, input }),
+  deleteInput: (key: string, name: string) => call<SavedInput[]>("sfn_delete_input", { key, name }),
 };
+
+export interface StartRequest {
+  machineArn: string;
+  /** A version number or alias name; null runs the latest definition. */
+  qualifier: string | null;
+  /** null lets AWS name it. */
+  name: string | null;
+  input: string;
+}
+
+export interface SavedInput {
+  name: string;
+  input: string;
+}
+
+/** Why AWS would refuse an execution name (null if it wouldn't); the backend checks too. */
+export function executionNameProblem(name: string): string | null {
+  if (!name) return null;
+  if ([...name].length > 80) return "Execution names are at most 80 characters";
+  const bad = [...name].find((c) => /\s/.test(c) || c < " " || '<>{}[]?*"#%\\^|~`$&,;:/'.includes(c));
+  return bad ? `Execution names can't contain ${/\s/.test(bad) ? "spaces" : `"${bad}"`}` : null;
+}
+
+/** Statuses an execution can be redriven from (Standard machines only). */
+export const REDRIVABLE = ["FAILED", "ABORTED", "TIMED_OUT"];
 
 /** "arn:aws:states:r:a:stateMachine:orders" + "run-1" → "arn:aws:states:r:a:execution:orders:run-1". */
 export function executionArn(machineArn: string, execution: string): string {

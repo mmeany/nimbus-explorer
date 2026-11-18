@@ -48,6 +48,13 @@ function s3Parent(key: string): string {
 const s3Uri = (bucket: string, key: string) => `s3://${bucket}/${key}`;
 const s3Place = (bucket: string, prefix: string): Place => ({ service: "s3", bucket, prefix });
 
+/** "arn:…:execution:orders:run-1" → "orders:run-1" and its place. */
+const sfnExecName = (arn: string) => arn.split(":").slice(-2).join(":");
+function sfnExecPlace(arn: string): Place {
+  const [machine, execution] = arn.split(":").slice(-2);
+  return { service: "sfn", view: null, machine, execution, mapRun: null };
+}
+
 const ssmFolder = (name: string): Place & { service: "ssm" } => ({ service: "ssm", path: name.slice(0, name.lastIndexOf("/") + 1) || "/" });
 
 /** Secret name from a name or ARN ("arn:…:secret:prod/db-AbCdEf" → "prod/db"). */
@@ -375,6 +382,16 @@ export const RULES: Record<string, Rule> = {
     place: fnPlace(a.request.name),
     detail: `${a.request.source.kind === "zip" ? a.request.source.path : s3Uri(a.request.source.bucket, a.request.source.key)}${a.request.publish ? ", published" : ""}`,
   }),
+  sfn_start: (a, r) => ({
+    service: "sfn",
+    action: "Start execution",
+    target: r?.name ? `${lastAfter(a.request.machineArn, ":")}:${r.name}` : lastAfter(a.request.machineArn, ":"),
+    // Express executions (ARNs with ":express:") can't be looked up: point at the machine.
+    place: r?.name && !String(r.executionArn ?? "").includes(":express:") ? { service: "sfn", view: null, machine: lastAfter(a.request.machineArn, ":"), execution: r.name, mapRun: null } : { service: "sfn", view: null, machine: lastAfter(a.request.machineArn, ":"), execution: null, mapRun: null },
+    detail: a.request.qualifier ? `on ${a.request.qualifier}` : null,
+  }),
+  sfn_stop: (a) => ({ service: "sfn", action: "Stop execution", target: sfnExecName(a.arn), place: sfnExecPlace(a.arn), detail: a.error ? `error ${a.error}` : null }),
+  sfn_redrive: (a) => ({ service: "sfn", action: "Redrive execution", target: sfnExecName(a.arn), place: sfnExecPlace(a.arn) }),
   sfn_export_svg: (a) => ({ service: "sfn", action: "Export graph", target: base(a.path), detail: `to ${a.path}` }),
   lambda_download_code: (a) => ({ service: "lambda", action: "Download code", target: a.qualifier ? `${a.name}:${a.qualifier}` : a.name, place: fnPlace(a.name), detail: `to ${a.dest}` }),
 

@@ -23,6 +23,7 @@ mod s3;
 mod secrets;
 mod settings;
 mod sfn;
+mod sfn_run;
 mod sns;
 mod sns_publish;
 mod sns_watch;
@@ -197,6 +198,12 @@ pub fn run() {
             commands::sfn::sfn_history_all,
             commands::sfn::sfn_execution_definition,
             commands::sfn::sfn_export_svg,
+            commands::sfn::sfn_start,
+            commands::sfn::sfn_stop,
+            commands::sfn::sfn_redrive,
+            commands::sfn::sfn_inputs,
+            commands::sfn::sfn_save_input,
+            commands::sfn::sfn_delete_input,
             commands::lambda::lambda_list,
             commands::lambda::lambda_get,
             commands::lambda::lambda_env_values,

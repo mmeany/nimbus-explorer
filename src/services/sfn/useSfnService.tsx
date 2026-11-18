@@ -3,13 +3,13 @@
 // the execution view.
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, type AppError } from "../../api/s3";
-import { sfnApi, type ExecutionDetails, type ExecutionSummary, type MachineDetails, type MachineRef } from "../../api/sfn";
-import { CommandButton } from "../../components/CommandButton";
+import { arnTail, REDRIVABLE, sfnApi, type ExecutionDetails, type ExecutionSummary, type MachineDetails, type MachineRef } from "../../api/sfn";
+import { CommandButton, CommandSeparator } from "../../components/CommandButton";
 import type { MenuItem } from "../../components/ContextMenu";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { FilterBox } from "../../components/FilterBox";
-import { RefreshIcon, StateMachineIcon, StepFunctionsIcon } from "../../components/Icons";
+import { PlayIcon, RedriveIcon, RefreshIcon, StateMachineIcon, StepFunctionsIcon, StopIcon } from "../../components/Icons";
 import { PageBar } from "../../components/PageBar";
 import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { formatDate } from "../../format";
@@ -18,6 +18,7 @@ import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePagedDetails, usePaging } from "../../state/paged";
 import { ExecutionView } from "./ExecutionView";
 import { MachineView } from "./MachineView";
+import { StartExecutionDialog, StopExecutionDialog, type StartPreset } from "./RunDialogs";
 
 const COLUMNS: Column[] = [
   { id: "name", label: "State machine", width: 280 },
@@ -50,6 +51,8 @@ export function useSfnService(shell: Shell): ServiceUi {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewMachine, setViewMachine] = useState<MachineDetails | null>(null);
   const [viewExecution, setViewExecution] = useState<ExecutionDetails | null>(null);
+  const [startFor, setStartFor] = useState<{ machine: MachineRef; preset: StartPreset | null } | null>(null);
+  const [stopFor, setStopFor] = useState<{ arn: string; name: string } | null>(null);
 
   useEffect(() => {
     setListing(null);
@@ -140,6 +143,61 @@ export function useSfnService(shell: Shell): ServiceUi {
     [pageRefs, paged.details],
   );
 
+  const denied = () => shell.showFlash("Read-only mode: changes are disabled.");
+  /** The machine on screen, or the single selected row of the list. */
+  const targetMachine = (machine ? byName.get(machine) : selected.size === 1 && listView ? byName.get([...selected][0]) : undefined) ?? null;
+
+  function startExecution(m: MachineRef, preset: StartPreset | null = null) {
+    if (shell.readOnly) return denied();
+    setStartFor({ machine: m, preset });
+  }
+
+  /** "Re-run with this input": the execution's input and the version or alias it ran. */
+  async function rerun(m: MachineRef, e: ExecutionSummary | ExecutionDetails) {
+    if (shell.readOnly) return denied();
+    try {
+      const d = "input" in e ? e : await sfnApi.execution(e.arn);
+      if (d.input === null) return shell.showFlash("AWS didn't return this execution's input (it may be too large), so it can't be re-run from here.");
+      setStartFor({ machine: m, preset: { input: d.input, qualifier: d.aliasArn ? arnTail(d.aliasArn) : d.versionArn ? arnTail(d.versionArn) : null, from: d.name } });
+    } catch (err) {
+      shell.showError(err);
+    }
+  }
+
+  function stopExecution(e: { arn: string; name: string }) {
+    if (shell.readOnly) return denied();
+    setStopFor(e);
+  }
+
+  async function redrive(e: { arn: string; name: string }) {
+    if (shell.readOnly) return denied();
+    const ok = await shell.ask(
+      "Redrive execution",
+      <>
+        <p>
+          Restart <span className="mono">{e.name}</span> from the state where it stopped? States that already succeeded aren't run again; the execution keeps its name and input.
+        </p>
+        <p className="hint">AWS allows this for 14 days after an execution stops, and not for executions started by a Map Run.</p>
+      </>,
+      [
+        { label: "Redrive", value: "yes" },
+        { label: "Cancel", value: "no" },
+      ],
+      "no",
+    );
+    if (ok !== "yes") return;
+    shell.setWorking(`Redriving ${e.name}…`);
+    try {
+      await sfnApi.redrive(e.arn);
+      shell.showFlash(`Redrove ${e.name}.`);
+    } catch (err) {
+      shell.showError(err);
+    } finally {
+      shell.setWorking(null);
+      refresh();
+    }
+  }
+
   function openLogs(group: string) {
     shell.navigate({ service: "logs", group });
   }
@@ -153,6 +211,8 @@ export function useSfnService(shell: Shell): ServiceUi {
       if (logGroup) items.push({ label: "Open log group", onClick: () => openLogs(logGroup) });
       items.push(
         "separator",
+        { label: "Start execution…", disabled: shell.readOnly, onClick: () => startExecution(m) },
+        "separator",
         { label: "Copy name", onClick: () => void shell.copyText(m.name) },
         { label: "Copy ARN", onClick: () => void shell.copyText(m.arn) },
         { label: "Add bookmark…", onClick: () => shell.addBookmark(machinePlace(m.name), null, null) },
@@ -165,8 +225,14 @@ export function useSfnService(shell: Shell): ServiceUi {
 
   function executionMenu(e: ExecutionSummary, x: number, y: number) {
     if (!machine) return;
+    const m = byName.get(machine);
+    const ro = shell.readOnly;
     shell.openMenu(x, y, [
       { label: "Open", bold: true, shortcut: "Enter", onClick: () => go(machine, e.name) },
+      "separator",
+      { label: "Re-run with this input…", disabled: ro || !m, onClick: () => m && void rerun(m, e) },
+      { label: "Stop…", disabled: ro || e.status !== "RUNNING", onClick: () => stopExecution(e) },
+      { label: "Redrive…", disabled: ro || !REDRIVABLE.includes(e.status) || !!e.mapRunArn, onClick: () => void redrive(e) },
       "separator",
       { label: "Copy name", onClick: () => void shell.copyText(e.name) },
       { label: "Copy ARN", onClick: () => void shell.copyText(e.arn) },
@@ -282,7 +348,67 @@ export function useSfnService(shell: Shell): ServiceUi {
     status = `${machine}${viewMachine?.name === machine ? ` · ${viewMachine.kind === "EXPRESS" ? "Express" : "Standard"}` : ""} · ${region}`;
   }
 
-  const commands = active ? <CommandButton icon={<RefreshIcon />} label="Refresh" title="Refresh (F5)" disabled={!connection} onClick={refresh} /> : null;
+  const ro = shell.readOnly;
+  const openExecution = execution && viewExecution?.name === execution ? viewExecution : null;
+  const redrivable = !!openExecution && REDRIVABLE.includes(openExecution.status) && openExecution.redriveStatus !== "NOT_REDRIVABLE" && openExecution.redriveStatus !== "REDRIVABLE_BY_MAP_RUN";
+  const commands = active ? (
+    <>
+      {openExecution && machineRef ? (
+        <>
+          <CommandButton icon={<PlayIcon />} label="Re-run" title="Start a new execution with this one's input" disabled={ro} onClick={() => void rerun(machineRef, openExecution)} />
+          <CommandButton icon={<StopIcon />} label="Stop" title="Stop the running execution" disabled={ro || openExecution.status !== "RUNNING"} onClick={() => stopExecution(openExecution)} />
+          <CommandButton
+            icon={<RedriveIcon />}
+            label="Redrive"
+            title={openExecution.redriveStatusReason ?? "Restart the execution from the state where it stopped"}
+            disabled={ro || !redrivable}
+            onClick={() => void redrive(openExecution)}
+          />
+        </>
+      ) : (
+        <CommandButton icon={<PlayIcon />} label="Start execution" title="Start an execution of the state machine" disabled={ro || !targetMachine} onClick={() => targetMachine && startExecution(targetMachine)} />
+      )}
+      <CommandSeparator />
+      <CommandButton icon={<RefreshIcon />} label="Refresh" title="Refresh (F5)" disabled={!connection} onClick={refresh} />
+    </>
+  ) : null;
 
-  return { tree, content, commands, status, busy: active && loading, refresh, dialogs: null };
+  const dialogs = (
+    <>
+      {startFor && (
+        <StartExecutionDialog
+          key={startFor.machine.arn}
+          shell={shell}
+          machine={startFor.machine}
+          inputsKey={`${profile ?? ""}|${region}|${startFor.machine.name}`}
+          preset={startFor.preset}
+          onClose={() => setStartFor(null)}
+          onStarted={(name, express) => {
+            const m = startFor.machine;
+            setStartFor(null);
+            if (express) shell.showFlash(`Started ${name}. Express runs show only in the machine's log group.`);
+            else {
+              shell.showFlash(`Started ${name}.`);
+              go(m.name, name);
+            }
+            refresh();
+          }}
+        />
+      )}
+      {stopFor && (
+        <StopExecutionDialog
+          name={stopFor.name}
+          onClose={() => setStopFor(null)}
+          onStop={async (error, cause) => {
+            await sfnApi.stop(stopFor.arn, error, cause);
+            shell.showFlash(`Stopped ${stopFor.name}.`);
+            setStopFor(null);
+            refresh();
+          }}
+        />
+      )}
+    </>
+  );
+
+  return { tree, content, commands, status, busy: active && loading, refresh, dialogs };
 }

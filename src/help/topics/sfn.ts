@@ -27,6 +27,24 @@ Problems in the definition, like a transition to a state that doesn't exist, are
 
 The colours come from the execution's event history; for very long histories, only the first 25,000 events are read.`,
   },
+  "sfn.start": {
+    title: "Start execution",
+    body: `Runs the state machine with a JSON input (at most 256 KB). **This runs your workflow, which can change things**, so it's disabled in read-only mode.
+
+- **Saved inputs**: **Save as…** keeps an input for this machine on this computer; pick one from the list to load it. **Delete** removes the saved copy only.
+- **Start from a template…**: an empty object, an order, a list of items for a Map state, an S3 event or a schedule.
+- **Name**: optional. AWS picks a unique one if you leave it empty. A Standard machine's execution names must be unique for 90 days.
+- **Run**: the latest definition, a published version, or an alias (which may split executions between two versions).
+- **Ctrl+Enter** starts it.
+
+A Standard execution opens once it has started. An Express machine keeps no history to look up; its run appears in the machine's log group when logging is on.`,
+  },
+  "sfn.stop": {
+    title: "Stop execution",
+    body: `Stops a running execution; it ends as **aborted**. The error and cause are optional and are recorded on the execution. Work a Task already started (a Lambda call, a batch job) isn't undone.
+
+A stopped Standard execution can be **redriven**: restarted from the state where it stopped, within 14 days.`,
+  },
   "sfn.machine": {
     title: "Definition",
     body: `The machine's definition (Amazon States Language). The states table lists every state, including the ones inside Parallel branches and Map item processors, with the next state, the resource a Task calls, and its comment. **Definition** shows the ASL itself as a tree or as text.
@@ -40,6 +58,8 @@ The header shows the type, status and query language (JSONPath or JSONata). **Co
 - **Status**: show only running, succeeded, failed, timed out, aborted or pending-redrive executions.
 - **Open** an execution: Enter or double-click.
 - **Page size**: 100, 500 or 1,000. Ctrl+PgUp / Ctrl+PgDn turn pages.
+
+- **Right-click** an execution to re-run it with the same input, stop it (running) or redrive it (failed, aborted or timed out).
 
 Express machines don't keep executions that AWS can list. Their runs appear in the machine's log group (the Logs tab) when logging is on.`,
   },
@@ -63,6 +83,8 @@ If logging is off, the tab says so. Turn it on in the machine's settings (level 
   "sfn.execution": {
     title: "Execution",
     body: `One execution: status, start and stop times, the version or alias it ran, its input and output, and the error and cause when it failed. While it's running, the view checks again every 5 seconds.
+
+Commands: **Re-run** starts a new execution with this one's input (and the version or alias it ran), **Stop** ends a running execution, **Redrive** restarts a failed, aborted or timed-out one from the state where it stopped (within 14 days; not for executions a Map Run started). All three are disabled in read-only mode.
 
 **Event history** lists every event oldest first, a page at a time. Select an event to see its details (state input and output, task parameters, errors). AWS leaves out input or output that's too large, and the view says so.`,
   },
