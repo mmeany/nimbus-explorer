@@ -63,7 +63,7 @@ Minimise shipped dependencies; every addition needs a reason.
   no fixed release in the SDK yet). Consequences: no S3 Multi-Region Access
   Points, no profiles created with `aws login`. Re-check before turning
   either back on.
-- Build tools (vite, typescript, tauri-cli) are not shipped; CVEs there don't
+- Build tools (vite, typescript, tauri-cli, vitest) are not shipped; CVEs there don't
   require app rebuilds.
 
 ## Code layout & rules
@@ -257,6 +257,9 @@ folder-level rename/copy.
 - `npm run tauri dev`: run the app with hot reload
 - `npm run tauri build`: release build + installers (`src-tauri/target/release/bundle/`)
 - `npm run build`: typecheck + build frontend only
+- `npm test`: frontend unit tests (Vitest, node environment; `*.test.ts` next to
+  the code, shared test data in a `fixtures.ts` that only tests import). Logic
+  without React or Tauri (parsers, layout, status) gets tests here.
 - `cd src-tauri && cargo test`: unit tests
 - `cd src-tauri && cargo check`: also run it (not just tests) before committing
   Rust changes. Tests enable tokio `macros` / `rt-multi-thread` (dev-dependency),
