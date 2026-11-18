@@ -6,6 +6,7 @@ use crate::sfn::{
     self, ExecutionDetails, ExecutionPage, FullHistory, HistoryPage, MachineDetails, MachineRef,
     Versions,
 };
+use crate::sfn_activities::{self as activities, Activity};
 use crate::sfn_admin::{self as admin, CreateRequest, UpdateOutcome, UpdateRequest, Validation};
 use crate::sfn_map::{self as map, MapRunChange, MapRunDetails, MapRunRef};
 use crate::sfn_run::{self as run, SavedInput, StartRequest, Started};
@@ -267,4 +268,30 @@ pub async fn sfn_create(
 pub async fn sfn_delete(state: State<'_, AppState>, arn: String) -> Result<(), AppError> {
     state.ensure_writable()?;
     admin::delete(&*state.connection()?, &arn).await
+}
+
+/// Every activity in the region.
+#[tauri::command]
+pub async fn sfn_activities(state: State<'_, AppState>) -> Result<Vec<Activity>, AppError> {
+    activities::list(&*state.connection()?).await
+}
+
+#[tauri::command]
+pub async fn sfn_activity(state: State<'_, AppState>, arn: String) -> Result<Activity, AppError> {
+    activities::describe(&*state.connection()?, &arn).await
+}
+
+#[tauri::command]
+pub async fn sfn_create_activity(
+    state: State<'_, AppState>,
+    name: String,
+) -> Result<String, AppError> {
+    state.ensure_writable()?;
+    activities::create(&*state.connection()?, &name).await
+}
+
+#[tauri::command]
+pub async fn sfn_delete_activity(state: State<'_, AppState>, arn: String) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    activities::delete(&*state.connection()?, &arn).await
 }

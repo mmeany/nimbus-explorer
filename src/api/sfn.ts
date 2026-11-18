@@ -115,7 +115,20 @@ export const sfnApi = {
   create: (request: { name: string; kind: string; definition: string; roleArn: string; logging: { level: string; includeExecutionData: boolean; logGroupArn: string | null } | null; tracing: boolean; publish: boolean; versionDescription: string | null }) =>
     call<string>("sfn_create", { request }),
   deleteMachine: (arn: string) => call<void>("sfn_delete", { arn }),
+  activities: () => call<Activity[]>("sfn_activities"),
+  activity: (arn: string) => call<Activity>("sfn_activity", { arn }),
+  createActivity: (name: string) => call<string>("sfn_create_activity", { name }),
+  deleteActivity: (arn: string) => call<void>("sfn_delete_activity", { arn }),
 };
+
+export interface Activity {
+  name: string;
+  arn: string;
+  created: string | null;
+  /** Only from `activity`. */
+  encryption: { kind: string; kmsKeyId: string | null; reusePeriodSecs: number | null } | null;
+  tags: [string, string][];
+}
 
 export interface Validation {
   /** OK or FAIL. */

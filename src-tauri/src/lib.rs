@@ -23,6 +23,7 @@ mod s3;
 mod secrets;
 mod settings;
 mod sfn;
+mod sfn_activities;
 mod sfn_admin;
 mod sfn_map;
 mod sfn_run;
@@ -214,6 +215,10 @@ pub fn run() {
             commands::sfn::sfn_update,
             commands::sfn::sfn_create,
             commands::sfn::sfn_delete,
+            commands::sfn::sfn_activities,
+            commands::sfn::sfn_activity,
+            commands::sfn::sfn_create_activity,
+            commands::sfn::sfn_delete_activity,
             commands::sfn::sfn_publish_version,
             commands::sfn::sfn_save_alias,
             commands::sfn::sfn_delete_alias,

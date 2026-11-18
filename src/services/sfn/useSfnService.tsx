@@ -18,6 +18,7 @@ import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePagedDetails, usePaging } from "../../state/paged";
 import { ExecutionView } from "./ExecutionView";
 import { MachineView } from "./MachineView";
+import { useActivities } from "./Activities";
 import { MachineEditorDialog } from "./MachineEditorDialog";
 import { MapRunSettingsDialog, MapRunView } from "./MapRunView";
 import { StartExecutionDialog, StopExecutionDialog, type StartPreset } from "./RunDialogs";
@@ -100,6 +101,8 @@ export function useSfnService(shell: Shell): ServiceUi {
   const machines = useMemo(() => (all && filter ? all.filter((m) => m.name.startsWith(filter)) : all), [all, filter]);
   const byName = useMemo(() => new Map((all ?? []).map((m) => [m.name, m])), [all]);
   const listView = active && !machine && place.service === "sfn" && !place.view;
+  const activitiesView = active && place.service === "sfn" && place.view === "activities";
+  const activities = useActivities(shell, activitiesView, open);
   const paging = usePaging(`${scope}|${filter}`, machines?.length ?? 0, "sfn.pageSize", listView);
   const pageRefs = useMemo(() => paging.slice(machines ?? []), [paging, machines]);
   const pageArns = useMemo(() => pageRefs.map((m) => m.arn), [pageRefs]);
@@ -353,6 +356,7 @@ export function useSfnService(shell: Shell): ServiceUi {
       onClick={() => go(null)}
       onToggle={() => setOpen((v) => !v)}
     >
+      {activities.treeRow}
       {listing?.error ? (
         <TreeNote depth={2}>Couldn't list state machines</TreeNote>
       ) : !machines ? (
@@ -586,5 +590,16 @@ export function useSfnService(shell: Shell): ServiceUi {
     </>
   );
 
+  if (activitiesView) {
+    return {
+      tree,
+      content: activities.content,
+      commands: activities.commands,
+      status: activities.status,
+      busy: activities.busy,
+      refresh: activities.refresh,
+      dialogs: activities.dialogs,
+    };
+  }
   return { tree, content, commands, status, busy: active && loading, refresh, dialogs };
 }

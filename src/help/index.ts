@@ -65,6 +65,7 @@ export function placeTopic(p: Place): HelpTopicId {
     case "lambda":
       return p.fn ? "lambda.details" : "lambda.functions";
     case "sfn":
+      if (p.view === "activities") return "sfn.activities";
       if (p.mapRun) return "sfn.maprun";
       if (p.execution) return "sfn.execution";
       return p.machine ? "sfn.machine" : "sfn.machines";

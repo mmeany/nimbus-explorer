@@ -891,6 +891,10 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .sfn-publish { gap: 8px; }
 .nowrap { white-space: nowrap; }
 .sfn-create-bar { gap: 8px; flex-wrap: wrap; }
+.sfn-activities-note { margin: 6px 10px; }
+.sfn-snippet { margin: 0; padding: 6px 8px; border: 1px solid var(--border-light); background: var(--panel-bg); white-space: pre-wrap; }
+.sfn-cmd { gap: 8px; align-items: flex-start; }
+.sfn-cmd code { flex: 1; word-break: break-all; }
 .sfn-create-bar .form-label { margin-top: 0; }
 .sfn-create-bar #sc-name { width: 240px; }
 .sfn-publish .text-input { flex: 1; }

@@ -483,3 +483,14 @@ export function ExecutionIcon({ size = 16 }: P) {
     </svg>
   );
 }
+
+/** A Step Functions activity: a worker's gear on a task card. */
+export function ActivityIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="1.5" y="3" width="13" height="10" rx="1.5" fill="#fbdbe6" stroke="#c43a69" strokeWidth="0.9" />
+      <circle cx="8" cy="8" r="2.4" fill="none" stroke="#c43a69" strokeWidth="1.2" />
+      <path d="M8 4.6 V5.6 M8 10.4 V11.4 M4.6 8 H5.6 M10.4 8 H11.4" stroke="#c43a69" strokeWidth="1.2" />
+    </svg>
+  );
+}

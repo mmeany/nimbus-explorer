@@ -67,6 +67,16 @@ Without a Label on the Map state, AWS names the run with a generated id instead 
 
 Only this run changes; the next run uses the Map state's definition again.`,
   },
+  "sfn.activities": {
+    title: "Activities",
+    body: `An activity is a Task that your own code does: a worker anywhere (a server, a container, a laptop) asks Step Functions for work with **GetActivityTask**, gets the input and a task token, and answers with **SendTaskSuccess** or **SendTaskFailure** (and **SendTaskHeartbeat** while it works). A Task state uses the activity by putting its ARN in Resource.
+
+- **Details** (Enter): the ARN, encryption and tags, a Task state snippet, and AWS CLI commands for a worker (your profile and region filled in).
+- **New activity**: a name (1 to 80 characters, no spaces or special characters).
+- **Delete** (Del): asks first. State machines that use it fail at that Task from then on.
+
+The list shows every activity in the region; the tree shows how many there are.`,
+  },
   "sfn.create": {
     title: "New state machine",
     body: `Create a state machine from a template or your own definition.

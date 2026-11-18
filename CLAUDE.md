@@ -930,7 +930,12 @@ tab / dialog.
   Del with typed confirmation) Create / delete state machines: Standard or Express, from a template
   or pasted ASL, role ARN as a text field (no IAM crate), logging; delete
   with typed confirmation.
-- 14.8 Activities (tree node): list, describe, create, delete (asks).
+- 14.8 ✅ (`src-tauri/src/sfn_activities.rs`, `services/sfn/Activities.tsx`
+  `useActivities`, which the controller hands the whole view to when
+  `place.view === "activities"`; details dialog with a Task snippet and
+  worker CLI commands (profile and region filled in; `--endpoint-url` only
+  for the app's own endpoint override, since the CLI reads a profile's
+  endpoint_url itself)) Activities (tree node): list, describe, create, delete (asks).
 - 14.9 Export the executions list or one execution's history to JSON lines /
   CSV (`.s3x-part` then rename; local write, allowed in read-only mode).
 - 14.10 Docs (`docs/step-functions.md`, README, help topics).
