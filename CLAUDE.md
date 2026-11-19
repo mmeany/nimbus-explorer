@@ -267,7 +267,8 @@ folder-level rename/copy.
   tests but break the release build.
 - `cd src-tauri && cargo test -- --ignored --test-threads=1`: emulator tests;
   need an S3 emulator on `localhost:4566` (LocalStack or `moto_server -p 4566`;
-  the Step Functions tests need MiniStack, which runs state machines)
+  the Step Functions and ElastiCache tests need MiniStack, which runs state
+  machines and real Valkey / Redis containers)
 
 ## Services plan (agreed 2026-10-25; build in this order, stop after each phase)
 
@@ -1014,4 +1015,4 @@ connections, no Redis client crate), metrics.
   group shows its members' access strings and links to the caches using
   it; a user's groups are also filled in from group member lists) Users & user groups (tree node, view only): users (access string,
   auth type), groups (members), which caches use each group.
-- 15.9 Docs (`docs/elasticache.md`, README, help topics).
+- 15.9 ✅ Docs (`docs/elasticache.md`, README, help topics).
