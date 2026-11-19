@@ -1016,3 +1016,66 @@ connections, no Redis client crate), metrics.
   it; a user's groups are also filled in from group member lists) Users & user groups (tree node, view only): users (access string,
   auth type), groups (members), which caches use each group.
 - 15.9 ✅ Docs (`docs/elasticache.md`, README, help topics).
+
+### Phase 16: IAM (agreed 2026-11-19)
+Agreed in a Q&A with the owner: users, groups, roles, policies and the
+account overview; **view only** (no IAM writes at all); policy simulator,
+policy validation and unused credentials; a role picker for other services.
+Out of scope: identity providers, instance profiles as a view, server
+certificates, service last accessed data, any create / attach / edit /
+delete. New crates: `aws-sdk-iam` and `aws-sdk-accessanalyzer` (default
+features off, same rustls+ring client; add them to the dependency policy
+when introduced). IAM is global: it ignores the region switcher (like S3);
+Access Analyzer is regional and uses the selected region. Tree order: IAM
+last, after Secrets Manager. Generating a credential report changes no
+configuration, so it's allowed in read-only mode (no `ensure_writable`);
+local exports get history rules. Emulator tests: MiniStack where it has
+the operation, else the test accepts the refusal (check its docs per item).
+Usual rules: "Add bookmark…" in row and tree menus, `storageKey` on every
+`FileList`, help topic per view / tab / dialog, one commit per item.
+- 16.1 Browse principals (`src-tauri/src/iam.rs`, `services/iam/`; Place
+  `{service:"iam", kind:"users"|"groups"|"roles"|"policies"|"account"|null,
+  id}`). Users, groups and roles: names and list fields load in full (List*
+  return them cheaply), paged on screen, path prefix filter with the
+  remembered history; tags and last used fetched for the visible page only
+  (Phase 7 pattern). User view: groups, attached and inline policies,
+  permissions boundary, console password (exists / last used, never more),
+  access keys (ID, status, created, last used service / region / date;
+  never secrets), MFA devices, tags. Group view: members, attached and
+  inline policies. Role view: trust policy (DataTree + who can assume it,
+  parsed), attached and inline policies, permissions boundary, max session
+  duration, last used, instance profiles (as a field), service-linked
+  marker, tags. Policy documents arrive URL-encoded and are decoded in Rust.
+- 16.2 Policies: customer-managed and AWS-managed (scope toggle, "attached
+  only", name filter), paged on screen; policy view with the default
+  version's document (DataTree / JSON), versions with Compare (DiffView),
+  and where it's attached (ListEntitiesForPolicy, linking to the
+  principals). Inline policies open in the same document viewer.
+- 16.3 Account overview (tree node): GetAccountSummary (usage against
+  quotas), password policy, account alias, and the credential report
+  (GenerateCredentialReport, polled until ready, CSV parsed in Rust; export
+  to a file). **Unused credentials**: from the credential report, passwords
+  and access keys not used for N days (remembered) or never used, plus
+  active keys older than N days, each linking to its user.
+- 16.4 Policy simulator (`iam_simulate.rs`, a tab on users, groups and
+  roles): SimulatePrincipalPolicy with actions (free text, comma / line
+  separated, wildcards), optional resource ARNs, context keys, and an
+  optional extra policy to test (pasted JSON); results per action and
+  resource: decision (allowed / explicit deny / implicit deny), matched
+  statements shown in their policy, missing context values, permissions
+  boundary and organisations effects. Simulating writes nothing.
+- 16.5 Policy validation (`accessanalyzer.rs`): Access Analyzer
+  ValidatePolicy on any document the app shows (identity policies, trust
+  policies as `AWS::IAM::AssumeRolePolicyDocument`) and in a "Validate
+  policy" dialog for pasted JSON (identity / resource / SCP). Findings
+  grouped by severity (error, security warning, warning, suggestion),
+  highlighted at their location in the document, with the learn-more link
+  shown as text.
+- 16.6 Role picker and links (`components/RolePicker.tsx`): in Step
+  Functions' create / edit dialog the role ARN field gets a picker of roles
+  whose trust policy allows the service principal (`states.amazonaws.com`),
+  filterable, other roles behind "Show all"; typing an ARN still works.
+  Role ARNs of this account in Lambda configuration, ECS task definitions,
+  Step Functions configuration and RDS (monitoring / associated roles) open
+  the IAM role view; other accounts' ARNs stay text.
+- 16.7 Docs (`docs/iam.md` with the permissions list, README, help topics).
