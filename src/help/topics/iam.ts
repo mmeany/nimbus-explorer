@@ -154,6 +154,29 @@ Each result is **Allowed**, **Denied (explicit)** (a Deny matched) or **Denied (
 
 Inputs and results are kept while the app runs.`,
   },
+  "iam.validate": {
+    title: "Policy validation",
+    body: `**Validate** under a policy document checks it with IAM Access Analyzer (ValidatePolicy, in the selected region). Nothing is changed.
+
+- **Errors**: the policy is invalid or won't work as written (a misspelt action, bad JSON grammar).
+- **Security warnings**: it grants more than intended (for example \`iam:PassRole\` on \`*\`).
+- **Warnings** and **suggestions**: likely mistakes and simpler ways to write it.
+
+Click a finding to see where it is in the document; every finding is marked, coloured by severity. The link under a finding is AWS's explanation (copy it to open it in a browser). Trust policies are checked as role trust policies.
+
+Emulators usually don't support Access Analyzer.`,
+  },
+  "iam.validateDialog": {
+    title: "Validate policy",
+    body: `Paste policy JSON and check it with IAM Access Analyzer.
+
+- **Identity policy**: for users, groups and roles.
+- **Role trust policy**: who may assume a role.
+- **Resource policy**: attached to a resource; pick a resource type (S3 bucket, DynamoDB table…) for extra checks.
+- **SCP** / **RCP**: AWS Organizations service and resource control policies.
+
+Findings are grouped by severity and marked in the document. Nothing is saved.`,
+  },
   "iam.policy.attached": {
     title: "Attached to",
     body: `The users, user groups and roles in this account that have the policy attached, and those using it as their **permissions boundary** (users and roles only). Click a name to open it.`,

@@ -920,3 +920,19 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .sim-match { margin: 6px 0 10px; }
 .sim-doc { max-height: 320px; overflow: auto; margin: 4px 0; padding: 6px 8px; border: 1px solid var(--border); white-space: pre; }
 .sim-doc mark { background: var(--sel); color: inherit; }
+.pv-block { margin: 4px 0 8px; }
+.pv-finding { padding: 4px 6px; margin: 2px 0; border: 1px solid transparent; cursor: pointer; }
+.pv-finding.selected { border-color: var(--sel-border); background: var(--sel); }
+.props-section.pv-error, .qbadge.pv-error { color: var(--danger); }
+.qbadge.pv-error { border-color: var(--danger); background: transparent; }
+.props-section.pv-security, .qbadge.pv-security { color: var(--danger); }
+.qbadge.pv-security { border-color: var(--danger); background: transparent; }
+.props-section.pv-warning, .qbadge.pv-warning { color: var(--badge-custom-text); }
+.qbadge.pv-warning { border-color: var(--badge-custom-text); background: transparent; }
+.qbadge.pv-suggestion { border-color: var(--muted); color: var(--muted); background: transparent; }
+.sim-doc mark.pv-error, .sim-doc mark.pv-security { background: transparent; text-decoration: underline wavy var(--danger); }
+.sim-doc mark.pv-warning { background: transparent; text-decoration: underline wavy var(--badge-custom-text); }
+.sim-doc mark.pv-suggestion { background: transparent; text-decoration: underline dotted var(--muted); }
+.sim-doc mark.selected { background: var(--sel); }
+.pv-dialog { width: min(860px, 94vw); }
+.pv-input.text-input { width: 100%; box-sizing: border-box; height: auto; resize: vertical; padding: 3px 6px; margin: 6px 0; }

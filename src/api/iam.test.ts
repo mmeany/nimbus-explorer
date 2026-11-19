@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysSince, filterPolicies, parseActions, splitList, statementRange, limitRows, quotaRows, unusedCredentials, type CredentialRow, type KeyCredential, matchesFilter, policyNameOf, prettyJson, sessionText, trustText, type PolicySummary, type Trust } from "./iam";
+import { daysSince, filterPolicies, groupFindings, highlightSegments, type Finding, parseActions, splitList, statementRange, limitRows, quotaRows, unusedCredentials, type CredentialRow, type KeyCredential, matchesFilter, policyNameOf, prettyJson, sessionText, trustText, type PolicySummary, type Trust } from "./iam";
 
 const t = (kind: string, principal: string): Trust => ({ effect: "Allow", kind, principal, actions: ["sts:AssumeRole"], conditions: false, sid: null });
 
@@ -118,5 +118,26 @@ describe("iam simulator", () => {
     expect(statementRange(doc, [3, 5], [3, 23])).toEqual(['{\n  "Statement": [\n    ', '{"Effect": "Allow"}', "\n  ]\n}"]);
     expect(statementRange(doc, [9, 1], [9, 2])).toBeNull();
     expect(statementRange(doc, null, [1, 1])).toBeNull();
+  });
+});
+
+describe("policy validation", () => {
+  const f = (severity: string, start: number, end: number): Finding => ({ severity, issueCode: "X", details: "", learnMore: "", locations: [{ path: "", start, end, line: 1, column: start }] });
+
+  it("groups findings by severity", () => {
+    const g = groupFindings([f("SUGGESTION", 0, 1), f("ERROR", 0, 1), f("SUGGESTION", 2, 3)]);
+    expect(g.map((x) => [x.severity, x.items.map((i) => i.index)])).toEqual([["ERROR", [1]], ["SUGGESTION", [0, 2]]]);
+  });
+
+  it("marks the document by location", () => {
+    const s = highlightSegments("abcdefgh", [f("WARNING", 1, 5), f("ERROR", 3, 4)], 0);
+    expect(s).toEqual([
+      { text: "a", severity: null, selected: false },
+      { text: "bc", severity: "WARNING", selected: true },
+      { text: "d", severity: "ERROR", selected: true },
+      { text: "e", severity: "WARNING", selected: true },
+      { text: "fgh", severity: null, selected: false },
+    ]);
+    expect(highlightSegments("ab", [f("ERROR", 5, 9)], null)).toEqual([{ text: "ab", severity: null, selected: false }]);
   });
 });

@@ -18,6 +18,7 @@ import { IAM_KIND_LABEL, IAM_ROOT, iamIdLabel, type IamKind, type Place } from "
 import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePagedDetails, usePaging } from "../../state/paged";
 import { AccountView } from "./AccountView";
+import { ValidatePolicyDialog } from "./PolicyValidation";
 import { PolicyView } from "./PolicyViews";
 import { GroupView, RoleView, UserView } from "./PrincipalViews";
 
@@ -149,6 +150,7 @@ export function useIamService(shell: Shell): ServiceUi {
   const go = useCallback((p: Partial<Place & { service: "iam" }>) => shell.navigate({ ...IAM_ROOT, ...p }), [shell]);
 
   const [open, setOpen] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [expanded, setExpanded] = useState<Set<IamKind>>(new Set());
   const [reloadToken, setReloadToken] = useState(0);
   const [filters, setFilters] = useState<Record<IamKind, string>>({ users: "", groups: "", roles: "", policies: "", account: "" });
@@ -503,7 +505,12 @@ export function useIamService(shell: Shell): ServiceUi {
   }
 
   const anyLoading = users.loading || groups.loading || roles.loading || policies.loading;
-  const commands = active ? <CommandButton icon={<RefreshIcon />} label="Refresh" title="Refresh (F5)" disabled={!connection} onClick={refresh} /> : null;
+  const commands = active ? (
+    <>
+      <CommandButton icon={<RefreshIcon />} label="Refresh" title="Refresh (F5)" disabled={!connection} onClick={refresh} />
+      <CommandButton icon={<IamPolicyIcon />} label="Validate policy…" title="Check pasted policy JSON with IAM Access Analyzer" disabled={!connection} onClick={() => setValidating(true)} />
+    </>
+  ) : null;
 
-  return { tree, content, commands, status, busy: active && anyLoading, refresh, dialogs: null };
+  return { tree, content, commands, status, busy: active && anyLoading, refresh, dialogs: validating ? <ValidatePolicyDialog onClose={() => setValidating(false)} /> : null };
 }

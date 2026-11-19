@@ -112,3 +112,12 @@ pub async fn iam_simulate(
 ) -> Result<Vec<crate::iam_simulate::SimResult>, AppError> {
     crate::iam_simulate::simulate(&*state.connection()?, &request).await
 }
+
+/// Access Analyzer ValidatePolicy (regional; changes nothing).
+#[tauri::command]
+pub async fn iam_validate_policy(
+    state: State<'_, AppState>,
+    request: crate::accessanalyzer::ValidateRequest,
+) -> Result<Vec<crate::accessanalyzer::Finding>, AppError> {
+    crate::accessanalyzer::validate(&*state.connection()?, &request).await
+}

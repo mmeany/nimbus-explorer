@@ -50,7 +50,7 @@ Minimise shipped dependencies; every addition needs a reason.
   (`preserve_order`, so YAML/JSON keys keep document order), `tokio`
   (sync, fs, io-util, rt, time), the AWS crates above plus `aws-sdk-ssm`,
   `aws-sdk-sqs`, `aws-sdk-sns`, `aws-sdk-dynamodb`, `aws-sdk-rds`,
-  `aws-sdk-rdsdata`, `aws-sdk-cloudwatchlogs`, `aws-sdk-lambda`, `aws-sdk-ecs`, `aws-sdk-sfn`, `aws-sdk-elasticache`, `aws-sdk-iam` and `aws-sdk-secretsmanager` (default features off) (+ `aws-smithy-types` for base64, `aws-smithy-runtime-api` (already part of
+  `aws-sdk-rdsdata`, `aws-sdk-cloudwatchlogs`, `aws-sdk-lambda`, `aws-sdk-ecs`, `aws-sdk-sfn`, `aws-sdk-elasticache`, `aws-sdk-iam`, `aws-sdk-accessanalyzer` and `aws-sdk-secretsmanager` (default features off) (+ `aws-smithy-types` for base64, `aws-smithy-runtime-api` (already part of
   the SDK) to fetch Lambda code download links with the SDK's own HTTP client,
   `aws-credential-types` for credential expiry), `yaml-rust2` (no default
   features) for YAML previews.
@@ -1098,7 +1098,17 @@ Usual rules: "Add bookmark…" in row and tree menus, `storageKey` on every
   resource: decision (allowed / explicit deny / implicit deny), matched
   statements shown in their policy, missing context values, permissions
   boundary and organisations effects. Simulating writes nothing.
-- 16.5 Policy validation (`accessanalyzer.rs`): Access Analyzer
+- 16.5 ✅ (`src-tauri/src/accessanalyzer.rs`, `services/iam/PolicyValidation.tsx`:
+  `ValidateButton` under every `PolicyDocument` (managed, inline, versions;
+  trust policies as ROLE_TRUST), and the Validate policy… command opening
+  `ValidatePolicyDialog` (identity / trust / resource with optional resource
+  type / SCP / RCP); findings sorted by severity in Rust, grouped and marked
+  with `highlightSegments` (0-based offsets from the span, clamped; the most
+  severe finding wins where they overlap); the first listed finding starts
+  selected; an empty or 400 error from an emulator becomes a plain message.
+  MiniStack has no ValidatePolicy, so the emulator test accepts the refusal
+  and the findings view was checked by rendering `Findings` with sample data)
+  Policy validation (`accessanalyzer.rs`): Access Analyzer
   ValidatePolicy on any document the app shows (identity policies, trust
   policies as `AWS::IAM::AssumeRolePolicyDocument`) and in a "Validate
   policy" dialog for pasted JSON (identity / resource / SCP). Findings

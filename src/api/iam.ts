@@ -433,3 +433,82 @@ export function statementRange(doc: string, start: [number, number] | null, end:
   if (a < 0 || b < a) return null;
   return [doc.slice(0, a), doc.slice(a, b + 1), doc.slice(b + 1)];
 }
+
+// ---------------------------------------------------------------------------
+// Policy validation with Access Analyzer (16.5)
+
+export type PolicyKind = "identity" | "trust" | "resource" | "scp" | "rcp";
+
+export interface FindingLocation {
+  path: string;
+  /** 0-based offsets: start inclusive, end exclusive. */
+  start: number;
+  end: number;
+  line: number;
+  column: number;
+}
+
+export interface Finding {
+  severity: "ERROR" | "SECURITY_WARNING" | "WARNING" | "SUGGESTION" | string;
+  issueCode: string;
+  details: string;
+  learnMore: string;
+  locations: FindingLocation[];
+}
+
+export const iamValidateApi = {
+  validate: (document: string, kind: PolicyKind, resourceType: string | null = null) => call<Finding[]>("iam_validate_policy", { request: { document, kind, resourceType } }),
+};
+
+export const SEVERITIES = ["ERROR", "SECURITY_WARNING", "WARNING", "SUGGESTION"] as const;
+
+export const SEVERITY_LABEL: Record<string, string> = { ERROR: "Errors", SECURITY_WARNING: "Security warnings", WARNING: "Warnings", SUGGESTION: "Suggestions" };
+
+export const POLICY_KIND_LABEL: Record<PolicyKind, string> = {
+  identity: "Identity policy",
+  trust: "Role trust policy",
+  resource: "Resource policy",
+  scp: "Service control policy (SCP)",
+  rcp: "Resource control policy (RCP)",
+};
+
+export const RESOURCE_TYPES = ["AWS::S3::Bucket", "AWS::S3::AccessPoint", "AWS::S3::MultiRegionAccessPoint", "AWS::S3ObjectLambda::AccessPoint", "AWS::S3Express::DirectoryBucket", "AWS::S3Express::AccessPoint", "AWS::DynamoDB::Table", "AWS::DynamoDB::Stream"] as const;
+
+function severityRank(s: string): number {
+  const i = (SEVERITIES as readonly string[]).indexOf(s);
+  return i < 0 ? SEVERITIES.length : i;
+}
+
+/** Findings in severity order, each with its index in `findings`. */
+export function groupFindings(findings: Finding[]): { severity: string; items: { f: Finding; index: number }[] }[] {
+  const groups = new Map<string, { f: Finding; index: number }[]>();
+  findings.forEach((f, index) => groups.set(f.severity, [...(groups.get(f.severity) ?? []), { f, index }]));
+  return [...groups.entries()].sort((a, b) => severityRank(a[0]) - severityRank(b[0])).map(([severity, items]) => ({ severity, items }));
+}
+
+export interface Segment {
+  text: string;
+  /** The most severe finding covering this text, if any. */
+  severity: string | null;
+  /** Covered by the selected finding. */
+  selected: boolean;
+}
+
+/** The document cut into runs, marked by the findings' locations (offsets clamped to the text). */
+export function highlightSegments(doc: string, findings: Finding[], selected: number | null): Segment[] {
+  const spans = findings.flatMap((f, i) =>
+    f.locations.map((l) => ({ start: Math.max(0, Math.min(doc.length, l.start)), end: Math.max(0, Math.min(doc.length, Math.max(l.end, l.start + 1))), rank: severityRank(f.severity), severity: f.severity, i })),
+  );
+  const cuts = [...new Set([0, doc.length, ...spans.flatMap((s) => [s.start, s.end])])].sort((a, b) => a - b);
+  const out: Segment[] = [];
+  for (let k = 0; k + 1 < cuts.length; k++) {
+    const [a, b] = [cuts[k], cuts[k + 1]];
+    const over = spans.filter((s) => s.start <= a && s.end >= b);
+    const top = over.sort((x, y) => x.rank - y.rank)[0];
+    const seg = { text: doc.slice(a, b), severity: top?.severity ?? null, selected: over.some((s) => s.i === selected) };
+    const last = out[out.length - 1];
+    if (last && last.severity === seg.severity && last.selected === seg.selected) last.text += seg.text;
+    else out.push(seg);
+  }
+  return out;
+}

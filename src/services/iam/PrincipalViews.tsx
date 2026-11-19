@@ -438,7 +438,7 @@ function RoleBody({ shell, r }: { shell: Shell; r: RoleDetails }) {
             </table>
           )}
           <div className="props-section">Trust policy</div>
-          <PolicyDocument document={r.trustPolicy} />
+          <PolicyDocument document={r.trustPolicy} kind="trust" />
         </>
       ),
     },
