@@ -11,6 +11,7 @@ mod ec2;
 mod ec2_actions;
 mod ec2_console;
 mod ec2_network;
+mod ec2_tags;
 mod elasticache;
 mod elasticache_actions;
 mod elasticache_events;
@@ -221,6 +222,10 @@ pub fn run() {
             commands::ec2::ec2_set_type,
             commands::ec2::ec2_set_protection,
             commands::ec2::ec2_instance_types,
+            commands::ec2::ec2_set_tags,
+            commands::ec2::ec2_create_image,
+            commands::ec2::ec2_snapshot_volume,
+            commands::ec2::ec2_snapshot_instance,
             commands::elasticache::ec_list_groups,
             commands::elasticache::ec_list_serverless,
             commands::elasticache::ec_group,

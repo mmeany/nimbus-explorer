@@ -3,6 +3,7 @@
 use super::AppState;
 use crate::ec2::{self, Instance, InstanceDetails};
 use crate::ec2_actions::{self as actions, StateChange, TypeInfo};
+use crate::ec2_tags::{self as tags, CreatedSnapshot, ImageRequest};
 use crate::ec2_console::{self as console, ConsoleOutput, InstanceStatus, UserData};
 use crate::error::AppError;
 use tauri::State;
@@ -103,4 +104,47 @@ pub async fn ec2_instance_types(
     architecture: Option<String>,
 ) -> Result<Vec<TypeInfo>, AppError> {
     actions::instance_types(&*state.connection()?, &az, architecture.as_deref()).await
+}
+
+/// Sets a resource's user tags to `desired` (current = what the UI showed).
+#[tauri::command]
+pub async fn ec2_set_tags(
+    state: State<'_, AppState>,
+    resource: String,
+    current: Vec<(String, String)>,
+    desired: Vec<(String, String)>,
+) -> Result<(usize, usize), AppError> {
+    state.ensure_writable()?;
+    tags::set_tags(&*state.connection()?, &resource, &current, &desired).await
+}
+
+/// Creates an AMI from an instance; returns its ID.
+#[tauri::command]
+pub async fn ec2_create_image(state: State<'_, AppState>, request: ImageRequest) -> Result<String, AppError> {
+    state.ensure_writable()?;
+    tags::create_image(&*state.connection()?, &request).await
+}
+
+/// Snapshot of one volume.
+#[tauri::command]
+pub async fn ec2_snapshot_volume(
+    state: State<'_, AppState>,
+    volume_id: String,
+    description: Option<String>,
+    tags: Vec<(String, String)>,
+) -> Result<CreatedSnapshot, AppError> {
+    state.ensure_writable()?;
+    tags::snapshot_volume(&*state.connection()?, &volume_id, description.as_deref(), &tags).await
+}
+
+/// Snapshots of all an instance's volumes at the same moment.
+#[tauri::command]
+pub async fn ec2_snapshot_instance(
+    state: State<'_, AppState>,
+    instance_id: String,
+    description: Option<String>,
+    exclude_root: bool,
+) -> Result<Vec<CreatedSnapshot>, AppError> {
+    state.ensure_writable()?;
+    tags::snapshot_instance(&*state.connection()?, &instance_id, description.as_deref(), exclude_root).await
 }

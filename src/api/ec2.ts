@@ -207,7 +207,50 @@ export const ec2Api = {
   setType: (id: string, instanceType: string) => call<void>("ec2_set_type", { id, instanceType }),
   setProtection: (id: string, termination: boolean | null, stop: boolean | null) => call<void>("ec2_set_protection", { id, termination, stop }),
   instanceTypes: (az: string, architecture: string | null) => call<TypeInfo[]>("ec2_instance_types", { az, architecture }),
+  setTags: (resource: string, current: [string, string][], desired: [string, string][]) => call<[number, number]>("ec2_set_tags", { resource, current, desired }),
+  createImage: (request: { instanceId: string; name: string; description: string | null; noReboot: boolean; tags: [string, string][] }) => call<string>("ec2_create_image", { request }),
+  snapshotVolume: (volumeId: string, description: string | null, tags: [string, string][]) => call<CreatedSnapshot>("ec2_snapshot_volume", { volumeId, description, tags }),
+  snapshotInstance: (instanceId: string, description: string | null, excludeRoot: boolean) => call<CreatedSnapshot[]>("ec2_snapshot_instance", { instanceId, description, excludeRoot }),
 };
+
+export interface CreatedSnapshot {
+  snapshotId: string;
+  volumeId: string | null;
+}
+
+/** Why a set of tags can't be saved (AWS's limits), or null. */
+export function tagProblem(tags: [string, string][]): string | null {
+  if (tags.length > 50) return "A resource can have at most 50 tags";
+  const seen = new Set<string>();
+  for (const [k, v] of tags) {
+    if (!k.trim()) return "Every tag needs a key";
+    if (k.length > 128) return `The key "${k.slice(0, 20)}…" is longer than 128 characters`;
+    if (k.toLowerCase().startsWith("aws:")) return `"${k}": keys starting with aws: are reserved for AWS`;
+    if (v.length > 256) return `The value of "${k}" is longer than 256 characters`;
+    if (seen.has(k)) return `The key "${k}" is used twice`;
+    seen.add(k);
+  }
+  return null;
+}
+
+/** The list kind an EC2 resource ID belongs to (by its prefix), or null. */
+export function kindOfId(id: string): import("../shell/places").Ec2Kind | null {
+  const prefix = id.slice(0, id.indexOf("-"));
+  const map: Record<string, import("../shell/places").Ec2Kind> = {
+    i: "instances",
+    ami: "images",
+    vol: "volumes",
+    snap: "snapshots",
+    sg: "securityGroups",
+    vpc: "vpcs",
+    subnet: "subnets",
+    eni: "interfaces",
+    eipalloc: "addresses",
+    key: "keyPairs",
+    lt: "launchTemplates",
+  };
+  return map[prefix] ?? null;
+}
 
 export interface StateChange {
   id: string;

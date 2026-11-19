@@ -35,6 +35,8 @@ export function InstanceView({
   onLoaded,
   tabs = [],
   initialTab,
+  onEditTags,
+  onSnapshotVolume,
 }: {
   shell: Shell;
   id: string;
@@ -42,6 +44,9 @@ export function InstanceView({
   onLoaded: (i: InstanceDetails | null, reload: () => void) => void;
   tabs?: InstanceTab[];
   initialTab?: string;
+  /** Opens the tag editor (absent or read-only: no button). */
+  onEditTags?: (i: InstanceDetails) => void;
+  onSnapshotVolume?: (volumeId: string) => void;
 }) {
   const [tab, setTab] = useState(initialTab ?? "details");
   const { data: i, error, retry } = useLoad(`${id}|${reloadToken}`, () => ec2Api.instance(id), (d) => (d && CHANGING.has(d.state ?? "") ? 5_000 : null));
@@ -78,13 +83,13 @@ export function InstanceView({
       {extra ? (
         extra.render(i, retry)
       ) : current.id === "storage" ? (
-        <StorageTab i={i} />
+        <StorageTab i={i} onSnapshot={shell.readOnly ? undefined : onSnapshotVolume} />
       ) : current.id === "networking" ? (
         <NetworkingTab i={i} onGroup={goGroup} />
       ) : current.id === "security" ? (
         <SecurityTab i={i} onGroup={goGroup} />
       ) : (
-        <DetailsTab i={i} shell={shell} />
+        <DetailsTab i={i} shell={shell} onEditTags={shell.readOnly || !onEditTags ? undefined : () => onEditTags(i)} />
       )}
     </div>
   );
@@ -94,7 +99,7 @@ function protection(v: boolean | null): string | null {
   return v === null ? "(couldn't read)" : v ? "On" : "Off";
 }
 
-function DetailsTab({ i, shell }: { i: InstanceDetails; shell: Shell }) {
+function DetailsTab({ i, shell, onEditTags }: { i: InstanceDetails; shell: Shell; onEditTags?: () => void }) {
   const cpu = i.cpuCores ? `${i.cpuCores} core${i.cpuCores === 1 ? "" : "s"} × ${i.threadsPerCore ?? 1} thread${(i.threadsPerCore ?? 1) === 1 ? "" : "s"}` : null;
   return (
     <div className="lambda-details">
@@ -148,13 +153,21 @@ function DetailsTab({ i, shell }: { i: InstanceDetails; shell: Shell }) {
           ["Shutdown from the OS", i.shutdownBehavior === "terminate" ? "Terminates the instance" : i.shutdownBehavior === "stop" ? "Stops the instance" : null],
         ]}
       />
-      <div className="props-section">Tags</div>
+      <div className="props-section row">
+        <span>Tags</span>
+        <div className="spacer" />
+        {onEditTags && (
+          <button className="btn small" onClick={onEditTags}>
+            Edit tags…
+          </button>
+        )}
+      </div>
       <TagsTable tags={i.tags} />
     </div>
   );
 }
 
-function StorageTab({ i }: { i: InstanceDetails }) {
+function StorageTab({ i, onSnapshot }: { i: InstanceDetails; onSnapshot?: (volumeId: string) => void }) {
   const vols = new Map(i.volumes.map((v) => [v.id, v]));
   if (i.blockDevices.length === 0) return <p className="hint">No EBS volumes{i.rootDeviceType === "instance-store" ? ": the root device is an instance store, which is lost when the instance stops" : ""}.</p>;
   return (
@@ -171,6 +184,7 @@ function StorageTab({ i }: { i: InstanceDetails }) {
             <th>Deleted with instance</th>
             <th>State</th>
             <th>Attached</th>
+            {onSnapshot && <th />}
           </tr>
         </thead>
         <tbody>
@@ -190,6 +204,15 @@ function StorageTab({ i }: { i: InstanceDetails }) {
                 <td>{yesNo(b.deleteOnTermination) ?? ""}</td>
                 <td>{b.status ?? ""}</td>
                 <td>{formatDate(b.attached)}</td>
+                {onSnapshot && (
+                  <td>
+                    {b.volumeId && (
+                      <button className="link-btn" onClick={() => onSnapshot(b.volumeId!)}>
+                        Snapshot…
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             );
           })}

@@ -10,7 +10,7 @@ import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { FilterBox } from "../../components/FilterBox";
 import { HelpTopic } from "../../components/HelpDialog";
-import { DeleteIcon, Ec2Icon, EditIcon, InstanceIcon, LockIcon, PlayIcon, RedriveIcon, RefreshIcon, StopIcon } from "../../components/Icons";
+import { DeleteIcon, Ec2Icon, EditIcon, ImageIcon, InstanceIcon, SnapshotIcon, LockIcon, PlayIcon, RedriveIcon, RefreshIcon, StopIcon } from "../../components/Icons";
 import { PageBar } from "../../components/PageBar";
 import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { formatDate } from "../../format";
@@ -18,6 +18,7 @@ import { EC2_KIND_LABEL, EC2_ROOT, type Ec2Kind, type Place } from "../../shell/
 import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePaging } from "../../state/paged";
 import { ChangeTypeDialog, ProtectionDialog, StopDialog } from "./InstanceDialogs";
+import { CreateImageDialog, SnapshotDialog, TagEditorDialog } from "./TagDialogs";
 import { ConsoleTab, StatusTab, UserDataTab } from "./InstanceExtras";
 import { InstanceView, type InstanceTab } from "./InstanceView";
 
@@ -77,7 +78,14 @@ function storedStates(): Set<InstanceState> {
 
 type Listing<T> = { key: string; items: T[] | null; error: AppError | null };
 
-type Dialog = { kind: "stop"; instances: Instance[] } | { kind: "type"; instance: Instance } | { kind: "protection"; instance: InstanceDetails } | null;
+type Dialog =
+  | { kind: "stop"; instances: Instance[] }
+  | { kind: "type"; instance: Instance }
+  | { kind: "protection"; instance: InstanceDetails }
+  | { kind: "tags"; resource: string; label: string; tags: [string, string][] }
+  | { kind: "image"; instance: Instance }
+  | { kind: "snapshot"; instance: Instance | null; volumeId: string | null }
+  | null;
 
 export function useEc2Service(shell: Shell): ServiceUi {
   const { connection, connectionId, profile, place } = shell;
@@ -330,6 +338,10 @@ export function useEc2Service(shell: Shell): ServiceUi {
       { label: "Reboot", disabled: ro || !c.reboot, onClick: () => void simple("reboot", list) },
       { label: "Change instance type…", shortcut: "Ctrl+E", disabled: ro || !c.type, onClick: () => openDialog({ kind: "type", instance: list[0] }) },
       { label: "Terminate…", shortcut: "Del", disabled: ro || !c.terminate, onClick: () => void terminate(list) },
+      "separator",
+      { label: "Create image…", disabled: ro || list.length !== 1 || !c.terminate, onClick: () => openDialog({ kind: "image", instance: list[0] }) },
+      { label: "Snapshot volumes…", disabled: ro || list.length !== 1 || !c.terminate || !list[0].blockDevices.some((b) => b.volumeId), onClick: () => openDialog({ kind: "snapshot", instance: list[0], volumeId: null }) },
+      { label: "Edit tags…", disabled: ro || list.length !== 1 || list[0].state === "terminated", onClick: () => openDialog({ kind: "tags", resource: list[0].id, label: instanceLabel(list[0]), tags: list[0].tags }) },
     ];
   }
 
@@ -507,7 +519,11 @@ export function useEc2Service(shell: Shell): ServiceUi {
   } else if (active && kind === "instances" && id) {
     content = (
       <div className="service-pane scroll-pane">
-        <InstanceView key={id} shell={shell} id={id} reloadToken={reloadToken} onLoaded={(i) => setViewInstance(i)} tabs={instanceTabs} />
+        <InstanceView key={id} shell={shell} id={id} reloadToken={reloadToken} onLoaded={(i) => setViewInstance(i)}
+          tabs={instanceTabs}
+          onEditTags={(i) => openDialog({ kind: "tags", resource: i.id, label: instanceLabel(i), tags: i.tags })}
+          onSnapshotVolume={(v) => openDialog({ kind: "snapshot", instance: null, volumeId: v })}
+        />
       </div>
     );
     const v = viewInstance?.id === id ? viewInstance : null;
@@ -536,6 +552,14 @@ export function useEc2Service(shell: Shell): ServiceUi {
             />
           )}
           <CommandButton icon={<DeleteIcon />} label="Terminate" title="Terminate the instances (Del)" disabled={off(c.terminate)} onClick={() => void terminate(t)} />
+          <CommandButton icon={<ImageIcon />} label="Create image" title="Create an AMI from the instance" disabled={off(t.length === 1 && c.terminate)} onClick={() => openDialog({ kind: "image", instance: t[0] })} />
+          <CommandButton
+            icon={<SnapshotIcon />}
+            label="Snapshot"
+            title="Snapshot all the instance's EBS volumes at once"
+            disabled={off(t.length === 1 && c.terminate && t[0].blockDevices.some((b) => b.volumeId))}
+            onClick={() => openDialog({ kind: "snapshot", instance: t[0], volumeId: null })}
+          />
         </>
       )}
     </>
@@ -547,6 +571,12 @@ export function useEc2Service(shell: Shell): ServiceUi {
       <ChangeTypeDialog instance={dialog.instance} onClose={() => setDialog(null)} onDone={done} />
     ) : dialog?.kind === "protection" ? (
       <ProtectionDialog shell={shell} instance={dialog.instance} onClose={() => setDialog(null)} onDone={done} />
+    ) : dialog?.kind === "tags" ? (
+      <TagEditorDialog resource={dialog.resource} label={dialog.label} tags={dialog.tags} onClose={() => setDialog(null)} onDone={done} />
+    ) : dialog?.kind === "image" ? (
+      <CreateImageDialog instance={dialog.instance} onClose={() => setDialog(null)} onDone={done} />
+    ) : dialog?.kind === "snapshot" ? (
+      <SnapshotDialog instance={dialog.instance} volumeId={dialog.volumeId} onClose={() => setDialog(null)} onDone={done} />
     ) : null;
   return { tree, content, commands, status, busy: active && loading, refresh, dialogs };
 }

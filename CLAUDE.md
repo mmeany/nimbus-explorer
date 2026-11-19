@@ -1184,7 +1184,14 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   emulator test accepts it) Instance actions: start, stop (optionally hibernate, force), reboot,
   terminate (typed confirmation), change instance type (stopped only, types
   offered for the AZ), termination / stop protection (turning off asks).
-- 17.4 Tags editor (instances and every EC2 resource view) and create AMI /
+- 17.4 ✅ (`src-tauri/src/ec2_tags.rs`, `services/ec2/TagDialogs.tsx`;
+  `ec2_set_tags` gets the tags the editor opened with and the wanted set,
+  sends CreateTags for new / changed keys and DeleteTags for removed ones,
+  never touching aws: tags; limits checked in both layers (`check_tags` /
+  `tagProblem`); `kindOfId` maps an ID prefix to its list for history;
+  instance snapshots use CreateSnapshots (crash-consistent, tags copied
+  from each volume); MiniStack has no CreateImage, so the test accepts the
+  refusal) Tags editor (instances and every EC2 resource view) and create AMI /
   create snapshot (from an instance or a volume).
 - 17.5 Connect tab: SSM Session Manager, SSM port forwarding (SSH / RDP),
   SSH, EC2 Instance Connect commands with profile and region filled in;

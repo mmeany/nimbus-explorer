@@ -953,3 +953,4 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .ec2-console.nowrap, .ec2-console.nowrap .ln-body { white-space: pre; word-break: normal; }
 .ec2-screenshot { display: block; max-width: 100%; margin-top: 8px; border: 1px solid var(--border); }
 .ec2-type-list { width: 100%; margin-top: 6px; font-family: Consolas, "Cascadia Mono", Menlo, monospace; font-size: 12px; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
+.ec2-tag-table .text-input { width: 100%; box-sizing: border-box; }

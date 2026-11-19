@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allowedActions, instanceLabel, isOpenToWorld, matchesInstanceFilter, ruleSource, typeText, type Rule } from "./ec2";
+import { allowedActions, instanceLabel, kindOfId, tagProblem, isOpenToWorld, matchesInstanceFilter, ruleSource, typeText, type Rule } from "./ec2";
 
 const inst = { id: "i-0abc123", name: "Web Server", tags: [["Name", "Web Server"], ["env", "Prod"]] as [string, string][] };
 
@@ -48,5 +48,20 @@ describe("actions", () => {
     expect(typeText({ name: "t3.small", vcpus: 2, memoryMib: 2048, currentGeneration: true })).toBe("t3.small · 2 vCPUs · 2 GiB");
     expect(typeText({ name: "t3.nano", vcpus: 1, memoryMib: 512, currentGeneration: true })).toBe("t3.nano · 1 vCPU · 0.5 GiB");
     expect(typeText({ name: "x.y", vcpus: null, memoryMib: null, currentGeneration: null })).toBe("x.y");
+  });
+});
+
+describe("tags", () => {
+  it("checks tags like AWS", () => {
+    expect(tagProblem([["Name", "web"], ["env", ""]])).toBeNull();
+    expect(tagProblem([["", "x"]])).not.toBeNull();
+    expect(tagProblem([["aws:x", "1"]])).toContain("reserved");
+    expect(tagProblem([["a", "1"], ["a", "2"]])).toContain("twice");
+  });
+  it("maps ids to kinds", () => {
+    expect(kindOfId("i-0abc")).toBe("instances");
+    expect(kindOfId("vol-1")).toBe("volumes");
+    expect(kindOfId("eipalloc-1")).toBe("addresses");
+    expect(kindOfId("weird")).toBeNull();
   });
 });

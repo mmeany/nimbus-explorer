@@ -7,6 +7,7 @@
 // Every command that calls `ensure_writable` needs a rule here; a Rust test
 // (history.rs, every_write_command_has_a_history_rule) checks it. Keep each
 // rule key indented by two spaces and followed by a colon.
+import { kindOfId } from "../api/ec2";
 import type { HistoryService } from "../api/history";
 import { DDB_ROOT, LAMBDA_ROOT, RDS_ROOT, SFN_ROOT, SNS_ROOT, SQS_ROOT, type Place } from "../shell/places";
 
@@ -448,6 +449,31 @@ export const RULES: Record<string, Rule> = {
   ec2_reboot: (a) => ec2Instances("Reboot instance", a.ids),
   ec2_terminate: (a) => ec2Instances("Terminate instance", a.ids),
   ec2_set_type: (a) => ({ service: "ec2", action: "Change instance type", target: String(a.id), place: { service: "ec2", kind: "instances", id: String(a.id) }, detail: `to ${a.instanceType}` }),
+  ec2_set_tags: (a) => {
+    const kind = kindOfId(String(a.resource));
+    const desired: [string, string][] = Array.isArray(a.desired) ? a.desired : [];
+    const current: [string, string][] = Array.isArray(a.current) ? a.current : [];
+    const keys = (l: [string, string][]) => new Set(l.map(([k]) => k));
+    const removed = [...keys(current)].filter((k) => !k.startsWith("aws:") && !keys(desired).has(k));
+    const set = desired.filter(([k, v]) => !current.some(([ck, cv]) => ck === k && cv === v)).map(([k]) => k);
+    return {
+      service: "ec2",
+      action: "Edit tags",
+      target: String(a.resource),
+      place: kind ? { service: "ec2", kind, id: kind === "instances" ? String(a.resource) : null } : null,
+      select: kind && kind !== "instances" ? String(a.resource) : null,
+      detail: [set.length ? `set ${set.join(", ")}` : "", removed.length ? `removed ${removed.join(", ")}` : ""].filter(Boolean).join("; "),
+    };
+  },
+  ec2_create_image: (a, r) => ({ service: "ec2", action: "Create image", target: String(a.request.name), place: { service: "ec2", kind: "images", id: null }, select: r ? String(r) : null, detail: `from ${a.request.instanceId}${r ? `, ${r}` : ""}` }),
+  ec2_snapshot_volume: (a, r) => ({ service: "ec2", action: "Create snapshot", target: r?.snapshotId ? String(r.snapshotId) : String(a.volumeId), place: { service: "ec2", kind: "snapshots", id: null }, select: r?.snapshotId ?? null, detail: `of ${a.volumeId}` }),
+  ec2_snapshot_instance: (a, r) => ({
+    service: "ec2",
+    action: "Create snapshots",
+    target: String(a.instanceId),
+    place: { service: "ec2", kind: "instances", id: String(a.instanceId) },
+    detail: Array.isArray(r) ? r.map((x: { snapshotId: string }) => x.snapshotId).join(", ") : null,
+  }),
   ec2_set_protection: (a) => ({
     service: "ec2",
     action: "Change instance protection",

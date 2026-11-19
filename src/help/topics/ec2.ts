@@ -27,7 +27,7 @@ The tree under **Instances** shows the same filtered list (the first 200).`,
 - **Termination / stop protection**: when on, the instance can't be terminated or stopped through the API until it's turned off.
 - **Public IP**: an auto-assigned public address changes every time the instance stops and starts; an Elastic IP stays.
 
-The command bar acts on this instance: Start, Stop…, Reboot, Change type (when stopped), **Protection** and Terminate….`,
+The command bar acts on this instance: Start, Stop…, Reboot, Change type (when stopped), **Protection**, Terminate…, **Create image** and **Snapshot** (all its volumes). **Edit tags…** is by the Tags section; on the Storage tab, **Snapshot…** snapshots one volume.`,
   },
   "ec2.instance.storage": {
     title: "Instance storage",
@@ -88,6 +88,32 @@ Spot instances can only be stopped when their request is persistent.`,
     body: `Gives a stopped instance more (or less) CPU and memory. The list shows the types offered in the instance's availability zone for its architecture, the current family first; search to find others, including older generations, or type a type into the box on the right.
 
 The new type must support the instance's image and settings (architecture, virtualization, ENA networking, any EBS optimisation or hibernation). If it doesn't, AWS refuses and the instance keeps its type. Start the instance afterwards to use it.`,
+  },
+  "ec2.tags": {
+    title: "Tags",
+    body: `Key / value labels on an EC2 resource. Edit, add or remove rows and **Save**: new and changed tags are set, removed ones deleted, the rest left alone.
+
+- The **Name** tag is what the lists and the tree show.
+- Keys are case-sensitive, up to 128 characters; values up to 256; at most 50 tags.
+- Tags starting with *aws:* are set by AWS (CloudFormation, Auto Scaling, …) and can't be changed; they're listed greyed out.`,
+  },
+  "ec2.image.create": {
+    title: "Create image",
+    body: `Makes an AMI from the instance: a snapshot of each of its EBS volumes plus the launch settings, so you can launch copies later or keep a restore point.
+
+- **Reboot first** (default): AWS shuts the OS down briefly so every file is closed; the image is consistent. Without it the instance keeps running, but files being written may be incomplete.
+- **Tag with Name**: sets Name on the image and its snapshots, so they're easy to find.
+
+The image appears under AMIs as *pending* and becomes *available* after a few minutes. It costs money (its snapshots) until you deregister it and delete the snapshots.`,
+  },
+  "ec2.snapshot.create": {
+    title: "Create snapshots",
+    body: `A point-in-time copy of EBS volumes, stored in your account.
+
+- **From an instance**: one snapshot of each volume, all taken at the same instant (crash-consistent: as if the power were cut, so files being written may be incomplete). Each snapshot copies its volume's tags. You can leave out the root volume.
+- **From a volume** (Snapshot… on the Storage tab): one snapshot of that volume.
+
+Snapshots show under **Snapshots** as *pending* until complete; the volumes stay in use meanwhile. They cost money until you delete them.`,
   },
   "ec2.instance.protection": {
     title: "Instance protection",
