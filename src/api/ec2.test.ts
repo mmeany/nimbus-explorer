@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allowedActions, connectCommands, guessUser, instanceLabel, kindOfId, tagProblem, isOpenToWorld, matchesInstanceFilter, ruleSource, typeText, type Rule } from "./ec2";
+import { allowedActions, connectCommands, guessUser, instanceLabel, interfaceOwner, kindOfId, tagProblem, isOpenToWorld, matchesInstanceFilter, ruleSource, typeText, type Rule } from "./ec2";
 
 const inst = { id: "i-0abc123", name: "Web Server", tags: [["Name", "Web Server"], ["env", "Prod"]] as [string, string][] };
 
@@ -86,5 +86,17 @@ describe("connect", () => {
     expect(c.map((x) => x.id)).toEqual(["ssm-shell", "ssm-rdp", "rdp"]);
     expect(c[0].command).toContain("--endpoint-url http://localhost:4566");
     expect(guessUser({ platform: "Ubuntu Pro", windows: false })).toBe("ubuntu");
+  });
+});
+
+describe("interfaceOwner", () => {
+  const n = { instanceId: null, interfaceType: "interface", requester: null, description: null };
+  it("names the owner", () => {
+    expect(interfaceOwner({ ...n, instanceId: "i-1" })).toBe("i-1");
+    expect(interfaceOwner({ ...n, interfaceType: "nat_gateway" })).toBe("nat gateway");
+    expect(interfaceOwner({ ...n, description: "ELB app/web/123" })).toBe("load balancer");
+    expect(interfaceOwner({ ...n, description: "AWS Lambda VPC ENI-fn" })).toBe("Lambda");
+    expect(interfaceOwner({ ...n, requester: "amazon-rds" })).toBe("amazon-rds");
+    expect(interfaceOwner(n)).toBe("");
   });
 });

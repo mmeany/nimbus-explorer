@@ -211,3 +211,541 @@ mod tests {
         assert_eq!(r[2].source_account.as_deref(), Some("222"));
     }
 }
+
+// ---------------------------------------------------------------------------
+// Lists and views (17.7)
+
+use crate::ec2::{client, err, filter, interface, other, tag, GroupRef, Interface};
+use crate::error::AppError;
+use crate::s3::Connection;
+
+/// "Not found" errors as a plain sentence.
+fn missing(conn: &Connection, e: impl std::error::Error + std::fmt::Debug, what: &str, id: &str) -> AppError {
+    let text = format!("{e:?}");
+    if text.contains("NotFound") || text.contains(".Malformed") {
+        return other(format!("There's no {what} {id} in this region."));
+    }
+    err(conn, e)
+}
+
+/// Every security group in the region (rules included, referenced groups named), by name.
+pub async fn list_security_groups(conn: &Connection) -> Result<Vec<SecurityGroup>, AppError> {
+    let c = client(conn);
+    let mut out = Vec::new();
+    let mut token: Option<String> = None;
+    loop {
+        let page = c
+            .describe_security_groups()
+            .max_results(1000)
+            .set_next_token(token.clone())
+            .send()
+            .await
+            .map_err(|e| err(conn, e))?;
+        out.extend(page.security_groups().iter().map(group));
+        match page.next_token() {
+            Some(t) if !t.is_empty() && Some(t) != token.as_deref() => token = Some(t.to_string()),
+            _ => break,
+        }
+    }
+    name_sources(&c, &mut out).await;
+    out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()).then(a.id.cmp(&b.id)));
+    Ok(out)
+}
+
+/// What uses a security group: a network interface (and through it an
+/// instance, load balancer, Lambda function, …).
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GroupUser {
+    pub interface_id: String,
+    pub interface_type: Option<String>,
+    pub description: Option<String>,
+    pub instance_id: Option<String>,
+    pub private_ip: Option<String>,
+    /// The service that manages the interface (amazon-elb, …).
+    pub requester: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GroupDetails {
+    #[serde(flatten)]
+    pub group: SecurityGroup,
+    pub used_by: Vec<GroupUser>,
+    /// Groups whose rules name this one.
+    pub referenced_by: Vec<GroupRef>,
+}
+
+pub async fn security_group(conn: &Connection, id: &str) -> Result<GroupDetails, AppError> {
+    let c = client(conn);
+    let out = c
+        .describe_security_groups()
+        .group_ids(id)
+        .send()
+        .await
+        .map_err(|e| missing(conn, e, "security group", id))?;
+    let mut groups: Vec<SecurityGroup> = out.security_groups().iter().map(group).collect();
+    if groups.is_empty() {
+        return Err(other(format!("There's no security group {id} in this region.")));
+    }
+    name_sources(&c, &mut groups).await;
+    let used_by = c
+        .describe_network_interfaces()
+        .filters(filter("group-id", &[id]))
+        .send()
+        .await
+        .map(|o| {
+            o.network_interfaces()
+                .iter()
+                .map(|n| GroupUser {
+                    interface_id: n.network_interface_id().unwrap_or_default().to_string(),
+                    interface_type: n.interface_type().map(|t| t.as_str().to_string()),
+                    description: n.description().filter(|d| !d.is_empty()).map(String::from),
+                    instance_id: n.attachment().and_then(|a| a.instance_id()).map(String::from),
+                    private_ip: n.private_ip_address().map(String::from),
+                    requester: n.requester_id().map(String::from),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let mut referenced_by: Vec<GroupRef> = Vec::new();
+    for f in ["ip-permission.group-id", "egress.ip-permission.group-id"] {
+        if let Ok(o) = c.describe_security_groups().filters(filter(f, &[id])).send().await {
+            for g in o.security_groups() {
+                let r = GroupRef {
+                    id: g.group_id().unwrap_or_default().to_string(),
+                    name: g.group_name().map(String::from),
+                };
+                if r.id != id && !referenced_by.contains(&r) {
+                    referenced_by.push(r);
+                }
+            }
+        }
+    }
+    Ok(GroupDetails {
+        group: groups.remove(0),
+        used_by,
+        referenced_by,
+    })
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Vpc {
+    pub id: String,
+    pub name: Option<String>,
+    pub cidrs: Vec<String>,
+    pub ipv6_cidrs: Vec<String>,
+    pub state: Option<String>,
+    pub is_default: bool,
+    pub tenancy: Option<String>,
+    pub dhcp_options: Option<String>,
+    pub owner_id: Option<String>,
+    pub tags: Vec<(String, String)>,
+}
+
+fn vpc(v: &aws_sdk_ec2::types::Vpc) -> Vpc {
+    let mut cidrs: Vec<String> = v
+        .cidr_block_association_set()
+        .iter()
+        .filter(|a| a.cidr_block_state().and_then(|s| s.state()).map(|s| s.as_str() == "associated").unwrap_or(true))
+        .filter_map(|a| a.cidr_block())
+        .map(String::from)
+        .collect();
+    if cidrs.is_empty() {
+        cidrs.extend(v.cidr_block().map(String::from));
+    }
+    Vpc {
+        id: v.vpc_id().unwrap_or_default().to_string(),
+        name: tag(v.tags(), "Name").map(String::from),
+        cidrs,
+        ipv6_cidrs: v
+            .ipv6_cidr_block_association_set()
+            .iter()
+            .filter_map(|a| a.ipv6_cidr_block())
+            .map(String::from)
+            .collect(),
+        state: v.state().map(|s| s.as_str().to_string()),
+        is_default: v.is_default().unwrap_or(false),
+        tenancy: v.instance_tenancy().map(|t| t.as_str().to_string()),
+        dhcp_options: v.dhcp_options_id().map(String::from),
+        owner_id: v.owner_id().map(String::from),
+        tags: tags(v.tags()),
+    }
+}
+
+pub async fn list_vpcs(conn: &Connection) -> Result<Vec<Vpc>, AppError> {
+    let c = client(conn);
+    let mut out = Vec::new();
+    let mut token: Option<String> = None;
+    loop {
+        let page = c
+            .describe_vpcs()
+            .max_results(1000)
+            .set_next_token(token.clone())
+            .send()
+            .await
+            .map_err(|e| err(conn, e))?;
+        out.extend(page.vpcs().iter().map(vpc));
+        match page.next_token() {
+            Some(t) if !t.is_empty() && Some(t) != token.as_deref() => token = Some(t.to_string()),
+            _ => break,
+        }
+    }
+    out.sort_by(|a, b| b.is_default.cmp(&a.is_default).then(a.name.cmp(&b.name)).then(a.id.cmp(&b.id)));
+    Ok(out)
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Subnet {
+    pub id: String,
+    pub name: Option<String>,
+    pub vpc_id: Option<String>,
+    pub az: Option<String>,
+    pub cidr: Option<String>,
+    pub ipv6_cidrs: Vec<String>,
+    pub available_ips: Option<i32>,
+    pub default_for_az: bool,
+    pub public_ip_on_launch: bool,
+    pub state: Option<String>,
+    pub tags: Vec<(String, String)>,
+}
+
+fn subnet(s: &aws_sdk_ec2::types::Subnet) -> Subnet {
+    Subnet {
+        id: s.subnet_id().unwrap_or_default().to_string(),
+        name: tag(s.tags(), "Name").map(String::from),
+        vpc_id: s.vpc_id().map(String::from),
+        az: s.availability_zone().map(String::from),
+        cidr: s.cidr_block().map(String::from),
+        ipv6_cidrs: s
+            .ipv6_cidr_block_association_set()
+            .iter()
+            .filter_map(|a| a.ipv6_cidr_block())
+            .map(String::from)
+            .collect(),
+        available_ips: s.available_ip_address_count(),
+        default_for_az: s.default_for_az().unwrap_or(false),
+        public_ip_on_launch: s.map_public_ip_on_launch().unwrap_or(false),
+        state: s.state().map(|x| x.as_str().to_string()),
+        tags: tags(s.tags()),
+    }
+}
+
+pub async fn list_subnets(conn: &Connection, vpc_id: Option<&str>) -> Result<Vec<Subnet>, AppError> {
+    let c = client(conn);
+    let mut out = Vec::new();
+    let mut token: Option<String> = None;
+    loop {
+        let mut req = c.describe_subnets().max_results(1000).set_next_token(token.clone());
+        if let Some(v) = vpc_id {
+            req = req.filters(filter("vpc-id", &[v]));
+        }
+        let page = req.send().await.map_err(|e| err(conn, e))?;
+        out.extend(page.subnets().iter().map(subnet));
+        match page.next_token() {
+            Some(t) if !t.is_empty() && Some(t) != token.as_deref() => token = Some(t.to_string()),
+            _ => break,
+        }
+    }
+    out.sort_by(|a, b| a.vpc_id.cmp(&b.vpc_id).then(a.az.cmp(&b.az)).then(a.cidr.cmp(&b.cidr)));
+    Ok(out)
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Route {
+    pub destination: String,
+    /// igw-…, nat-…, local, pcx-…, tgw-…, vpce-…, eni-…, i-…
+    pub target: String,
+    pub state: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct RouteTable {
+    pub id: String,
+    pub name: Option<String>,
+    /// The VPC's main table (used by subnets without their own).
+    pub main: bool,
+    pub routes: Vec<Route>,
+}
+
+fn route_table(t: &aws_sdk_ec2::types::RouteTable) -> RouteTable {
+    RouteTable {
+        id: t.route_table_id().unwrap_or_default().to_string(),
+        name: tag(t.tags(), "Name").map(String::from),
+        main: t.associations().iter().any(|a| a.main().unwrap_or(false)),
+        routes: t
+            .routes()
+            .iter()
+            .map(|r| Route {
+                destination: r
+                    .destination_cidr_block()
+                    .or(r.destination_ipv6_cidr_block())
+                    .or(r.destination_prefix_list_id())
+                    .unwrap_or("?")
+                    .to_string(),
+                target: r
+                    .gateway_id()
+                    .or(r.nat_gateway_id())
+                    .or(r.transit_gateway_id())
+                    .or(r.vpc_peering_connection_id())
+                    .or(r.network_interface_id())
+                    .or(r.instance_id())
+                    .or(r.egress_only_internet_gateway_id())
+                    .or(r.local_gateway_id())
+                    .or(r.carrier_gateway_id())
+                    .unwrap_or("?")
+                    .to_string(),
+                state: r.state().map(|s| s.as_str().to_string()),
+            })
+            .collect(),
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Gateway {
+    pub id: String,
+    pub name: Option<String>,
+    /// internet, nat.
+    pub kind: String,
+    pub state: Option<String>,
+    pub subnet_id: Option<String>,
+    pub public_ip: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct VpcDetails {
+    #[serde(flatten)]
+    pub vpc: Vpc,
+    pub subnets: Vec<Subnet>,
+    pub route_tables: Vec<RouteTable>,
+    pub gateways: Vec<Gateway>,
+}
+
+pub async fn vpc_details(conn: &Connection, id: &str) -> Result<VpcDetails, AppError> {
+    let c = client(conn);
+    let out = c
+        .describe_vpcs()
+        .vpc_ids(id)
+        .send()
+        .await
+        .map_err(|e| missing(conn, e, "VPC", id))?;
+    let v = out
+        .vpcs()
+        .first()
+        .map(vpc)
+        .ok_or_else(|| other(format!("There's no VPC {id} in this region.")))?;
+    let subnets = list_subnets(conn, Some(id)).await.unwrap_or_default();
+    let route_tables = c
+        .describe_route_tables()
+        .filters(filter("vpc-id", &[id]))
+        .send()
+        .await
+        .map(|o| o.route_tables().iter().map(route_table).collect())
+        .unwrap_or_default();
+    let mut gateways: Vec<Gateway> = c
+        .describe_internet_gateways()
+        .filters(filter("attachment.vpc-id", &[id]))
+        .send()
+        .await
+        .map(|o| {
+            o.internet_gateways()
+                .iter()
+                .map(|g| Gateway {
+                    id: g.internet_gateway_id().unwrap_or_default().to_string(),
+                    name: tag(g.tags(), "Name").map(String::from),
+                    kind: "internet".into(),
+                    state: g.attachments().first().and_then(|a| a.state()).map(|s| s.as_str().to_string()),
+                    subnet_id: None,
+                    public_ip: None,
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    if let Ok(o) = c.describe_nat_gateways().filter(filter("vpc-id", &[id])).send().await {
+        gateways.extend(o.nat_gateways().iter().map(|g| Gateway {
+            id: g.nat_gateway_id().unwrap_or_default().to_string(),
+            name: tag(g.tags(), "Name").map(String::from),
+            kind: "nat".into(),
+            state: g.state().map(|s| s.as_str().to_string()),
+            subnet_id: g.subnet_id().map(String::from),
+            public_ip: g.nat_gateway_addresses().first().and_then(|a| a.public_ip()).map(String::from),
+        }));
+    }
+    Ok(VpcDetails { vpc: v, subnets, route_tables, gateways })
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SubnetDetails {
+    #[serde(flatten)]
+    pub subnet: Subnet,
+    /// The table that applies: the subnet's own, else the VPC's main one.
+    pub route_table: Option<RouteTable>,
+    /// It has a route to an internet gateway.
+    pub public: Option<bool>,
+}
+
+pub async fn subnet_details(conn: &Connection, id: &str) -> Result<SubnetDetails, AppError> {
+    let c = client(conn);
+    let out = c
+        .describe_subnets()
+        .subnet_ids(id)
+        .send()
+        .await
+        .map_err(|e| missing(conn, e, "subnet", id))?;
+    let s = out
+        .subnets()
+        .first()
+        .map(subnet)
+        .ok_or_else(|| other(format!("There's no subnet {id} in this region.")))?;
+    let own = c
+        .describe_route_tables()
+        .filters(filter("association.subnet-id", &[id]))
+        .send()
+        .await
+        .ok()
+        .and_then(|o| o.route_tables().first().map(route_table));
+    let table = match own {
+        Some(t) => Some(t),
+        None => match &s.vpc_id {
+            Some(v) => c
+                .describe_route_tables()
+                .filters(filter("vpc-id", &[v]))
+                .filters(filter("association.main", &["true"]))
+                .send()
+                .await
+                .ok()
+                .and_then(|o| o.route_tables().first().map(route_table)),
+            None => None,
+        },
+    };
+    let public = table.as_ref().map(|t| t.routes.iter().any(|r| r.target.starts_with("igw-")));
+    Ok(SubnetDetails { subnet: s, route_table: table, public })
+}
+
+/// Every network interface in the region.
+pub async fn list_interfaces(conn: &Connection) -> Result<Vec<Interface>, AppError> {
+    let c = client(conn);
+    let mut out = Vec::new();
+    let mut token: Option<String> = None;
+    loop {
+        let page = c
+            .describe_network_interfaces()
+            .max_results(1000)
+            .set_next_token(token.clone())
+            .send()
+            .await
+            .map_err(|e| err(conn, e))?;
+        out.extend(page.network_interfaces().iter().map(interface));
+        match page.next_token() {
+            Some(t) if !t.is_empty() && Some(t) != token.as_deref() => token = Some(t.to_string()),
+            _ => break,
+        }
+    }
+    out.sort_by(|a, b| a.vpc_id.cmp(&b.vpc_id).then(a.id.cmp(&b.id)));
+    Ok(out)
+}
+
+pub async fn get_interface(conn: &Connection, id: &str) -> Result<Interface, AppError> {
+    let out = client(conn)
+        .describe_network_interfaces()
+        .network_interface_ids(id)
+        .send()
+        .await
+        .map_err(|e| missing(conn, e, "network interface", id))?;
+    out.network_interfaces()
+        .first()
+        .map(interface)
+        .ok_or_else(|| other(format!("There's no network interface {id} in this region.")))
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Address {
+    /// The allocation ID (eipalloc-…), used as the address's key.
+    pub id: String,
+    pub name: Option<String>,
+    pub public_ip: Option<String>,
+    pub association_id: Option<String>,
+    pub instance_id: Option<String>,
+    pub interface_id: Option<String>,
+    pub private_ip: Option<String>,
+    pub domain: Option<String>,
+    pub border_group: Option<String>,
+    pub pool: Option<String>,
+    pub tags: Vec<(String, String)>,
+}
+
+pub async fn list_addresses(conn: &Connection) -> Result<Vec<Address>, AppError> {
+    let out = client(conn)
+        .describe_addresses()
+        .send()
+        .await
+        .map_err(|e| err(conn, e))?;
+    let mut list: Vec<Address> = out
+        .addresses()
+        .iter()
+        .map(|a| Address {
+            id: a
+                .allocation_id()
+                .or(a.public_ip())
+                .unwrap_or_default()
+                .to_string(),
+            name: tag(a.tags(), "Name").map(String::from),
+            public_ip: a.public_ip().map(String::from),
+            association_id: a.association_id().map(String::from),
+            instance_id: a.instance_id().filter(|i| !i.is_empty()).map(String::from),
+            interface_id: a.network_interface_id().map(String::from),
+            private_ip: a.private_ip_address().map(String::from),
+            domain: a.domain().map(|d| d.as_str().to_string()),
+            border_group: a.network_border_group().map(String::from),
+            pool: a.public_ipv4_pool().map(String::from),
+            tags: tags(a.tags()),
+        })
+        .collect();
+    list.sort_by(|a, b| a.public_ip.cmp(&b.public_ip));
+    Ok(list)
+}
+
+#[cfg(test)]
+mod emulator_tests {
+    use super::*;
+    use crate::ec2::emulator_tests::{connect, ensure_instance};
+
+    #[tokio::test]
+    #[ignore]
+    async fn lists_and_describes_networking() {
+        let conn = connect().await;
+        let id = ensure_instance(&conn, "s3x-ec2-network").await;
+        let inst = crate::ec2::get_instance(&conn, &id).await.unwrap();
+
+        let groups = list_security_groups(&conn).await.unwrap();
+        assert!(!groups.is_empty());
+        let g = security_group(&conn, &groups[0].id).await.unwrap();
+        assert_eq!(g.group.id, groups[0].id);
+        assert!(security_group(&conn, "sg-0000000000000dead").await.is_err());
+
+        let vpcs = list_vpcs(&conn).await.unwrap();
+        assert!(!vpcs.is_empty());
+        let v = vpc_details(&conn, &vpcs[0].id).await.unwrap();
+        assert_eq!(v.vpc.id, vpcs[0].id);
+
+        let subnets = list_subnets(&conn, None).await.unwrap();
+        if let Some(s) = subnets.first() {
+            let d = subnet_details(&conn, &s.id).await.unwrap();
+            assert_eq!(d.subnet.id, s.id);
+        }
+        let enis = list_interfaces(&conn).await.unwrap();
+        if let Some(n) = enis.first() {
+            assert_eq!(get_interface(&conn, &n.id).await.unwrap().id, n.id);
+        }
+        let _ = list_addresses(&conn).await.unwrap();
+        assert!(inst.id.starts_with("i-"));
+    }
+}

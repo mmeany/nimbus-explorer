@@ -1211,7 +1211,14 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   as no volume; image scope remembered in localStorage `ec2.images.scope`)
   AMIs (Mine / Shared with me), EBS volumes and EBS snapshots: lists and
   details with links between images, snapshots, volumes and instances.
-- 17.7 Networking: VPCs, subnets, security groups (inbound / outbound rules,
+- 17.7 ✅ (`ec2_network.rs` lists and views, `services/ec2/NetworkViews.tsx`;
+  a group's "used by" = DescribeNetworkInterfaces filtered by group-id,
+  "referenced by" = groups filtered by (egress.)ip-permission.group-id;
+  VPC view adds subnets, internet / NAT gateways and route tables; a
+  subnet's table is its own or the VPC's main one, public = a route to
+  igw-; `interfaceOwner` names the service behind an ENI; Elastic IPs are
+  keyed by allocation ID; the tree groups VPCs, subnets, interfaces and
+  EIPs under a Network node) Networking: VPCs, subnets, security groups (inbound / outbound rules,
   referenced groups resolved, what uses the group), network interfaces,
   Elastic IPs.
 - 17.8 Key pairs (names, type, fingerprint) and launch templates (versions,

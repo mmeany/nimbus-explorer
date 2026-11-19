@@ -216,6 +216,15 @@ export const ec2Api = {
   volume: (id: string) => call<Volume>("ec2_volume", { id }),
   snapshots: () => call<Snapshot[]>("ec2_snapshots"),
   snapshot: (id: string) => call<SnapshotDetails>("ec2_snapshot", { id }),
+  securityGroups: () => call<SecurityGroup[]>("ec2_security_groups"),
+  securityGroup: (id: string) => call<GroupDetails>("ec2_security_group", { id }),
+  vpcs: () => call<Vpc[]>("ec2_vpcs"),
+  vpc: (id: string) => call<VpcDetails>("ec2_vpc", { id }),
+  subnets: () => call<Subnet[]>("ec2_subnets"),
+  subnet: (id: string) => call<SubnetDetails>("ec2_subnet", { id }),
+  interfaces: () => call<Interface[]>("ec2_interfaces"),
+  interface: (id: string) => call<Interface>("ec2_interface", { id }),
+  addresses: () => call<Address[]>("ec2_addresses"),
   ssmAgent: (id: string) => call<SsmAgent>("ec2_ssm_agent", { id }),
   snapshotInstance: (instanceId: string, description: string | null, excludeRoot: boolean) => call<CreatedSnapshot[]>("ec2_snapshot_instance", { instanceId, description, excludeRoot }),
 };
@@ -280,6 +289,111 @@ export interface SnapshotDetails extends Snapshot {
   volumeExists: boolean | null;
   /** Your images that use it. */
   images: string[];
+}
+
+export interface GroupUser {
+  interfaceId: string;
+  interfaceType: string | null;
+  description: string | null;
+  instanceId: string | null;
+  privateIp: string | null;
+  requester: string | null;
+}
+
+export interface GroupDetails extends SecurityGroup {
+  usedBy: GroupUser[];
+  referencedBy: GroupRef[];
+}
+
+export interface Vpc {
+  id: string;
+  name: string | null;
+  cidrs: string[];
+  ipv6Cidrs: string[];
+  state: string | null;
+  isDefault: boolean;
+  tenancy: string | null;
+  dhcpOptions: string | null;
+  ownerId: string | null;
+  tags: [string, string][];
+}
+
+export interface Subnet {
+  id: string;
+  name: string | null;
+  vpcId: string | null;
+  az: string | null;
+  cidr: string | null;
+  ipv6Cidrs: string[];
+  availableIps: number | null;
+  defaultForAz: boolean;
+  publicIpOnLaunch: boolean;
+  state: string | null;
+  tags: [string, string][];
+}
+
+export interface Route {
+  destination: string;
+  target: string;
+  state: string | null;
+}
+
+export interface RouteTable {
+  id: string;
+  name: string | null;
+  main: boolean;
+  routes: Route[];
+}
+
+export interface Gateway {
+  id: string;
+  name: string | null;
+  kind: "internet" | "nat";
+  state: string | null;
+  subnetId: string | null;
+  publicIp: string | null;
+}
+
+export interface VpcDetails extends Vpc {
+  subnets: Subnet[];
+  routeTables: RouteTable[];
+  gateways: Gateway[];
+}
+
+export interface SubnetDetails extends Subnet {
+  routeTable: RouteTable | null;
+  /** Has a route to an internet gateway (null = couldn't tell). */
+  public: boolean | null;
+}
+
+export interface Address {
+  /** The allocation ID (eipalloc-…). */
+  id: string;
+  name: string | null;
+  publicIp: string | null;
+  associationId: string | null;
+  instanceId: string | null;
+  interfaceId: string | null;
+  privateIp: string | null;
+  domain: string | null;
+  borderGroup: string | null;
+  pool: string | null;
+  tags: [string, string][];
+}
+
+/** Who owns a network interface, in words: an instance, or the service that created it. */
+export function interfaceOwner(n: { instanceId: string | null; interfaceType: string | null; requester: string | null; description: string | null }): string {
+  if (n.instanceId) return n.instanceId;
+  const t = n.interfaceType ?? "";
+  if (t && t !== "interface") return t.replace(/_/g, " ");
+  const d = n.description ?? "";
+  if (/^ELB /.test(d)) return "load balancer";
+  if (/^AWS Lambda VPC ENI/.test(d)) return "Lambda";
+  if (/^RDSNetworkInterface/.test(d)) return "RDS";
+  if (/^ElastiCache/.test(d)) return "ElastiCache";
+  if (/ecs|arn:aws:ecs/i.test(d)) return "ECS task";
+  if (n.requester) return n.requester;
+  return "";
 }
 
 export interface SsmAgent {

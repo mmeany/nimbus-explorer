@@ -141,6 +141,51 @@ Open an image to see its block devices (with their snapshots) and which instance
 
 **Edit tags…** changes the snapshot's tags.`,
   },
+  "ec2.securityGroups": {
+    title: "Security groups",
+    body: `Every security group in the region, with how many inbound and outbound rules it has and which ports it opens to the whole internet (0.0.0.0/0 or ::/0).
+
+**Filter**: part of the group name, the start of the group or VPC ID, or a tag as *key=value*. The app shows rules but doesn't change them.`,
+  },
+  "ec2.securityGroup": {
+    title: "Security group",
+    body: `One group's inbound and outbound rules, one row per source or destination. A source that is another group means "anything that has that group"; click it to open the group.
+
+- **Used by**: the network interfaces that have this group, and what each belongs to (an instance, a load balancer, a Lambda function, …). None means the group is unused.
+- **Referenced by**: groups whose rules name this one; they'd break if it were deleted.`,
+  },
+  "ec2.vpcs": {
+    title: "VPCs",
+    body: `The region's virtual private clouds with their address ranges. The default VPC (if there is one) is listed first.`,
+  },
+  "ec2.vpc": {
+    title: "VPC",
+    body: `One VPC: its address ranges, subnets (click one to open it), internet and NAT gateways, and route tables. The *main* route table applies to every subnet that doesn't have its own.
+
+A subnet whose route table sends 0.0.0.0/0 to an internet gateway (igw-…) is *public*; one that sends it to a NAT gateway can reach out but can't be reached.`,
+  },
+  "ec2.subnets": {
+    title: "Subnets",
+    body: `Every subnet in the region with its VPC, zone, address range and free addresses. **Filter** also matches the start of a VPC ID or CIDR.`,
+  },
+  "ec2.subnet": {
+    title: "Subnet",
+    body: `One subnet: its zone, ranges, free addresses, whether new instances get public IPs, the instances in it, and the route table that applies (its own, or the VPC's main table). *Reaches the internet* says whether the routes go to an internet gateway.`,
+  },
+  "ec2.interfaces": {
+    title: "Network interfaces",
+    body: `Every network interface in the region and what it belongs to: an instance, or a service such as a load balancer, NAT gateway, Lambda function or RDS database. *available* interfaces (dimmed) aren't attached to anything.
+
+**Filter** also matches the start of an instance, subnet or VPC ID, or an IP address.`,
+  },
+  "ec2.interface": {
+    title: "Network interface",
+    body: `One network interface: what it's attached to, its private and public addresses, subnet, security groups and settings. Interfaces *managed by a service* are changed through that service, not EC2.`,
+  },
+  "ec2.addresses": {
+    title: "Elastic IPs",
+    body: `Static public IPv4 addresses allocated to your account, and what each is associated with. An Elastic IP that isn't associated (dimmed) is charged by the hour; so is every public IPv4 address in use.`,
+  },
   "ec2.tags": {
     title: "Tags",
     body: `Key / value labels on an EC2 resource. Edit, add or remove rows and **Save**: new and changed tags are set, removed ones deleted, the rest left alone.
@@ -184,5 +229,10 @@ export function ec2PlaceTopic(kind: Ec2Kind | null, id: string | null): Ec2Topic
   if (kind === "images") return id ? "ec2.image" : "ec2.images";
   if (kind === "volumes") return id ? "ec2.volume" : "ec2.volumes";
   if (kind === "snapshots") return id ? "ec2.snapshot" : "ec2.snapshots";
+  if (kind === "securityGroups") return id ? "ec2.securityGroup" : "ec2.securityGroups";
+  if (kind === "vpcs") return id ? "ec2.vpc" : "ec2.vpcs";
+  if (kind === "subnets") return id ? "ec2.subnet" : "ec2.subnets";
+  if (kind === "interfaces") return id ? "ec2.interface" : "ec2.interfaces";
+  if (kind === "addresses") return "ec2.addresses";
   return "ec2.overview";
 }

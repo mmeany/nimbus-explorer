@@ -1,7 +1,7 @@
 // EC2 controller: an overview of the resource kinds, then one list per kind
 // and a view per resource. Instances load in full and page on screen; state
 // chips and the remembered filter narrow the list (and the tree).
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, type AppError } from "../../api/s3";
 import { allowedActions, DEFAULT_STATES, ec2Api, INSTANCE_STATES, instanceLabel, matchesInstanceFilter, type Instance, type InstanceDetails, type InstanceState } from "../../api/ec2";
 import { CommandButton } from "../../components/CommandButton";
@@ -10,7 +10,7 @@ import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { FilterBox } from "../../components/FilterBox";
 import { HelpTopic } from "../../components/HelpDialog";
-import { DeleteIcon, Ec2Icon, EditIcon, ImageIcon, InstanceIcon, SnapshotIcon, LockIcon, PlayIcon, RedriveIcon, RefreshIcon, StopIcon } from "../../components/Icons";
+import { DeleteIcon, Ec2Icon, EditIcon, ImageIcon, InstanceIcon, NetworkIcon, ShieldIcon, SnapshotIcon, LockIcon, PlayIcon, RedriveIcon, RefreshIcon, StopIcon } from "../../components/Icons";
 import { PageBar } from "../../components/PageBar";
 import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { formatDate } from "../../format";
@@ -22,14 +22,36 @@ import { ChangeTypeDialog, ProtectionDialog, StopDialog } from "./InstanceDialog
 import { CreateImageDialog, SnapshotDialog, TagEditorDialog } from "./TagDialogs";
 import { ConsoleTab, StatusTab, UserDataTab } from "./InstanceExtras";
 import { InstanceView, type InstanceTab } from "./InstanceView";
-import { ResourceList } from "./ResourceList";
+import { addressConfig, AddressView, groupConfig, interfaceConfig, InterfaceView, SecurityGroupView, subnetConfig, SubnetView, vpcConfig, VpcView } from "./NetworkViews";
+import { ResourceList, type KindConfig } from "./ResourceList";
 import { imageConfig, ImageView, snapshotConfig, SnapshotView, STORAGE_ICONS, volumeConfig, VolumeView, type ImageScope } from "./StorageViews";
 import { store, stored } from "./common";
 
 /** Kinds built so far, in tree / overview order. */
-const KINDS: Ec2Kind[] = ["instances", "images", "volumes", "snapshots"];
+const KINDS: Ec2Kind[] = ["instances", "images", "volumes", "snapshots", "securityGroups", "vpcs", "subnets", "interfaces", "addresses"];
 
-const KIND_ICON: Partial<Record<Ec2Kind, ReactNode>> = { instances: <InstanceIcon state="running" />, ...STORAGE_ICONS };
+/** Shown under a Network node in the tree. */
+const NETWORK_KINDS: Ec2Kind[] = ["vpcs", "subnets", "interfaces", "addresses"];
+
+const SINGULAR: Record<Ec2Kind, string> = {
+  instances: "Instance",
+  images: "Image",
+  volumes: "Volume",
+  snapshots: "Snapshot",
+  securityGroups: "Security group",
+  vpcs: "VPC",
+  subnets: "Subnet",
+  interfaces: "Network interface",
+  addresses: "Elastic IP",
+  keyPairs: "Key pair",
+  launchTemplates: "Launch template",
+  loadBalancers: "Load balancer",
+  targetGroups: "Target group",
+  autoScaling: "Auto Scaling group",
+  unused: "Unused resources",
+};
+
+const KIND_ICON: Partial<Record<Ec2Kind, ReactNode>> = { instances: <InstanceIcon state="running" />, ...STORAGE_ICONS, securityGroups: <ShieldIcon />, vpcs: <NetworkIcon />, subnets: <NetworkIcon />, interfaces: <NetworkIcon />, addresses: <NetworkIcon /> };
 
 const ABOUT: Record<Ec2Kind, string> = {
   instances: "Virtual machines: state, type, addresses, storage, networking",
@@ -436,13 +458,30 @@ export function useEc2Service(shell: Shell): ServiceUi {
     </TreeRow>
   );
 
+  const kindRow = (k: Ec2Kind, depth: number) => (
+    <TreeRow key={k} depth={depth} label={EC2_KIND_LABEL[k]} icon={KIND_ICON[k]} selected={active && kind === k && !id} onClick={() => go({ kind: k })} onContextMenu={(x, y) => kindMenu(k, x, y)} />
+  );
   const tree = connection ? (
     <TreeRow depth={1} label="EC2" icon={<Ec2Icon />} selected={active && !kind} expanded={open} title={`EC2 · ${region}`} onClick={() => go({})} onToggle={() => setOpen((v) => !v)}>
-      {KINDS.map((k) =>
+      {KINDS.filter((k) => !NETWORK_KINDS.includes(k)).map((k) =>
         k === "instances" ? (
           instancesTree
+        ) : k === "securityGroups" ? (
+          <Fragment key="net">
+            {kindRow(k, 2)}
+            <TreeRow
+              depth={2}
+              label="Network"
+              icon={<NetworkIcon />}
+              expanded={expanded.has("network") || (!!kind && NETWORK_KINDS.includes(kind))}
+              onClick={() => toggle("network")}
+              onToggle={() => toggle("network")}
+            >
+              {NETWORK_KINDS.map((n) => kindRow(n, 3))}
+            </TreeRow>
+          </Fragment>
         ) : (
-          <TreeRow key={k} depth={2} label={filters[k] ? `${EC2_KIND_LABEL[k]} (filtered)` : EC2_KIND_LABEL[k]} icon={KIND_ICON[k]} selected={active && kind === k && !id} onClick={() => go({ kind: k })} onContextMenu={(x, y) => kindMenu(k, x, y)} />
+          kindRow(k, 2)
         ),
       )}
     </TreeRow>
@@ -469,41 +508,45 @@ export function useEc2Service(shell: Shell): ServiceUi {
   const images = useMemo(() => imageConfig(imageScope, imageControls), [imageScope]);
   const volumes = useMemo(() => volumeConfig(byId), [byId]);
   const snapshots = useMemo(() => snapshotConfig(), []);
+  const interfaces = useMemo(() => interfaceConfig(byId), [byId]);
+  const addresses = useMemo(() => addressConfig(byId), [byId]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lists: Partial<Record<Ec2Kind, KindConfig<any>>> = { images, volumes, snapshots, securityGroups: groupConfig, vpcs: vpcConfig, subnets: subnetConfig, interfaces, addresses };
   const editTags = (resource: string, label: string, tags: [string, string][]) => openDialog({ kind: "tags", resource, label, tags });
+
+  function resourceView(k: Ec2Kind, rid: string): ReactNode {
+    const common = { key: rid, shell, id: rid, reloadToken };
+    switch (k) {
+      case "images":
+        return <ImageView {...common} instances={allInstances} onEditTags={(i) => editTags(i.id, i.name ?? i.id, i.tags)} />;
+      case "volumes":
+        return <VolumeView {...common} instances={byId} onEditTags={(v) => editTags(v.id, v.name ?? v.id, v.tags)} onSnapshot={(v) => openDialog({ kind: "snapshot", instance: null, volumeId: v.id })} />;
+      case "snapshots":
+        return <SnapshotView {...common} onEditTags={(x) => editTags(x.id, x.name ?? x.id, x.tags)} />;
+      case "securityGroups":
+        return <SecurityGroupView {...common} instances={byId} onEditTags={editTags} />;
+      case "vpcs":
+        return <VpcView {...common} instances={allInstances} onEditTags={editTags} />;
+      case "subnets":
+        return <SubnetView {...common} instances={allInstances} onEditTags={editTags} />;
+      case "interfaces":
+        return <InterfaceView {...common} onEditTags={editTags} />;
+      case "addresses":
+        return <AddressView {...common} onEditTags={editTags} />;
+      default:
+        return null;
+    }
+  }
 
   let content: ReactNode = null;
   let status = "";
-  if (active && !id && (kind === "images" || kind === "volumes" || kind === "snapshots")) {
-    content =
-      kind === "images" ? (
-        <ResourceList key={kind} shell={shell} config={images} reloadToken={reloadToken} onStatus={setListStatus} />
-      ) : kind === "volumes" ? (
-        <ResourceList key={kind} shell={shell} config={volumes} reloadToken={reloadToken} onStatus={setListStatus} />
-      ) : (
-        <ResourceList key={kind} shell={shell} config={snapshots} reloadToken={reloadToken} onStatus={setListStatus} />
-      );
+  const listConfig = kind ? lists[kind] : undefined;
+  if (active && kind && !id && listConfig) {
+    content = <ResourceList key={kind} shell={shell} config={listConfig} reloadToken={reloadToken} onStatus={setListStatus} />;
     status = listStatus;
-  } else if (active && id && kind === "images") {
-    content = (
-      <div className="service-pane scroll-pane">
-        <ImageView key={id} shell={shell} id={id} reloadToken={reloadToken} instances={allInstances} onEditTags={(i) => editTags(i.id, i.name ?? i.id, i.tags)} />
-      </div>
-    );
-    status = `Image ${id} · ${region}`;
-  } else if (active && id && kind === "volumes") {
-    content = (
-      <div className="service-pane scroll-pane">
-        <VolumeView key={id} shell={shell} id={id} reloadToken={reloadToken} instances={byId} onEditTags={(v) => editTags(v.id, v.name ?? v.id, v.tags)} onSnapshot={(v) => openDialog({ kind: "snapshot", instance: null, volumeId: v.id })} />
-      </div>
-    );
-    status = `Volume ${id} · ${region}`;
-  } else if (active && id && kind === "snapshots") {
-    content = (
-      <div className="service-pane scroll-pane">
-        <SnapshotView key={id} shell={shell} id={id} reloadToken={reloadToken} onEditTags={(s) => editTags(s.id, s.name ?? s.id, s.tags)} />
-      </div>
-    );
-    status = `Snapshot ${id} · ${region}`;
+  } else if (active && kind && kind !== "instances" && id) {
+    content = <div className="service-pane scroll-pane">{resourceView(kind, id)}</div>;
+    status = `${SINGULAR[kind]} ${id} · ${region}`;
   } else if (active && !kind) {
     const rows: Row[] = KINDS.map((k, n) => ({
       key: k,

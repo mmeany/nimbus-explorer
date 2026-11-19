@@ -1,7 +1,8 @@
 //! EC2 commands.
 
 use super::AppState;
-use crate::ec2::{self, Instance, InstanceDetails, Volume};
+use crate::ec2::{self, Instance, InstanceDetails, Interface, Volume};
+use crate::ec2_network::{self as network, Address, GroupDetails, SecurityGroup, Subnet, SubnetDetails, Vpc, VpcDetails};
 use crate::ec2_storage::{self as storage, Image, Snapshot, SnapshotDetails};
 use crate::ec2_actions::{self as actions, StateChange, TypeInfo};
 use crate::ec2_tags::{self as tags, CreatedSnapshot, ImageRequest};
@@ -186,4 +187,51 @@ pub async fn ec2_snapshots(state: State<'_, AppState>) -> Result<Vec<Snapshot>, 
 #[tauri::command]
 pub async fn ec2_snapshot(state: State<'_, AppState>, id: String) -> Result<SnapshotDetails, AppError> {
     storage::get_snapshot(&*state.connection()?, &id).await
+}
+
+#[tauri::command]
+pub async fn ec2_security_groups(state: State<'_, AppState>) -> Result<Vec<SecurityGroup>, AppError> {
+    network::list_security_groups(&*state.connection()?).await
+}
+
+/// A security group with what uses it and which groups reference it.
+#[tauri::command]
+pub async fn ec2_security_group(state: State<'_, AppState>, id: String) -> Result<GroupDetails, AppError> {
+    network::security_group(&*state.connection()?, &id).await
+}
+
+#[tauri::command]
+pub async fn ec2_vpcs(state: State<'_, AppState>) -> Result<Vec<Vpc>, AppError> {
+    network::list_vpcs(&*state.connection()?).await
+}
+
+#[tauri::command]
+pub async fn ec2_vpc(state: State<'_, AppState>, id: String) -> Result<VpcDetails, AppError> {
+    network::vpc_details(&*state.connection()?, &id).await
+}
+
+#[tauri::command]
+pub async fn ec2_subnets(state: State<'_, AppState>) -> Result<Vec<Subnet>, AppError> {
+    network::list_subnets(&*state.connection()?, None).await
+}
+
+#[tauri::command]
+pub async fn ec2_subnet(state: State<'_, AppState>, id: String) -> Result<SubnetDetails, AppError> {
+    network::subnet_details(&*state.connection()?, &id).await
+}
+
+#[tauri::command]
+pub async fn ec2_interfaces(state: State<'_, AppState>) -> Result<Vec<Interface>, AppError> {
+    network::list_interfaces(&*state.connection()?).await
+}
+
+#[tauri::command]
+pub async fn ec2_interface(state: State<'_, AppState>, id: String) -> Result<Interface, AppError> {
+    network::get_interface(&*state.connection()?, &id).await
+}
+
+/// Elastic IPs.
+#[tauri::command]
+pub async fn ec2_addresses(state: State<'_, AppState>) -> Result<Vec<Address>, AppError> {
+    network::list_addresses(&*state.connection()?).await
 }
