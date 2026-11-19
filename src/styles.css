@@ -949,3 +949,6 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .qbadge.warn-badge { margin-left: 6px; background: var(--badge-custom-bg); color: var(--badge-custom-text); border-color: var(--badge-custom-border); }
 .ec2-states { display: inline-flex; gap: 2px; }
 .ec2-group-head { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; }
+.ec2-console { max-height: 65vh; }
+.ec2-console.nowrap, .ec2-console.nowrap .ln-body { white-space: pre; word-break: normal; }
+.ec2-screenshot { display: block; max-width: 100%; margin-top: 8px; border: 1px solid var(--border); }

@@ -152,10 +152,62 @@ export interface InstanceDetails extends Instance {
   roleArn: string | null;
 }
 
+export interface CheckDetail {
+  name: string;
+  status: string;
+  impairedSince: string | null;
+}
+
+export interface Check {
+  /** ok, impaired, insufficient-data, not-applicable, initializing. */
+  status: string | null;
+  details: CheckDetail[];
+}
+
+export interface ScheduledEvent {
+  id: string | null;
+  code: string | null;
+  description: string | null;
+  notBefore: string | null;
+  notAfter: string | null;
+  deadline: string | null;
+}
+
+export interface InstanceStatus {
+  state: string | null;
+  system: Check | null;
+  instance: Check | null;
+  ebs: Check | null;
+  events: ScheduledEvent[];
+}
+
+export interface ConsoleOutput {
+  text: string;
+  captured: string | null;
+  latest: boolean;
+}
+
+export interface UserData {
+  text: string | null;
+  bytes: number;
+  compressed: boolean;
+}
+
 export const ec2Api = {
   instances: () => call<Instance[]>("ec2_instances"),
   instance: (id: string) => call<InstanceDetails>("ec2_instance", { id }),
+  status: (id: string) => call<InstanceStatus>("ec2_status", { id }),
+  consoleOutput: (id: string, latest: boolean) => call<ConsoleOutput>("ec2_console_output", { id, latest }),
+  screenshot: (id: string) => call<string>("ec2_screenshot", { id }),
+  userData: (id: string) => call<UserData>("ec2_user_data", { id }),
 };
+
+/** What the masked user data field reveals: the text, or a note when there's nothing to show. */
+export function userDataText(u: UserData): string {
+  if (u.compressed) return `(gzip-compressed, ${u.bytes.toLocaleString()} bytes: the app can't show compressed user data)`;
+  if (!u.text) return "(no user data)";
+  return u.text;
+}
 
 export const INSTANCE_STATES = ["pending", "running", "stopping", "stopped", "shutting-down", "terminated"] as const;
 export type InstanceState = (typeof INSTANCE_STATES)[number];

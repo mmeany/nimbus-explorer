@@ -8,6 +8,7 @@ mod ecs;
 mod ecs_actions;
 mod ecs_taskdefs;
 mod ec2;
+mod ec2_console;
 mod ec2_network;
 mod elasticache;
 mod elasticache_actions;
@@ -208,6 +209,10 @@ pub fn run() {
             commands::logs::logs_download,
             commands::ec2::ec2_instances,
             commands::ec2::ec2_instance,
+            commands::ec2::ec2_status,
+            commands::ec2::ec2_console_output,
+            commands::ec2::ec2_screenshot,
+            commands::ec2::ec2_user_data,
             commands::elasticache::ec_list_groups,
             commands::elasticache::ec_list_serverless,
             commands::elasticache::ec_group,

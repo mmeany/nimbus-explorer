@@ -45,6 +45,32 @@ An *auto-assigned* public IP is released when the instance stops; an *Elastic IP
 - A source that is another security group means "any resource that has that group". Click it to open the group.
 - **open to the internet** marks inbound rules from 0.0.0.0/0 or ::/0.`,
   },
+  "ec2.instance.status": {
+    title: "Status checks",
+    body: `AWS's health checks for a running instance, and maintenance it has scheduled.
+
+- **System**: problems on AWS's side (the host, its power or network). Stopping and starting the instance (not rebooting) moves it to a healthy host.
+- **Instance**: problems inside the instance, such as an OS that didn't boot or a broken network setup. The **Console** tab usually shows why.
+- **Attached EBS**: the instance can't reach its EBS volumes.
+- **Scheduled events**: reboots, maintenance, retirement or stops that AWS has planned, with the window they'll happen in. Some can be rescheduled until the date shown.
+
+New instances show *initializing* for a few minutes; the tab checks again every 15 seconds meanwhile.`,
+  },
+  "ec2.instance.console": {
+    title: "Console",
+    body: `What the instance has written to its serial console, or a picture of its screen. Both help when an instance doesn't boot or can't be reached.
+
+- **Output**: the console text (boot messages, kernel errors, cloud-init progress). Instances built on the Nitro system return the latest output; older types return the buffer AWS saved at boot and on stop. Colour codes are removed. **Copy** copies it all.
+- **Screenshot**: a JPEG of the screen, as a monitor would show it. Useful for Windows instances and stuck boot menus. The instance must be running.
+
+Your choice of Output or Screenshot is remembered.`,
+  },
+  "ec2.instance.userdata": {
+    title: "User data",
+    body: `The script or cloud-init configuration passed to the instance at launch. It often holds passwords, tokens or keys, so it stays masked until you choose **Reveal** or **Copy**, and it's dropped again when you hide it or leave the tab. The app never saves it.
+
+Plain JSON user data can be viewed as a tree; anything else (scripts, cloud-init) shows as text. Compressed (gzip) user data can't be shown: only its size is.`,
+  },
 };
 
 type Ec2TopicId = keyof typeof ec2Topics;

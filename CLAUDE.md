@@ -1164,7 +1164,12 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   name / ID / tag with the remembered history; instance view with details,
   storage (volumes), networking (ENIs, security groups with their rules
   resolved), tags, IAM instance profile (role links), ASG name as a field.
-- 17.2 Instance read views: status checks (system / instance / EBS) and
+- 17.2 ✅ (`src-tauri/src/ec2_console.rs`, `services/ec2/InstanceExtras.tsx`;
+  console output asks for the latest and falls back to the saved buffer on
+  non-Nitro types, control sequences stripped in Rust (`clean_console`);
+  the screenshot is a data: URL; gzip user data shows its size only, since
+  there's no decompressor; Output / Screenshot remembered in localStorage
+  `ec2.console.mode`; MiniStack answers all four calls) Instance read views: status checks (system / instance / EBS) and
   scheduled events; console output (text with line numbers); console
   screenshot (image); user data decoded, masked with Reveal, never cached.
 - 17.3 Instance actions: start, stop (optionally hibernate, force), reboot,
