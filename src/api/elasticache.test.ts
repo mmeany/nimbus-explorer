@@ -74,3 +74,13 @@ describe("parameterValue", () => {
     expect(parameterValue({ ...base, value: "300", perNodeType: [] }, null)).toBe("300");
   });
 });
+
+describe("authLabel", () => {
+  it("names the authentication type", async () => {
+    const { authLabel } = await import("../services/elasticache/UsersView");
+    expect(authLabel("password", 1)).toBe("Password");
+    expect(authLabel("password", 2)).toBe("Passwords (2)");
+    expect(authLabel("iam", null)).toBe("IAM");
+    expect(authLabel("no-password", null)).toBe("No password");
+  });
+});

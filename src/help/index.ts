@@ -60,7 +60,7 @@ export function placeTopic(p: Place): HelpTopicId {
     case "rds":
       return p.id ? "rds.details" : "rds.databases";
     case "elasticache":
-      return p.kind === "group" ? "elasticache.group" : p.kind === "serverless" ? "elasticache.serverless" : p.kind === "snapshots" ? "elasticache.snapshots" : "elasticache.caches";
+      return p.kind === "group" ? "elasticache.group" : p.kind === "serverless" ? "elasticache.serverless" : p.kind === "snapshots" ? "elasticache.snapshots" : p.kind === "users" ? "elasticache.users" : "elasticache.caches";
     case "ecs":
       if (p.view === "taskdefs") return p.id ? "ecs.family.details" : "ecs.taskdefs";
       if (p.view === "service") return "ecs.service.details";

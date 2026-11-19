@@ -9,6 +9,7 @@ use crate::elasticache_snapshots::{
     self as snapshots, Kind, RestoreRequest, Restored, Snapshot, SnapshotList,
 };
 use crate::elasticache_updates::{self as updates, Updates};
+use crate::elasticache_users::{self as users, Rbac};
 use crate::error::AppError;
 use tauri::State;
 
@@ -148,4 +149,10 @@ pub async fn ec_apply_update(
 ) -> Result<Option<String>, AppError> {
     state.ensure_writable()?;
     updates::apply(&*state.connection()?, &group, &update).await
+}
+
+/// RBAC users and user groups in the region (view only).
+#[tauri::command]
+pub async fn ec_users(state: State<'_, AppState>) -> Result<Rbac, AppError> {
+    users::list(&*state.connection()?).await
 }

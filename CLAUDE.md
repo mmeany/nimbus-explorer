@@ -1009,6 +1009,9 @@ connections, no Redis client crate), metrics.
   so the tab says so and only that path is checked in the app; the table
   itself is untested against real data) Service updates: pending updates per cache (severity, status,
   apply-by date); "Apply now" via BatchApplyUpdateAction (a write).
-- 15.8 Users & user groups (tree node, view only): users (access string,
+- 15.8 ✅ (`src-tauri/src/elasticache_users.rs`, `services/elasticache/UsersView.tsx`;
+  Place kind "users", a tree node; Users / User groups toggle, a selected
+  group shows its members' access strings and links to the caches using
+  it; a user's groups are also filled in from group member lists) Users & user groups (tree node, view only): users (access string,
   auth type), groups (members), which caches use each group.
 - 15.9 Docs (`docs/elasticache.md`, README, help topics).

@@ -116,11 +116,41 @@ export const ecApi = {
   updates: (group: string) => call<{ items: ServiceUpdate[]; unsupported: boolean }>("ec_updates", { group }),
   /** Starts applying a service update now; returns its new status. */
   applyUpdate: (group: string, update: string) => call<string | null>("ec_apply_update", { group, update }),
+  /** RBAC users and user groups in the region (view only). */
+  users: () => call<Rbac>("ec_users"),
   restoreSnapshot: (request: { kind: SnapshotKind; snapshot: string; name: string; description: string | null; nodeType: string | null; replicas: number }) =>
     call<{ name: string; copiedFromSource: boolean }>("ec_restore_snapshot", { request }),
 };
 
 export type SnapshotKind = "group" | "serverless";
+
+export interface Rbac {
+  users: {
+    id: string;
+    name: string | null;
+    status: string | null;
+    engine: string | null;
+    minimumEngineVersion: string | null;
+    accessString: string | null;
+    groupIds: string[];
+    /** password, no-password or iam. */
+    authType: string | null;
+    passwordCount: number | null;
+    arn: string | null;
+  }[];
+  groups: {
+    id: string;
+    status: string | null;
+    engine: string | null;
+    userIds: string[];
+    minimumEngineVersion: string | null;
+    adding: string[];
+    removing: string[];
+    replicationGroups: string[];
+    serverlessCaches: string[];
+    arn: string | null;
+  }[];
+}
 
 export interface ServiceUpdate {
   name: string;

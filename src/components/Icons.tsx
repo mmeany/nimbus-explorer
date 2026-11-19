@@ -556,3 +556,15 @@ export function SnapshotIcon({ size = 16 }: P) {
     </svg>
   );
 }
+
+/** ElastiCache users and groups: two people. */
+export function CacheUsersIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="6" cy="5.5" r="2.3" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" />
+      <path d="M1.8 13.5 C2.2 10.2 9.8 10.2 10.2 13.5 Z" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" />
+      <circle cx="11" cy="5" r="1.9" fill="none" stroke="#3e6fd8" strokeWidth="0.9" />
+      <path d="M10.6 9.4 C12.8 9.3 14.4 10.6 14.4 12.8" fill="none" stroke="#3e6fd8" strokeWidth="0.9" />
+    </svg>
+  );
+}

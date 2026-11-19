@@ -895,6 +895,8 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .service-pane > .ec-snap-bar { margin: 6px 10px; }
 .ec-snap-list { height: 360px; display: flex; flex-direction: column; border: 1px solid var(--border-light); }
 .ec-snap-list.region { flex: 1; height: auto; min-height: 0; border: none; }
+.ec-users .ec-snap-list.region { min-height: 160px; }
+.ec-detail { max-height: 45%; overflow: auto; padding: 6px 10px; border-top: 1px solid var(--border-light); }
 .sfn-activities-note { margin: 6px 10px; }
 .sfn-snippet { margin: 0; padding: 6px 8px; border: 1px solid var(--border-light); background: var(--panel-bg); white-space: pre-wrap; }
 .sfn-cmd { gap: 8px; align-items: flex-start; }

@@ -11,6 +11,7 @@ mod elasticache_events;
 mod elasticache_params;
 mod elasticache_snapshots;
 mod elasticache_updates;
+mod elasticache_users;
 mod ecs_actions;
 mod ecs_taskdefs;
 mod error;
@@ -214,6 +215,7 @@ pub fn run() {
             commands::elasticache::ec_parameters,
             commands::elasticache::ec_updates,
             commands::elasticache::ec_apply_update,
+            commands::elasticache::ec_users,
             commands::sfn::sfn_list,
             commands::sfn::sfn_details_many,
             commands::sfn::sfn_describe,

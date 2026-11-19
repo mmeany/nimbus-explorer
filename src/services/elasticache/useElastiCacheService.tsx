@@ -9,7 +9,7 @@ import type { MenuItem } from "../../components/ContextMenu";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { FilterBox } from "../../components/FilterBox";
-import { CacheGroupIcon, CacheNodeIcon, CacheShardIcon, ElastiCacheIcon, RefreshIcon, ServerlessCacheIcon, SnapshotIcon } from "../../components/Icons";
+import { CacheGroupIcon, CacheNodeIcon, CacheShardIcon, CacheUsersIcon, ElastiCacheIcon, RefreshIcon, ServerlessCacheIcon, SnapshotIcon } from "../../components/Icons";
 import { PageBar } from "../../components/PageBar";
 import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { EC_ROOT, type Place } from "../../shell/places";
@@ -20,6 +20,7 @@ import { ConnectTab } from "./ConnectTab";
 import { EventsTab } from "./EventsTab";
 import { ParametersTab } from "./ParametersTab";
 import { UpdatesTab } from "./UpdatesTab";
+import { UsersView } from "./UsersView";
 import { SnapshotList } from "./Snapshots";
 
 const COLUMNS: Column[] = [
@@ -229,6 +230,7 @@ export function useElastiCacheService(shell: Shell): ServiceUi {
   const tree = connection ? (
     <TreeRow depth={1} label={filter ? "ElastiCache (filtered)" : "ElastiCache"} icon={<ElastiCacheIcon />} selected={listView} expanded={open} title={`ElastiCache · ${region}`} onClick={() => go(EC_ROOT)} onToggle={() => setOpen((v) => !v)}>
       <TreeRow depth={2} label="Snapshots" icon={<SnapshotIcon />} selected={active && kind === "snapshots"} onClick={() => go({ ...EC_ROOT, kind: "snapshots" })} />
+      <TreeRow depth={2} label="Users and groups" icon={<CacheUsersIcon />} selected={active && kind === "users"} onClick={() => go({ ...EC_ROOT, kind: "users" })} />
       {listing?.error ? (
         <TreeNote depth={2}>Couldn't list caches</TreeNote>
       ) : !items ? (
@@ -307,6 +309,9 @@ export function useElastiCacheService(shell: Shell): ServiceUi {
       </div>
     );
     if (items) status = `${groups.toLocaleString()} replication group${groups === 1 ? "" : "s"}, ${(items.length - groups).toLocaleString()} serverless${filter ? ` beginning with "${filter}"` : ""} · ${region}`;
+  } else if (active && kind === "users") {
+    content = <UsersView shell={shell} reloadToken={reloadToken} />;
+    status = `Users and user groups · ${region}`;
   } else if (active && kind === "snapshots") {
     content = <SnapshotList shell={shell} cache={null} reloadToken={reloadToken} />;
     status = `Snapshots · ${region}`;

@@ -76,6 +76,15 @@ Default groups (default.*) can't be changed; a cache that needs other values use
 
 While an update runs, the list checks again every 30 seconds. Serverless caches are patched by AWS without anything to apply.`,
   },
+  "elasticache.users": {
+    title: "Users and groups",
+    body: `Role-based access control (RBAC) for Valkey and Redis OSS caches, view only. A **user** has a name clients log in with, an access string (ACL rules: which commands and keys it may use, such as \`on ~app:* +@read\`) and how it authenticates (passwords, IAM or none). A **user group** collects users; a cache that uses a group accepts its users.
+
+- **Users**: ID, name, status, engine, authentication, access string and groups. Select one for its details.
+- **User groups**: members, the caches that use the group (**Used by**) and changes in progress. Select one to see its members' access strings and open the caches.
+
+Passwords are never shown: AWS doesn't return them. Create and change users in the console or your infrastructure code.`,
+  },
   "elasticache.serverless": {
     title: "Serverless cache",
     body: `A serverless Valkey or Redis OSS cache: endpoint and reader endpoint, usage limits (data storage and ECPUs per second; none means it scales as needed), encryption (always in transit), RBAC user group, network, backups and tags.`,
