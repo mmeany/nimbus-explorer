@@ -99,6 +99,48 @@ Spot instances can only be stopped when their request is persistent.`,
 
 The new type must support the instance's image and settings (architecture, virtualization, ENA networking, any EBS optimisation or hibernation). If it doesn't, AWS refuses and the instance keeps its type. Start the instance afterwards to use it.`,
   },
+  "ec2.images": {
+    title: "AMIs",
+    body: `Machine images in this region, newest first.
+
+- **Mine**: images your account owns. **Shared with me**: images other accounts have given yours permission to launch (public images aren't listed). The choice is remembered.
+- **Filter**: part of the name, the start of the image ID, or a tag as *key=value*. Previous filters are remembered.
+- Images that aren't *available* (pending, failed, disabled) are dimmed.
+
+Open an image to see its block devices (with their snapshots) and which instances were launched from it.`,
+  },
+  "ec2.image": {
+    title: "AMI",
+    body: `An image: its owner, platform, architecture, root device and boot settings, the block devices it creates (each EBS one from a snapshot: click to open it), and the running or stopped instances in this region launched from it. While the image is *pending* the view checks again every 15 seconds.
+
+**Edit tags…** changes the image's tags (only the owner can).`,
+  },
+  "ec2.volumes": {
+    title: "Volumes",
+    body: `Every EBS volume in the region, newest first, with its size, type, state and the instance it's attached to.
+
+- *unattached* volumes (dimmed) aren't in use but still cost money every month.
+- **Filter**: name, the start of the volume ID, an instance ID (volumes attached to it), or a tag as *key=value*.`,
+  },
+  "ec2.volume": {
+    title: "Volume",
+    body: `One EBS volume: size, type, performance, zone, encryption, the snapshot it was created from, and what it's attached to (click an instance to open it).
+
+- **Create snapshot…**: a point-in-time copy of the volume.
+- **Edit tags…**: change the volume's tags.`,
+  },
+  "ec2.snapshots": {
+    title: "Snapshots",
+    body: `Your EBS snapshots in this region, newest first. Snapshots still being taken show their progress and are dimmed.
+
+**Filter**: name, the start of the snapshot ID or of its volume's ID, words from the description, or a tag as *key=value*.`,
+  },
+  "ec2.snapshot": {
+    title: "Snapshot",
+    body: `One EBS snapshot: size, when it was taken, the volume it came from (marked *deleted* if that volume is gone), encryption, storage tier, and which of your images use it. *Archive* tier snapshots are cheaper to keep but must be restored before they can be used.
+
+**Edit tags…** changes the snapshot's tags.`,
+  },
   "ec2.tags": {
     title: "Tags",
     body: `Key / value labels on an EC2 resource. Edit, add or remove rows and **Save**: new and changed tags are set, removed ones deleted, the rest left alone.
@@ -139,5 +181,8 @@ type Ec2TopicId = keyof typeof ec2Topics;
 /** The topic for an EC2 place. */
 export function ec2PlaceTopic(kind: Ec2Kind | null, id: string | null): Ec2TopicId {
   if (kind === "instances") return id ? "ec2.instance" : "ec2.instances";
+  if (kind === "images") return id ? "ec2.image" : "ec2.images";
+  if (kind === "volumes") return id ? "ec2.volume" : "ec2.volumes";
+  if (kind === "snapshots") return id ? "ec2.snapshot" : "ec2.snapshots";
   return "ec2.overview";
 }

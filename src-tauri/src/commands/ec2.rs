@@ -1,7 +1,8 @@
 //! EC2 commands.
 
 use super::AppState;
-use crate::ec2::{self, Instance, InstanceDetails};
+use crate::ec2::{self, Instance, InstanceDetails, Volume};
+use crate::ec2_storage::{self as storage, Image, Snapshot, SnapshotDetails};
 use crate::ec2_actions::{self as actions, StateChange, TypeInfo};
 use crate::ec2_tags::{self as tags, CreatedSnapshot, ImageRequest};
 use crate::ec2_console::{self as console, ConsoleOutput, InstanceStatus, SsmAgent, UserData};
@@ -153,4 +154,36 @@ pub async fn ec2_snapshot_instance(
 #[tauri::command]
 pub async fn ec2_ssm_agent(state: State<'_, AppState>, id: String) -> Result<SsmAgent, AppError> {
     Ok(console::ssm_agent(&*state.connection()?, &id).await)
+}
+
+/// Your images ("mine") or images shared with you ("shared").
+#[tauri::command]
+pub async fn ec2_images(state: State<'_, AppState>, scope: String) -> Result<Vec<Image>, AppError> {
+    storage::list_images(&*state.connection()?, &scope).await
+}
+
+#[tauri::command]
+pub async fn ec2_image(state: State<'_, AppState>, id: String) -> Result<Image, AppError> {
+    storage::get_image(&*state.connection()?, &id).await
+}
+
+#[tauri::command]
+pub async fn ec2_volumes(state: State<'_, AppState>) -> Result<Vec<Volume>, AppError> {
+    storage::list_volumes(&*state.connection()?).await
+}
+
+#[tauri::command]
+pub async fn ec2_volume(state: State<'_, AppState>, id: String) -> Result<Volume, AppError> {
+    storage::get_volume(&*state.connection()?, &id).await
+}
+
+/// Your snapshots.
+#[tauri::command]
+pub async fn ec2_snapshots(state: State<'_, AppState>) -> Result<Vec<Snapshot>, AppError> {
+    storage::list_snapshots(&*state.connection()?).await
+}
+
+#[tauri::command]
+pub async fn ec2_snapshot(state: State<'_, AppState>, id: String) -> Result<SnapshotDetails, AppError> {
+    storage::get_snapshot(&*state.connection()?, &id).await
 }

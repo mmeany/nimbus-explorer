@@ -210,9 +210,77 @@ export const ec2Api = {
   setTags: (resource: string, current: [string, string][], desired: [string, string][]) => call<[number, number]>("ec2_set_tags", { resource, current, desired }),
   createImage: (request: { instanceId: string; name: string; description: string | null; noReboot: boolean; tags: [string, string][] }) => call<string>("ec2_create_image", { request }),
   snapshotVolume: (volumeId: string, description: string | null, tags: [string, string][]) => call<CreatedSnapshot>("ec2_snapshot_volume", { volumeId, description, tags }),
+  images: (scope: "mine" | "shared") => call<Image[]>("ec2_images", { scope }),
+  image: (id: string) => call<Image>("ec2_image", { id }),
+  volumes: () => call<Volume[]>("ec2_volumes"),
+  volume: (id: string) => call<Volume>("ec2_volume", { id }),
+  snapshots: () => call<Snapshot[]>("ec2_snapshots"),
+  snapshot: (id: string) => call<SnapshotDetails>("ec2_snapshot", { id }),
   ssmAgent: (id: string) => call<SsmAgent>("ec2_ssm_agent", { id }),
   snapshotInstance: (instanceId: string, description: string | null, excludeRoot: boolean) => call<CreatedSnapshot[]>("ec2_snapshot_instance", { instanceId, description, excludeRoot }),
 };
+
+export interface ImageDevice {
+  device: string;
+  snapshotId: string | null;
+  sizeGib: number | null;
+  volumeType: string | null;
+  encrypted: boolean | null;
+  deleteOnTermination: boolean | null;
+  /** An instance store disk ("ephemeral0") rather than EBS. */
+  virtualName: string | null;
+}
+
+export interface Image {
+  id: string;
+  /** The image's own name (not a tag). */
+  name: string | null;
+  nameTag: string | null;
+  description: string | null;
+  state: string | null;
+  stateReason: string | null;
+  created: string | null;
+  deprecation: string | null;
+  ownerId: string | null;
+  ownerAlias: string | null;
+  public: boolean;
+  architecture: string | null;
+  platform: string | null;
+  rootDevice: string | null;
+  rootDeviceType: string | null;
+  virtualization: string | null;
+  enaSupport: boolean | null;
+  bootMode: string | null;
+  imdsSupport: string | null;
+  location: string | null;
+  devices: ImageDevice[];
+  tags: [string, string][];
+}
+
+export interface Snapshot {
+  id: string;
+  name: string | null;
+  description: string | null;
+  volumeId: string | null;
+  sizeGib: number | null;
+  state: string | null;
+  stateMessage: string | null;
+  progress: string | null;
+  started: string | null;
+  completed: string | null;
+  encrypted: boolean;
+  kmsKeyId: string | null;
+  ownerId: string | null;
+  storageTier: string | null;
+  tags: [string, string][];
+}
+
+export interface SnapshotDetails extends Snapshot {
+  /** null = couldn't tell. */
+  volumeExists: boolean | null;
+  /** Your images that use it. */
+  images: string[];
+}
 
 export interface SsmAgent {
   managed: boolean;

@@ -1201,7 +1201,15 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   SSH, EC2 Instance Connect commands with profile and region filled in;
   reachability notes (public IP, SSM agent status via
   DescribeInstanceInformation where allowed).
-- 17.6 AMIs (Mine / Shared with me), EBS volumes and EBS snapshots: lists and
+- 17.6 ✅ (`src-tauri/src/ec2_storage.rs`, `services/ec2/ResourceList.tsx`
+  (generic list: a `KindConfig` per kind gives load, columns, cells, filter
+  match, menu and controls; it keeps its own filter history, paging and
+  selection and reports status via `onStatus`), `StorageViews.tsx`;
+  "shared" = ExecutableUsers=self minus your own images; a snapshot's
+  volume is checked for existence and its images found by
+  block-device-mapping.snapshot-id; vol-ffffffff (copied snapshots) shows
+  as no volume; image scope remembered in localStorage `ec2.images.scope`)
+  AMIs (Mine / Shared with me), EBS volumes and EBS snapshots: lists and
   details with links between images, snapshots, volumes and instances.
 - 17.7 Networking: VPCs, subnets, security groups (inbound / outbound rules,
   referenced groups resolved, what uses the group), network interfaces,

@@ -22,11 +22,14 @@ import { ChangeTypeDialog, ProtectionDialog, StopDialog } from "./InstanceDialog
 import { CreateImageDialog, SnapshotDialog, TagEditorDialog } from "./TagDialogs";
 import { ConsoleTab, StatusTab, UserDataTab } from "./InstanceExtras";
 import { InstanceView, type InstanceTab } from "./InstanceView";
+import { ResourceList } from "./ResourceList";
+import { imageConfig, ImageView, snapshotConfig, SnapshotView, STORAGE_ICONS, volumeConfig, VolumeView, type ImageScope } from "./StorageViews";
+import { store, stored } from "./common";
 
 /** Kinds built so far, in tree / overview order. */
-const KINDS: Ec2Kind[] = ["instances"];
+const KINDS: Ec2Kind[] = ["instances", "images", "volumes", "snapshots"];
 
-const KIND_ICON: Partial<Record<Ec2Kind, ReactNode>> = { instances: <InstanceIcon state="running" /> };
+const KIND_ICON: Partial<Record<Ec2Kind, ReactNode>> = { instances: <InstanceIcon state="running" />, ...STORAGE_ICONS };
 
 const ABOUT: Record<Ec2Kind, string> = {
   instances: "Virtual machines: state, type, addresses, storage, networking",
@@ -106,6 +109,12 @@ export function useEc2Service(shell: Shell): ServiceUi {
   const [states, setStatesState] = useState<Set<InstanceState>>(storedStates);
   const [viewInstance, setViewInstance] = useState<InstanceDetails | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [listStatus, setListStatus] = useState("");
+  const [imageScope, setImageScopeState] = useState<ImageScope>(() => stored("ec2.images.scope", ["mine", "shared"] as const, "mine"));
+  const setImageScope = (s: ImageScope) => {
+    setImageScopeState(s);
+    store("ec2.images.scope", s);
+  };
   const historyKey = `ec2|${profile ?? ""}|${region}|${kind ?? ""}`;
   const filter = kind ? (filters[kind] ?? "") : "";
 
@@ -446,9 +455,56 @@ export function useEc2Service(shell: Shell): ServiceUi {
     { id: "userdata", label: "User data", help: "ec2.instance.userdata", render: (i) => <UserDataTab key={i.id} shell={shell} i={i} /> },
   ];
 
+  const imageControls = (
+    <div className="segmented small" title="Images you own, or images other accounts share with yours">
+      <button className={imageScope === "mine" ? "active" : ""} onClick={() => setImageScope("mine")}>
+        Mine
+      </button>
+      <button className={imageScope === "shared" ? "active" : ""} onClick={() => setImageScope("shared")}>
+        Shared with me
+      </button>
+    </div>
+  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const images = useMemo(() => imageConfig(imageScope, imageControls), [imageScope]);
+  const volumes = useMemo(() => volumeConfig(byId), [byId]);
+  const snapshots = useMemo(() => snapshotConfig(), []);
+  const editTags = (resource: string, label: string, tags: [string, string][]) => openDialog({ kind: "tags", resource, label, tags });
+
   let content: ReactNode = null;
   let status = "";
-  if (active && !kind) {
+  if (active && !id && (kind === "images" || kind === "volumes" || kind === "snapshots")) {
+    content =
+      kind === "images" ? (
+        <ResourceList key={kind} shell={shell} config={images} reloadToken={reloadToken} onStatus={setListStatus} />
+      ) : kind === "volumes" ? (
+        <ResourceList key={kind} shell={shell} config={volumes} reloadToken={reloadToken} onStatus={setListStatus} />
+      ) : (
+        <ResourceList key={kind} shell={shell} config={snapshots} reloadToken={reloadToken} onStatus={setListStatus} />
+      );
+    status = listStatus;
+  } else if (active && id && kind === "images") {
+    content = (
+      <div className="service-pane scroll-pane">
+        <ImageView key={id} shell={shell} id={id} reloadToken={reloadToken} instances={allInstances} onEditTags={(i) => editTags(i.id, i.name ?? i.id, i.tags)} />
+      </div>
+    );
+    status = `Image ${id} · ${region}`;
+  } else if (active && id && kind === "volumes") {
+    content = (
+      <div className="service-pane scroll-pane">
+        <VolumeView key={id} shell={shell} id={id} reloadToken={reloadToken} instances={byId} onEditTags={(v) => editTags(v.id, v.name ?? v.id, v.tags)} onSnapshot={(v) => openDialog({ kind: "snapshot", instance: null, volumeId: v.id })} />
+      </div>
+    );
+    status = `Volume ${id} · ${region}`;
+  } else if (active && id && kind === "snapshots") {
+    content = (
+      <div className="service-pane scroll-pane">
+        <SnapshotView key={id} shell={shell} id={id} reloadToken={reloadToken} onEditTags={(s) => editTags(s.id, s.name ?? s.id, s.tags)} />
+      </div>
+    );
+    status = `Snapshot ${id} · ${region}`;
+  } else if (active && !kind) {
     const rows: Row[] = KINDS.map((k, n) => ({
       key: k,
       icon: KIND_ICON[k],
