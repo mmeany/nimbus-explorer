@@ -77,3 +77,29 @@ pub async fn iam_policy_version(
 ) -> Result<String, AppError> {
     iam::policy_version(&*state.connection()?, &arn, &version).await
 }
+
+#[tauri::command]
+pub async fn iam_account(
+    state: State<'_, AppState>,
+) -> Result<crate::iam_account::AccountInfo, AppError> {
+    crate::iam_account::account(&*state.connection()?).await
+}
+
+/// The latest credential report, generated when there's none or `regenerate`
+/// is set (changes no configuration, so allowed in read-only mode).
+#[tauri::command]
+pub async fn iam_credential_report(
+    state: State<'_, AppState>,
+    regenerate: bool,
+) -> Result<crate::iam_account::CredentialReport, AppError> {
+    crate::iam_account::credential_report(&*state.connection()?, regenerate).await
+}
+
+/// Saves the credential report CSV (a local write).
+#[tauri::command]
+pub async fn iam_export_credential_report(
+    state: State<'_, AppState>,
+    dest: String,
+) -> Result<usize, AppError> {
+    crate::iam_account::export_report(&*state.connection()?, &dest).await
+}

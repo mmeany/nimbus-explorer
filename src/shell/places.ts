@@ -36,7 +36,7 @@ export type Place =
   /** IAM (global): the overview (kind null), the users / groups / roles / policies list (id null; a policy's id is its ARN), or one of them. */
   | { service: "iam"; kind: IamKind | null; id: string | null };
 
-export type IamKind = "users" | "groups" | "roles" | "policies";
+export type IamKind = "users" | "groups" | "roles" | "policies" | "account";
 
 export const HOME: Place = { service: "home" };
 export const S3_ROOT: Place = { service: "s3", bucket: null, prefix: "" };
@@ -58,7 +58,7 @@ export function isGlobalService(service: string): boolean {
   return service === "s3" || service === "iam";
 }
 
-export const IAM_KIND_LABEL: Record<IamKind, string> = { users: "Users", groups: "User groups", roles: "Roles", policies: "Policies" };
+export const IAM_KIND_LABEL: Record<IamKind, string> = { users: "Users", groups: "User groups", roles: "Roles", policies: "Policies", account: "Account" };
 
 /** What an IAM place's id shows as: a name, or for policies (whose id is the ARN) the name at its end. */
 export function iamIdLabel(kind: IamKind | null, id: string): string {

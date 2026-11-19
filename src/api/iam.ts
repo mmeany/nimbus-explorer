@@ -228,3 +228,124 @@ export function prettyJson(text: string): string {
     return text;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Account overview and credential report (16.3)
+
+export interface PasswordPolicy {
+  minLength: number | null;
+  requireSymbols: boolean;
+  requireNumbers: boolean;
+  requireUppercase: boolean;
+  requireLowercase: boolean;
+  allowUsersToChange: boolean;
+  expirePasswords: boolean;
+  maxAgeDays: number | null;
+  reusePrevention: number | null;
+  hardExpiry: boolean | null;
+}
+
+export interface AccountInfo {
+  alias: string | null;
+  summary: [string, number][];
+  passwordPolicy: PasswordPolicy | null;
+}
+
+export interface KeyCredential {
+  slot: number;
+  active: boolean;
+  lastRotated: string | null;
+  lastUsed: string | null;
+  lastRegion: string | null;
+  lastService: string | null;
+}
+
+export interface CredentialRow {
+  /** "<root_account>" for the root user. */
+  user: string;
+  arn: string;
+  created: string | null;
+  /** null for the root user. */
+  passwordEnabled: boolean | null;
+  passwordLastUsed: string | null;
+  passwordLastChanged: string | null;
+  passwordNextRotation: string | null;
+  mfaActive: boolean;
+  keys: KeyCredential[];
+  certificatesActive: number;
+}
+
+export interface CredentialReport {
+  generated: string | null;
+  rows: CredentialRow[];
+}
+
+export const iamAccountApi = {
+  account: () => call<AccountInfo>("iam_account"),
+  credentialReport: (regenerate: boolean) => call<CredentialReport>("iam_credential_report", { regenerate }),
+  exportCredentialReport: (dest: string) => call<number>("iam_export_credential_report", { dest }),
+};
+
+export const ROOT_USER = "<root_account>";
+
+/** Usage against a quota, from GetAccountSummary: [label, used, quota]. */
+export function quotaRows(summary: [string, number][]): [string, number, number][] {
+  const m = new Map(summary);
+  const pairs: [string, string, string][] = [
+    ["Users", "Users", "UsersQuota"],
+    ["User groups", "Groups", "GroupsQuota"],
+    ["Roles", "Roles", "RolesQuota"],
+    ["Customer managed policies", "Policies", "PoliciesQuota"],
+    ["Policy versions in use", "PolicyVersionsInUse", "PolicyVersionsInUseQuota"],
+    ["Instance profiles", "InstanceProfiles", "InstanceProfilesQuota"],
+    ["Server certificates", "ServerCertificates", "ServerCertificatesQuota"],
+    ["Identity providers", "Providers", "ProvidersQuota"],
+  ];
+  return pairs.filter(([, u, q]) => m.has(u) && m.has(q)).map(([label, u, q]) => [label, m.get(u)!, m.get(q)!]);
+}
+
+/** Per-principal limits from GetAccountSummary (keys ending in "Quota" that have no usage count). */
+export function limitRows(summary: [string, number][]): [string, number][] {
+  const paired = new Set(["UsersQuota", "GroupsQuota", "RolesQuota", "PoliciesQuota", "PolicyVersionsInUseQuota", "InstanceProfilesQuota", "ServerCertificatesQuota", "ProvidersQuota"]);
+  return summary
+    .filter(([k]) => k.endsWith("Quota") && !paired.has(k))
+    .map(([k, v]): [string, number] => [k.replace(/Quota$/, "").replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()), v]);
+}
+
+export interface UnusedFinding {
+  user: string;
+  /** "Console password", "Access key 1", "Access key 2". */
+  credential: string;
+  /** What's wrong, in words. */
+  issue: string;
+  lastUsed: string | null;
+  /** Days since last use, or since creation / rotation when never used. */
+  days: number | null;
+  kind: "never" | "unused" | "old";
+}
+
+/**
+ * Credentials worth a look: passwords and active access keys never used or
+ * not used for more than `unusedDays`, and active keys not rotated for more
+ * than `ageDays`. Inactive keys are left out (they can't be used).
+ */
+export function unusedCredentials(rows: CredentialRow[], unusedDays: number, ageDays: number, now = Date.now()): UnusedFinding[] {
+  const out: UnusedFinding[] = [];
+  for (const r of rows) {
+    if (r.passwordEnabled) {
+      const since = daysSince(r.passwordLastUsed, now);
+      if (since === null) out.push({ user: r.user, credential: "Console password", issue: "Never used", lastUsed: null, days: daysSince(r.passwordLastChanged ?? r.created, now), kind: "never" });
+      else if (since > unusedDays) out.push({ user: r.user, credential: "Console password", issue: `Not used for ${since} days`, lastUsed: r.passwordLastUsed, days: since, kind: "unused" });
+    }
+    for (const k of r.keys) {
+      if (!k.active) continue;
+      const credential = `Access key ${k.slot}`;
+      const since = daysSince(k.lastUsed, now);
+      const age = daysSince(k.lastRotated, now);
+      if (since === null) out.push({ user: r.user, credential, issue: "Never used", lastUsed: null, days: age, kind: "never" });
+      else if (since > unusedDays) out.push({ user: r.user, credential, issue: `Not used for ${since} days`, lastUsed: k.lastUsed, days: since, kind: "unused" });
+      if (age !== null && age > ageDays) out.push({ user: r.user, credential, issue: `Not rotated for ${age} days`, lastUsed: k.lastUsed, days: age, kind: "old" });
+    }
+  }
+  return out;
+}

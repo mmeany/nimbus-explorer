@@ -1065,7 +1065,15 @@ Usual rules: "Add bookmark…" in row and tree menus, `storageKey` on every
   version's document (DataTree / JSON), versions with Compare (DiffView),
   and where it's attached (ListEntitiesForPolicy, linking to the
   principals). Inline policies open in the same document viewer.
-- 16.3 Account overview (tree node): GetAccountSummary (usage against
+- 16.3 ✅ (`src-tauri/src/iam_account.rs`, `services/iam/AccountView.tsx`; Place
+  kind "account", a leaf in the tree and a row on the overview; the account
+  ID comes from the first ARN of the lists, since IAM has no call for it;
+  the report is fetched when its tab first opens: GetCredentialReport, and
+  only on ReportNotPresent / Expired / InProgress (or Generate new report)
+  GenerateCredentialReport polled every 1.5 s; export re-fetches and saves
+  the CSV as AWS sends it; `quotaRows` / `limitRows` / `unusedCredentials`
+  in `api/iam.ts` are tested; days remembered in localStorage
+  `iam.unused.days` / `iam.unused.ageDays`; MiniStack runs it all) Account overview (tree node): GetAccountSummary (usage against
   quotas), password policy, account alias, and the credential report
   (GenerateCredentialReport, polled until ready, CSV parsed in Rust; export
   to a file). **Unused credentials**: from the credential report, passwords

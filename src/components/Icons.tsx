@@ -625,3 +625,14 @@ export function IamPolicyIcon({ size = 16 }: P) {
     </svg>
   );
 }
+
+/** The IAM account overview: a gauge. */
+export function IamAccountIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M2 12 A6 6 0 0 1 14 12 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" strokeLinejoin="round" />
+      <path d="M8 12 L10.8 7.6" stroke="#c0392b" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="8" cy="12" r="1.1" fill="#c0392b" />
+    </svg>
+  );
+}

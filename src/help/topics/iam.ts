@@ -2,7 +2,7 @@
 export const iamTopics = {
   "iam.overview": {
     title: "IAM",
-    body: `Identity and Access Management for the account behind the profile: **users**, **user groups** and **roles**, each with its policies, and the account's **managed policies**. IAM is global, so the **Region** list doesn't apply.
+    body: `Identity and Access Management for the account behind the profile: **users**, **user groups** and **roles**, each with its policies, the account's **managed policies**, and the **Account** overview (quotas, password policy, credential report, unused credentials). IAM is global, so the **Region** list doesn't apply.
 
 This view is read only: nothing here changes IAM, even with the lock off. Use the console, the CLI or your infrastructure code for changes.
 
@@ -110,6 +110,36 @@ Inline policies, which belong to one user, group or role, are shown in the same 
 - **Compared with** shows the differences from another version (lines removed from it in red, added in green).
 
 Documents are loaded when you first show them.`,
+  },
+  "iam.account": {
+    title: "IAM account",
+    body: `The account behind the profile.
+
+- **Account ID** is read from the ARNs of its users, roles or policies; **alias** is the friendly name in the sign-in URL.
+- **Root user**: whether it has MFA (it should) and access keys (it shouldn't).
+- **Usage and quotas**: how much of each IAM quota is used; 80% or more is highlighted. **Limits** are per-principal and size limits.`,
+  },
+  "iam.account.password": {
+    title: "Password policy",
+    body: `The rules for IAM users' console passwords: length, character types, expiry and reuse. Without a policy, AWS's default applies. The root user isn't covered.`,
+  },
+  "iam.credentialReport": {
+    title: "Credential report",
+    body: `Every user with its console password, MFA and access keys, from AWS's credential report.
+
+- AWS keeps one report and builds a new one at most every **four hours**; opening this tab uses the latest (or generates one if there is none). **Generate new report** asks for a fresh one, which can take a minute.
+- Generating a report changes no settings, so it works in read-only mode.
+- **Export CSV…** saves the report exactly as AWS sends it.
+- MFA is highlighted for users who can sign in to the console without it.`,
+  },
+  "iam.unused": {
+    title: "Unused credentials",
+    body: `Credentials worth a look, from the credential report:
+
+- console passwords and active access keys **never used**, or **not used** for more than the first number of days;
+- active access keys **not rotated** for more than the second number of days.
+
+Both numbers are remembered. Inactive keys are left out. Click a user to open it; disabling or deleting credentials is done in the console or the CLI.`,
   },
   "iam.policy.attached": {
     title: "Attached to",

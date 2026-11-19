@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysSince, filterPolicies, matchesFilter, policyNameOf, prettyJson, sessionText, trustText, type PolicySummary, type Trust } from "./iam";
+import { daysSince, filterPolicies, limitRows, quotaRows, unusedCredentials, type CredentialRow, type KeyCredential, matchesFilter, policyNameOf, prettyJson, sessionText, trustText, type PolicySummary, type Trust } from "./iam";
 
 const t = (kind: string, principal: string): Trust => ({ effect: "Allow", kind, principal, actions: ["sts:AssumeRole"], conditions: false, sid: null });
 
@@ -73,5 +73,34 @@ describe("prettyJson", () => {
   it("normalises JSON spacing and leaves other text", () => {
     expect(prettyJson('{"a":[1, 2]}')).toBe('{\n  "a": [\n    1,\n    2\n  ]\n}');
     expect(prettyJson("not json")).toBe("not json");
+  });
+});
+
+describe("iam account", () => {
+  it("pairs usage with quotas and lists the other limits", () => {
+    const s: [string, number][] = [["AccessKeysPerUserQuota", 2], ["Groups", 2], ["GroupsQuota", 300], ["MFADevices", 0], ["Users", 3], ["UsersQuota", 5000]];
+    expect(quotaRows(s)).toEqual([["Users", 3, 5000], ["User groups", 2, 300]]);
+    expect(limitRows(s)).toEqual([["Access keys per user", 2]]);
+  });
+
+  it("finds unused and old credentials", () => {
+    const now = Date.parse("2026-11-19T00:00:00Z");
+    const row = (over: Partial<CredentialRow>): CredentialRow => ({ user: "u", arn: "", created: "2026-01-01T00:00:00Z", passwordEnabled: false, passwordLastUsed: null, passwordLastChanged: null, passwordNextRotation: null, mfaActive: false, keys: [], certificatesActive: 0, ...over });
+    const key = (slot: number, active: boolean, lastRotated: string, lastUsed: string | null): KeyCredential => ({ slot, active, lastRotated, lastUsed, lastRegion: null, lastService: null });
+    const f = unusedCredentials(
+      [
+        row({ user: "fresh", passwordEnabled: true, passwordLastUsed: "2026-11-18T00:00:00Z", keys: [key(1, true, "2026-11-01T00:00:00Z", "2026-11-18T00:00:00Z")] }),
+        row({ user: "idle", passwordEnabled: true, passwordLastUsed: "2026-01-01T00:00:00Z" }),
+        row({ user: "never", passwordEnabled: true, keys: [key(1, true, "2026-11-09T00:00:00Z", null), key(2, false, "2020-01-01T00:00:00Z", null)] }),
+        row({ user: "old", keys: [key(1, true, "2025-01-01T00:00:00Z", "2026-11-18T00:00:00Z")] }),
+        row({ user: "<root_account>", passwordEnabled: null }),
+      ],
+      90,
+      90,
+      now,
+    );
+    expect(f.map((x) => `${x.user}:${x.credential}:${x.kind}`)).toEqual(["idle:Console password:unused", "never:Console password:never", "never:Access key 1:never", "old:Access key 1:old"]);
+    expect(f[0].issue).toBe("Not used for 322 days");
+    expect(f[2].days).toBe(10);
   });
 });
