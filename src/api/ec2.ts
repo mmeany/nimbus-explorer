@@ -225,6 +225,9 @@ export const ec2Api = {
   interfaces: () => call<Interface[]>("ec2_interfaces"),
   interface: (id: string) => call<Interface>("ec2_interface", { id }),
   addresses: () => call<Address[]>("ec2_addresses"),
+  keyPairs: () => call<KeyPair[]>("ec2_key_pairs"),
+  launchTemplates: () => call<LaunchTemplate[]>("ec2_launch_templates"),
+  launchTemplate: (id: string) => call<TemplateDetails>("ec2_launch_template", { id }),
   ssmAgent: (id: string) => call<SsmAgent>("ec2_ssm_agent", { id }),
   snapshotInstance: (instanceId: string, description: string | null, excludeRoot: boolean) => call<CreatedSnapshot[]>("ec2_snapshot_instance", { instanceId, description, excludeRoot }),
 };
@@ -394,6 +397,41 @@ export function interfaceOwner(n: { instanceId: string | null; interfaceType: st
   if (/ecs|arn:aws:ecs/i.test(d)) return "ECS task";
   if (n.requester) return n.requester;
   return "";
+}
+
+export interface KeyPair {
+  /** key-… (or the name, where an endpoint has no IDs). */
+  id: string;
+  name: string;
+  keyType: string | null;
+  fingerprint: string | null;
+  created: string | null;
+  tags: [string, string][];
+}
+
+export interface LaunchTemplate {
+  id: string;
+  name: string;
+  defaultVersion: number | null;
+  latestVersion: number | null;
+  created: string | null;
+  createdBy: string | null;
+  tags: [string, string][];
+}
+
+export interface TemplateVersion {
+  version: number;
+  description: string | null;
+  created: string | null;
+  createdBy: string | null;
+  default: boolean;
+  /** Launch settings, AWS CLI field names; user data as its size only. */
+  data: unknown;
+}
+
+export interface TemplateDetails extends LaunchTemplate {
+  /** Newest first. */
+  versions: TemplateVersion[];
 }
 
 export interface SsmAgent {

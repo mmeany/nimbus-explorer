@@ -3,6 +3,7 @@
 use super::AppState;
 use crate::ec2::{self, Instance, InstanceDetails, Interface, Volume};
 use crate::ec2_network::{self as network, Address, GroupDetails, SecurityGroup, Subnet, SubnetDetails, Vpc, VpcDetails};
+use crate::ec2_templates::{self as templates, KeyPair, LaunchTemplate, TemplateDetails};
 use crate::ec2_storage::{self as storage, Image, Snapshot, SnapshotDetails};
 use crate::ec2_actions::{self as actions, StateChange, TypeInfo};
 use crate::ec2_tags::{self as tags, CreatedSnapshot, ImageRequest};
@@ -234,4 +235,21 @@ pub async fn ec2_interface(state: State<'_, AppState>, id: String) -> Result<Int
 #[tauri::command]
 pub async fn ec2_addresses(state: State<'_, AppState>) -> Result<Vec<Address>, AppError> {
     network::list_addresses(&*state.connection()?).await
+}
+
+/// Key pairs (names, type, fingerprint; never key material).
+#[tauri::command]
+pub async fn ec2_key_pairs(state: State<'_, AppState>) -> Result<Vec<KeyPair>, AppError> {
+    templates::list_key_pairs(&*state.connection()?).await
+}
+
+#[tauri::command]
+pub async fn ec2_launch_templates(state: State<'_, AppState>) -> Result<Vec<LaunchTemplate>, AppError> {
+    templates::list_templates(&*state.connection()?).await
+}
+
+/// A launch template with every version's data (user data hidden).
+#[tauri::command]
+pub async fn ec2_launch_template(state: State<'_, AppState>, id: String) -> Result<TemplateDetails, AppError> {
+    templates::template_details(&*state.connection()?, &id).await
 }

@@ -13,6 +13,7 @@ mod ec2_console;
 mod ec2_network;
 mod ec2_storage;
 mod ec2_tags;
+mod ec2_templates;
 mod elasticache;
 mod elasticache_actions;
 mod elasticache_events;
@@ -243,6 +244,9 @@ pub fn run() {
             commands::ec2::ec2_interfaces,
             commands::ec2::ec2_interface,
             commands::ec2::ec2_addresses,
+            commands::ec2::ec2_key_pairs,
+            commands::ec2::ec2_launch_templates,
+            commands::ec2::ec2_launch_template,
             commands::elasticache::ec_list_groups,
             commands::elasticache::ec_list_serverless,
             commands::elasticache::ec_group,

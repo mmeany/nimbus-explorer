@@ -10,7 +10,7 @@ import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { FilterBox } from "../../components/FilterBox";
 import { HelpTopic } from "../../components/HelpDialog";
-import { DeleteIcon, Ec2Icon, EditIcon, ImageIcon, InstanceIcon, NetworkIcon, ShieldIcon, SnapshotIcon, LockIcon, PlayIcon, RedriveIcon, RefreshIcon, StopIcon } from "../../components/Icons";
+import { DeleteIcon, Ec2Icon, EditIcon, ImageIcon, InstanceIcon, KeyIcon, NetworkIcon, TemplateIcon, ShieldIcon, SnapshotIcon, LockIcon, PlayIcon, RedriveIcon, RefreshIcon, StopIcon } from "../../components/Icons";
 import { PageBar } from "../../components/PageBar";
 import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { formatDate } from "../../format";
@@ -24,11 +24,12 @@ import { ConsoleTab, StatusTab, UserDataTab } from "./InstanceExtras";
 import { InstanceView, type InstanceTab } from "./InstanceView";
 import { addressConfig, AddressView, groupConfig, interfaceConfig, InterfaceView, SecurityGroupView, subnetConfig, SubnetView, vpcConfig, VpcView } from "./NetworkViews";
 import { ResourceList, type KindConfig } from "./ResourceList";
+import { keyPairConfig, KeyPairView, templateConfig, TemplateView } from "./TemplateViews";
 import { imageConfig, ImageView, snapshotConfig, SnapshotView, STORAGE_ICONS, volumeConfig, VolumeView, type ImageScope } from "./StorageViews";
 import { store, stored } from "./common";
 
 /** Kinds built so far, in tree / overview order. */
-const KINDS: Ec2Kind[] = ["instances", "images", "volumes", "snapshots", "securityGroups", "vpcs", "subnets", "interfaces", "addresses"];
+const KINDS: Ec2Kind[] = ["instances", "images", "volumes", "snapshots", "securityGroups", "vpcs", "subnets", "interfaces", "addresses", "keyPairs", "launchTemplates"];
 
 /** Shown under a Network node in the tree. */
 const NETWORK_KINDS: Ec2Kind[] = ["vpcs", "subnets", "interfaces", "addresses"];
@@ -51,7 +52,7 @@ const SINGULAR: Record<Ec2Kind, string> = {
   unused: "Unused resources",
 };
 
-const KIND_ICON: Partial<Record<Ec2Kind, ReactNode>> = { instances: <InstanceIcon state="running" />, ...STORAGE_ICONS, securityGroups: <ShieldIcon />, vpcs: <NetworkIcon />, subnets: <NetworkIcon />, interfaces: <NetworkIcon />, addresses: <NetworkIcon /> };
+const KIND_ICON: Partial<Record<Ec2Kind, ReactNode>> = { instances: <InstanceIcon state="running" />, ...STORAGE_ICONS, securityGroups: <ShieldIcon />, vpcs: <NetworkIcon />, subnets: <NetworkIcon />, interfaces: <NetworkIcon />, addresses: <NetworkIcon />, keyPairs: <KeyIcon />, launchTemplates: <TemplateIcon /> };
 
 const ABOUT: Record<Ec2Kind, string> = {
   instances: "Virtual machines: state, type, addresses, storage, networking",
@@ -510,8 +511,9 @@ export function useEc2Service(shell: Shell): ServiceUi {
   const snapshots = useMemo(() => snapshotConfig(), []);
   const interfaces = useMemo(() => interfaceConfig(byId), [byId]);
   const addresses = useMemo(() => addressConfig(byId), [byId]);
+  const keyPairs = useMemo(() => keyPairConfig(allInstances), [allInstances]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const lists: Partial<Record<Ec2Kind, KindConfig<any>>> = { images, volumes, snapshots, securityGroups: groupConfig, vpcs: vpcConfig, subnets: subnetConfig, interfaces, addresses };
+  const lists: Partial<Record<Ec2Kind, KindConfig<any>>> = { images, volumes, snapshots, securityGroups: groupConfig, vpcs: vpcConfig, subnets: subnetConfig, interfaces, addresses, keyPairs, launchTemplates: templateConfig };
   const editTags = (resource: string, label: string, tags: [string, string][]) => openDialog({ kind: "tags", resource, label, tags });
 
   function resourceView(k: Ec2Kind, rid: string): ReactNode {
@@ -533,6 +535,10 @@ export function useEc2Service(shell: Shell): ServiceUi {
         return <InterfaceView {...common} onEditTags={editTags} />;
       case "addresses":
         return <AddressView {...common} onEditTags={editTags} />;
+      case "keyPairs":
+        return <KeyPairView {...common} instances={allInstances} onEditTags={editTags} />;
+      case "launchTemplates":
+        return <TemplateView {...common} onEditTags={editTags} />;
       default:
         return null;
     }

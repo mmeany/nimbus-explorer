@@ -1221,7 +1221,13 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   EIPs under a Network node) Networking: VPCs, subnets, security groups (inbound / outbound rules,
   referenced groups resolved, what uses the group), network interfaces,
   Elastic IPs.
-- 17.8 Key pairs (names, type, fingerprint) and launch templates (versions,
+- 17.8 ✅ (`src-tauri/src/ec2_templates.rs`, `services/ec2/TemplateViews.tsx`;
+  version data is SDK types, so `data_json` maps the usual fields to JSON
+  with the CLI's names (empty parts left out; user data as its length
+  only, never decoded); Compare = DiffView of the pretty-printed data,
+  older on the left; a key pair's id is key-… or its name where an
+  endpoint has no IDs; usage counted from the instance list)
+  Key pairs (names, type, fingerprint) and launch templates (versions,
   default / latest, data as a tree, Compare two versions).
 - 17.9 Load balancers and target groups (ELBv2): load balancers with
   listeners and rules, target groups with target health; register /

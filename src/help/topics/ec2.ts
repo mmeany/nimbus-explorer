@@ -186,6 +186,24 @@ A subnet whose route table sends 0.0.0.0/0 to an internet gateway (igw-…) is *
     title: "Elastic IPs",
     body: `Static public IPv4 addresses allocated to your account, and what each is associated with. An Elastic IP that isn't associated (dimmed) is charged by the hour; so is every public IPv4 address in use.`,
   },
+  "ec2.keyPairs": {
+    title: "Key pairs",
+    body: `SSH key pairs registered in this region: name, type, fingerprint and how many instances (not terminated) were launched with each. Key pairs no instance uses are dimmed.
+
+AWS keeps only the public key; the private key was downloaded once, when the pair was created. Neither AWS nor this app can show or recover it. Open a key pair to see the instances that use it.`,
+  },
+  "ec2.launchTemplates": {
+    title: "Launch templates",
+    body: `Saved launch settings (image, type, network, storage, tags, …) that Auto Scaling groups and people launching instances can use, with their default and latest version numbers.`,
+  },
+  "ec2.launchTemplate": {
+    title: "Launch template",
+    body: `One launch template and its versions, newest first. Click a version to see its launch settings as a tree (Text for JSON); the default version is shown first.
+
+- **Compare**: shows what changed between two versions (from the older to the newer).
+- User data is never shown, only its size, since it often holds secrets.
+- Settings are shown with the AWS CLI's names; a few rarely used ones aren't mapped.`,
+  },
   "ec2.tags": {
     title: "Tags",
     body: `Key / value labels on an EC2 resource. Edit, add or remove rows and **Save**: new and changed tags are set, removed ones deleted, the rest left alone.
@@ -234,5 +252,7 @@ export function ec2PlaceTopic(kind: Ec2Kind | null, id: string | null): Ec2Topic
   if (kind === "subnets") return id ? "ec2.subnet" : "ec2.subnets";
   if (kind === "interfaces") return id ? "ec2.interface" : "ec2.interfaces";
   if (kind === "addresses") return "ec2.addresses";
+  if (kind === "keyPairs") return "ec2.keyPairs";
+  if (kind === "launchTemplates") return id ? "ec2.launchTemplate" : "ec2.launchTemplates";
   return "ec2.overview";
 }
