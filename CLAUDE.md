@@ -1257,4 +1257,4 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   history rule)) Unused resources report: unattached volumes, unassociated Elastic
   IPs, security groups nothing uses, snapshots of deleted volumes, AMIs no
   instance uses; export to CSV / JSON.
-- 17.12 Docs (`docs/ec2.md`, README, help topics).
+- 17.12 ✅ Docs (`docs/ec2.md` with the permissions list, README, help topics).

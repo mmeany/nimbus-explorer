@@ -67,6 +67,7 @@ Secret values stay masked until you choose **Reveal** or **Copy**. They're never
 - **DynamoDB**: tables and items
 - **RDS**: databases, Aurora clusters and snapshots
 - **ElastiCache**: Valkey and Redis OSS caches, nodes and endpoints
+- **EC2**: instances, images, volumes, networking, load balancers and Auto Scaling
 - **ECS**: clusters, services, tasks and task definitions
 - **Lambda**: functions, invoking, triggers and versions
 - **Step Functions**: state machines, executions, graphs and activities

@@ -1,7 +1,7 @@
 # Nimbus Explorer
 
 A classic Explorer-style desktop app that works with Amazon Web Services, using your AWS
-profiles: Amazon S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ElastiCache, ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager and IAM. Works with emulators such
+profiles: Amazon S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ElastiCache, EC2, ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager and IAM. Works with emulators such
 as LocalStack and MiniStack.
 
 Built with Tauri 2 (Rust backend), React and TypeScript. See `CLAUDE.md` for
@@ -79,6 +79,7 @@ GitHub Release. Each version is then submitted to winget by hand. See
 | DynamoDB        | [docs/dynamodb.md](docs/dynamodb.md): tables with filter history, scan & query (filters, projection, paging), results grid, item editor (JSON / DynamoDB JSON), PartiQL, export / import, create / delete tables, indexes, settings, backups                                                                                                                                                                     |
 | RDS             | [docs/rds.md](docs/rds.md): instances and Aurora / Multi-AZ clusters with filter history, start / stop / reboot / fail over, modify (class, backups, deletion protection), delete with final snapshot, snapshots (create, copy, delete, restore, point in time), events, log files (tail, download), connection details and client commands, SQL on Aurora via the Data API (read-only runs rolled back, export) |
 | ElastiCache     | [docs/elasticache.md](docs/elasticache.md): Valkey and Redis OSS replication groups (shards and nodes in the tree) and serverless caches, details, connect commands and URIs, reboot / test failover, snapshots (create, copy, delete, restore), events, parameters, service updates, users and groups                                                                                                           |
+| EC2             | [docs/ec2.md](docs/ec2.md): instances (state filter, start / stop / hibernate / reboot / terminate, change type, protection, status checks, console output and screenshot, masked user data, connect commands), AMIs, volumes, snapshots (create images and snapshots), security groups with "used by", VPCs, subnets, interfaces, Elastic IPs, key pairs, launch templates (compare versions), load balancers and rules, target groups (register / deregister), Auto Scaling (capacity, processes, instance refresh), tags on everything, unused resources report |
 | ECS             | [docs/ecs.md](docs/ecs.md): clusters, services (counts, deployments and events, load balancing, network), tasks (containers, stop reasons), scale / redeploy / change revision / roll back, stop and run tasks with overrides, task definitions (details, JSON, compare, new revision from JSON, deregister), container logs, ECS Exec command                                                                   |
 | Lambda          | [docs/lambda.md](docs/lambda.md): functions (paged, filter history), details (environment variables revealed on demand, function URL, async settings, layers, VPC), invoke with saved test events and templates, logs, triggers (event sources on / off, resource-policy invokers), versions and aliases with traffic splits, settings (memory, timeout, env vars, concurrency), code download / upload, delete  |
 | Step Functions  | [docs/step-functions.md](docs/step-functions.md): state machines (paged, filter history), graph (collapsible Parallel / Map, SVG export), executions coloured on the graph, event history, start / stop / redrive / re-run with saved inputs, Distributed Map runs, edit with live graph and validation, create / delete, versions and aliases, activities, export                                               |
@@ -109,7 +110,7 @@ Each service is a node in the tree under the profile. Shared controls:
   week / month / year (your choice) or at a size limit. See
   [docs/history.md](docs/history.md).
 - **Region** list in the toolbar for the regional services (Parameter Store,
-  SQS, SNS, DynamoDB, RDS, ElastiCache, ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager); remembered per profile. S3 always
+  SQS, SNS, DynamoDB, RDS, ElastiCache, EC2, ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager); remembered per profile. S3 always
   uses each bucket's own region, and IAM is global (only its policy validation
   uses the selected region).
 - **Read-only lock** in the toolbar: on, nothing that changes AWS is allowed
@@ -120,7 +121,7 @@ Each service is a node in the tree under the profile. Shared controls:
   connect to a profile.
 - **Paging**: long lists (queues, topics, tables, parameters, secrets,
   functions, log groups, ECS services and tasks, snapshots, events, IAM users,
-  groups, roles and policies) are shown 100, 500 or 1,000 at a time with a pager under
+  groups, roles and policies, EC2 instances and the other EC2 lists) are shown 100, 500 or 1,000 at a time with a pager under
   the list (Ctrl+PgUp / Ctrl+PgDn). Where each row costs an AWS call
   (queue counts, topic and table details, parameter values), only the page
   on screen is fetched.
