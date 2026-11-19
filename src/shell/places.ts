@@ -33,10 +33,10 @@ export type Place =
   | { service: "logs"; group: string | null }
   /** Secrets Manager folder: "" (root) or a name prefix ending in "/" ("prod/app/"). */
   | { service: "secrets"; path: string }
-  /** IAM (global): the overview (kind null), the users / groups / roles list (id null), or one of them. */
+  /** IAM (global): the overview (kind null), the users / groups / roles / policies list (id null; a policy's id is its ARN), or one of them. */
   | { service: "iam"; kind: IamKind | null; id: string | null };
 
-export type IamKind = "users" | "groups" | "roles";
+export type IamKind = "users" | "groups" | "roles" | "policies";
 
 export const HOME: Place = { service: "home" };
 export const S3_ROOT: Place = { service: "s3", bucket: null, prefix: "" };
@@ -58,7 +58,12 @@ export function isGlobalService(service: string): boolean {
   return service === "s3" || service === "iam";
 }
 
-export const IAM_KIND_LABEL: Record<IamKind, string> = { users: "Users", groups: "User groups", roles: "Roles" };
+export const IAM_KIND_LABEL: Record<IamKind, string> = { users: "Users", groups: "User groups", roles: "Roles", policies: "Policies" };
+
+/** What an IAM place's id shows as: a name, or for policies (whose id is the ARN) the name at its end. */
+export function iamIdLabel(kind: IamKind | null, id: string): string {
+  return kind === "policies" && id.includes(":policy/") ? id.slice(id.lastIndexOf("/") + 1) : id;
+}
 
 export interface ServiceInfo {
   id: ServiceId;
@@ -81,7 +86,7 @@ export const SERVICES: ServiceInfo[] = [
   { id: "sfn", name: "Step Functions", description: "State machines, executions and their history", root: SFN_ROOT },
   { id: "logs", name: "CloudWatch Logs", description: "Log groups, streams and events", root: LOGS_ROOT },
   { id: "secrets", name: "Secrets Manager", description: "Secrets, versions and rotation", root: SECRETS_ROOT },
-  { id: "iam", name: "IAM", description: "Users, groups and roles with their policies (view only; global)", root: IAM_ROOT },
+  { id: "iam", name: "IAM", description: "Users, groups, roles and policies (view only; global)", root: IAM_ROOT },
 ];
 
 export function samePlace(a: Place, b: Place): boolean {
@@ -141,7 +146,7 @@ export function placeCrumbs(p: Place): { label: string; place: Place }[] {
   if (p.service === "logs" && p.group) out.push({ label: p.group, place: p });
   if (p.service === "iam" && p.kind) {
     out.push({ label: IAM_KIND_LABEL[p.kind], place: { ...IAM_ROOT, kind: p.kind } });
-    if (p.id) out.push({ label: p.id, place: p });
+    if (p.id) out.push({ label: iamIdLabel(p.kind, p.id), place: p });
   }
   if (p.service === "secrets") {
     let acc = "";
@@ -202,7 +207,7 @@ export function placeUri(p: Place): string {
   if (p.service === "sfn") return p.mapRun ?? p.execution ?? p.machine ?? "";
   if (p.service === "logs") return p.group ?? "";
   if (p.service === "secrets") return p.path;
-  if (p.service === "iam") return p.id ?? "";
+  if (p.service === "iam") return p.id ? iamIdLabel(p.kind, p.id) : "";
   return "";
 }
 

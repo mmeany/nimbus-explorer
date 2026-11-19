@@ -1051,7 +1051,16 @@ Usual rules: "Add bookmark…" in row and tree menus, `storageKey` on every
   parsed), attached and inline policies, permissions boundary, max session
   duration, last used, instance profiles (as a field), service-linked
   marker, tags. Policy documents arrive URL-encoded and are decoded in Rust.
-- 16.2 Policies: customer-managed and AWS-managed (scope toggle, "attached
+- 16.2 ✅ (`iam.rs` `list_policies` (Scope All, one list; scope and "attached
+  only" (attachments or boundary uses) filtered in the UI, both remembered in
+  localStorage `iam.policies.*`), `policy` (GetPolicy, versions newest
+  first, default document, ListEntitiesForPolicy; boundary users / roles asked
+  for only when the count says so), `policy_version`; `PolicyViews.tsx`,
+  `PolicyDocument.tsx` (the one document viewer for managed, inline and
+  trust policies; 16.5 adds validation there); a policy's Place id is its ARN,
+  `iamIdLabel` shows the name; Compare pretty-prints both sides first, since
+  documents are often stored on one line; attached policy and boundary names
+  on principals open the policy) Policies: customer-managed and AWS-managed (scope toggle, "attached
   only", name filter), paged on screen; policy view with the default
   version's document (DataTree / JSON), versions with Compare (DiffView),
   and where it's attached (ListEntitiesForPolicy, linking to the

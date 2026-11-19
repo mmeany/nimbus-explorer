@@ -81,6 +81,6 @@ export function placeTopic(p: Place): HelpTopicId {
       return "secrets.browse";
     case "iam":
       if (!p.kind) return "iam.overview";
-      return p.id ? (p.kind === "users" ? "iam.user" : p.kind === "groups" ? "iam.group" : "iam.role") : `iam.${p.kind}`;
+      return p.id ? (p.kind === "users" ? "iam.user" : p.kind === "groups" ? "iam.group" : p.kind === "roles" ? "iam.role" : "iam.policy") : `iam.${p.kind}`;
   }
 }

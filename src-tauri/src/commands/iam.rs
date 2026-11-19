@@ -3,8 +3,8 @@
 use super::AppState;
 use crate::error::AppError;
 use crate::iam::{
-    self, GroupDetails, GroupSummary, RoleDetails, RoleExtras, RoleSummary, UserDetails,
-    UserExtras, UserSummary,
+    self, GroupDetails, GroupSummary, PolicyDetails, PolicySummary, RoleDetails, RoleExtras,
+    RoleSummary, UserDetails, UserExtras, UserSummary,
 };
 use tauri::State;
 
@@ -54,4 +54,26 @@ pub async fn iam_group(state: State<'_, AppState>, name: String) -> Result<Group
 #[tauri::command]
 pub async fn iam_role(state: State<'_, AppState>, name: String) -> Result<RoleDetails, AppError> {
     iam::role(&*state.connection()?, &name).await
+}
+
+#[tauri::command]
+pub async fn iam_policies(state: State<'_, AppState>) -> Result<Vec<PolicySummary>, AppError> {
+    iam::list_policies(&*state.connection()?).await
+}
+
+#[tauri::command]
+pub async fn iam_policy(
+    state: State<'_, AppState>,
+    arn: String,
+) -> Result<PolicyDetails, AppError> {
+    iam::policy(&*state.connection()?, &arn).await
+}
+
+#[tauri::command]
+pub async fn iam_policy_version(
+    state: State<'_, AppState>,
+    arn: String,
+    version: String,
+) -> Result<String, AppError> {
+    iam::policy_version(&*state.connection()?, &arn, &version).await
 }

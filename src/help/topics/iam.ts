@@ -2,7 +2,7 @@
 export const iamTopics = {
   "iam.overview": {
     title: "IAM",
-    body: `Identity and Access Management for the account behind the profile: **users**, **user groups** and **roles**, each with its policies. IAM is global, so the **Region** list doesn't apply.
+    body: `Identity and Access Management for the account behind the profile: **users**, **user groups** and **roles**, each with its policies, and the account's **managed policies**. IAM is global, so the **Region** list doesn't apply.
 
 This view is read only: nothing here changes IAM, even with the lock off. Use the console, the CLI or your infrastructure code for changes.
 
@@ -65,9 +65,9 @@ Secret access keys and passwords can't be read from AWS at all.`,
     title: "Permissions",
     body: `The policies of this user, group or role.
 
-- **Managed policies** are standalone and can be attached to many principals: *AWS managed* (maintained by AWS) or *customer managed* (yours). Click an ARN to copy it.
+- **Managed policies** are standalone and can be attached to many principals: *AWS managed* (maintained by AWS) or *customer managed* (yours). Click a name to open the policy, an ARN to copy it.
 - **Inline policies** belong to this principal only; expand one for its document.
-- A **permissions boundary** caps what the policies can allow: the result is what both allow.
+- A **permissions boundary** caps what the policies can allow: the result is what both allow. Click it to open the policy.
 
 What's actually allowed also depends on resource policies, service control policies and session policies.`,
   },
@@ -80,5 +80,39 @@ What's actually allowed also depends on resource policies, service control polic
 - **MFA devices**: a console user without MFA is marked in the header.
 
 AWS never returns passwords or secret access keys after they're created.`,
+  },
+  "iam.policies": {
+    title: "IAM policies",
+    body: `Managed policies: standalone policies you attach to users, user groups and roles.
+
+- **Customer managed** / **AWS managed** / **All**: which policies to list. AWS managed policies are maintained by AWS (there are over a thousand); the choice is remembered.
+- **Attached only**: policies attached somewhere in this account, or used as a permissions boundary. Unattached ones are shown faded.
+- **Attachments** counts users, user groups and roles in this account.
+- **Filter**: the start of a name (ignoring case), or a path starting with \`/\` (for example \`/service-role/\`).
+
+Open a policy for its document, versions and where it's attached.`,
+  },
+  "iam.policy": {
+    title: "IAM policy",
+    body: `One managed policy.
+
+- **Document**: the default version, the one in effect, as a tree or text.
+- **Details**: name, ID, ARN, path, description, dates, how many principals use it, and whether it can be attached.
+- **Tags** (customer managed only).
+
+Inline policies, which belong to one user, group or role, are shown in the same viewer on that principal's Permissions tab.`,
+  },
+  "iam.policy.versions": {
+    title: "Policy versions",
+    body: `A managed policy keeps up to five versions; only the **default** is in effect. Older versions are what a rollback would restore.
+
+- **Show** picks the version whose document is shown.
+- **Compared with** shows the differences from another version (lines removed from it in red, added in green).
+
+Documents are loaded when you first show them.`,
+  },
+  "iam.policy.attached": {
+    title: "Attached to",
+    body: `The users, user groups and roles in this account that have the policy attached, and those using it as their **permissions boundary** (users and roles only). Click a name to open it.`,
   },
 };

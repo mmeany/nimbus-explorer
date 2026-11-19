@@ -152,3 +152,79 @@ export function daysSince(iso: string | null, now = Date.now()): number | null {
   const t = Date.parse(iso);
   return Number.isNaN(t) ? null : Math.floor((now - t) / 86_400_000);
 }
+
+// ---------------------------------------------------------------------------
+// Managed policies (16.2)
+
+export interface PolicySummary {
+  name: string;
+  id: string;
+  arn: string;
+  path: string;
+  defaultVersion: string | null;
+  attachments: number;
+  boundaryUses: number;
+  attachable: boolean;
+  created: string | null;
+  updated: string | null;
+  awsManaged: boolean;
+}
+
+export interface Entity {
+  name: string;
+  id: string;
+}
+
+export interface PolicyEntities {
+  users: Entity[];
+  groups: Entity[];
+  roles: Entity[];
+}
+
+export interface PolicyDetails extends PolicySummary {
+  description: string | null;
+  tags: [string, string][];
+  /** The default version's document (decoded JSON text). */
+  document: string | null;
+  /** Newest first. */
+  versions: { id: string; default: boolean; created: string | null }[];
+  attachedTo: PolicyEntities;
+  boundaryFor: PolicyEntities;
+}
+
+export const iamPolicyApi = {
+  policies: () => call<PolicySummary[]>("iam_policies"),
+  policy: (arn: string) => call<PolicyDetails>("iam_policy", { arn }),
+  version: (arn: string, version: string) => call<string>("iam_policy_version", { arn, version }),
+};
+
+export type PolicyScope = "customer" | "aws" | "all";
+
+/** Policies of a scope, optionally only those attached somewhere, then the name / path filter. */
+export function filterPolicies(items: PolicySummary[], scope: PolicyScope, attachedOnly: boolean, filter: string): PolicySummary[] {
+  return items.filter(
+    (p) =>
+      (scope === "all" || (scope === "aws") === p.awsManaged) &&
+      (!attachedOnly || p.attachments > 0 || p.boundaryUses > 0) &&
+      matchesFilter(p, filter),
+  );
+}
+
+/** A managed policy's name from its ARN (arn:aws:iam::aws:policy/service-role/X → X). */
+export function policyNameOf(arn: string): string {
+  const i = arn.indexOf(":policy/");
+  return i < 0 ? arn : arn.slice(arn.lastIndexOf("/") + 1);
+}
+
+export function entityCount(e: PolicyEntities): number {
+  return e.users.length + e.groups.length + e.roles.length;
+}
+
+/** JSON pretty-printed (2 spaces) so documents stored on one line or with other spacing compare line by line; other text as it is. */
+export function prettyJson(text: string): string {
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2);
+  } catch {
+    return text;
+  }
+}

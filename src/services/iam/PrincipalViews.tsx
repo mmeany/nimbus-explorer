@@ -5,14 +5,14 @@ import type { AppError } from "../../api/core";
 import { daysSince, iamApi, sessionText, trustText, type Attached, type GroupDetails, type Inline, type RoleDetails, type UserDetails } from "../../api/iam";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { HelpTopic } from "../../components/HelpDialog";
-import { ValueView } from "../../components/ValueView";
+import { PolicyDocument } from "./PolicyDocument";
 import { formatDate } from "../../format";
 import type { HelpTopicId } from "../../help";
 import { IAM_ROOT } from "../../shell/places";
 import type { Shell } from "../../shell/shell";
 import { PropsTable } from "../elasticache/CacheViews";
 
-function useDetails<T>(key: string, load: () => Promise<T>) {
+export function useDetails<T>(key: string, load: () => Promise<T>) {
   const [state, setState] = useState<{ key: string; data: T | null; error: AppError | null }>({ key: "", data: null, error: null });
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -29,14 +29,14 @@ function useDetails<T>(key: string, load: () => Promise<T>) {
   return { data: cur.data, error: cur.error, retry: () => setTick((x) => x + 1) };
 }
 
-interface Tab {
+export interface Tab {
   id: string;
   label: string;
   help: HelpTopicId;
   render: () => ReactNode;
 }
 
-function PrincipalFrame({ shell, title, badges, arn, note, tabs }: { shell: Shell; title: string; badges: ReactNode; arn: string; note?: ReactNode; tabs: Tab[] }) {
+export function PrincipalFrame({ shell, title, badges, arn, note, tabs }: { shell: Shell; title: string; badges: ReactNode; arn: string; note?: ReactNode; tabs: Tab[] }) {
   const [tab, setTab] = useState(tabs[0].id);
   const current = tabs.find((t) => t.id === tab) ?? tabs[0];
   return (
@@ -63,7 +63,7 @@ function PrincipalFrame({ shell, title, badges, arn, note, tabs }: { shell: Shel
   );
 }
 
-function Tags({ tags }: { tags: [string, string][] }) {
+export function Tags({ tags }: { tags: [string, string][] }) {
   if (!tags.length) return <p className="hint">No tags.</p>;
   return <PropsTable rows={tags.map(([k, v]) => [k, v || "(empty)"])} />;
 }
@@ -76,7 +76,7 @@ function InlinePolicy({ p }: { p: Inline }) {
       <button className="link-btn" onClick={() => setOpen((v) => !v)}>
         {open ? "▾" : "▸"} {p.name}
       </button>
-      {open && (p.error ? <div className="field-error">{p.error}</div> : <ValueView value={p.document ?? ""} />)}
+      {open && (p.error ? <div className="field-error">{p.error}</div> : <PolicyDocument document={p.document} />)}
     </div>
   );
 }
@@ -99,7 +99,11 @@ function Permissions({ shell, attached, inline, boundary, via }: { shell: Shell;
           <tbody>
             {attached.map((p) => (
               <tr key={p.arn}>
-                <td>{p.name}</td>
+                <td>
+                  <button className="link-btn" title="Open the policy" onClick={() => shell.navigate({ ...IAM_ROOT, kind: "policies", id: p.arn })}>
+                    {p.name}
+                  </button>
+                </td>
                 <td>{p.awsManaged ? "AWS managed" : "Customer managed"}</td>
                 <td className="mono">
                   <button className="link-btn" title="Copy ARN" onClick={() => void shell.copyText(p.arn)}>
@@ -116,7 +120,15 @@ function Permissions({ shell, attached, inline, boundary, via }: { shell: Shell;
       {boundary !== undefined && (
         <>
           <div className="props-section">Permissions boundary</div>
-          <p className={boundary ? "mono selectable" : "hint"}>{boundary ?? "None: the policies above aren't capped by a boundary."}</p>
+          {boundary ? (
+            <p className="mono">
+              <button className="link-btn" title="Open the policy" onClick={() => shell.navigate({ ...IAM_ROOT, kind: "policies", id: boundary })}>
+                {boundary}
+              </button>
+            </p>
+          ) : (
+            <p className="hint">None: the policies above aren't capped by a boundary.</p>
+          )}
         </>
       )}
       {via}
@@ -423,7 +435,7 @@ function RoleBody({ shell, r }: { shell: Shell; r: RoleDetails }) {
             </table>
           )}
           <div className="props-section">Trust policy</div>
-          {r.trustPolicy ? <ValueView value={r.trustPolicy} /> : <p className="hint">None returned.</p>}
+          <PolicyDocument document={r.trustPolicy} />
         </>
       ),
     },

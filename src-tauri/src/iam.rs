@@ -893,6 +893,252 @@ pub async fn role(conn: &Connection, name: &str) -> Result<RoleDetails, AppError
     Ok(d)
 }
 
+// ---------------------------------------------------------------------------
+// Managed policies
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicySummary {
+    pub name: String,
+    pub id: String,
+    pub arn: String,
+    pub path: String,
+    pub default_version: Option<String>,
+    /// Users, groups and roles it's attached to (in this account).
+    pub attachments: i32,
+    /// Users and roles using it as their permissions boundary.
+    pub boundary_uses: i32,
+    pub attachable: bool,
+    pub created: Option<String>,
+    pub updated: Option<String>,
+    pub aws_managed: bool,
+}
+
+fn policy_summary(p: &aws_sdk_iam::types::Policy) -> PolicySummary {
+    let arn = p.arn().unwrap_or_default().to_string();
+    PolicySummary {
+        name: p.policy_name().unwrap_or_default().to_string(),
+        id: p.policy_id().unwrap_or_default().to_string(),
+        path: p.path().unwrap_or("/").to_string(),
+        default_version: p.default_version_id().map(String::from),
+        attachments: p.attachment_count().unwrap_or(0),
+        boundary_uses: p.permissions_boundary_usage_count().unwrap_or(0),
+        attachable: p.is_attachable(),
+        created: iso(p.create_date()),
+        updated: iso(p.update_date()),
+        aws_managed: arn.contains(":iam::aws:policy/"),
+        arn,
+    }
+}
+
+/// Every managed policy the account can see (customer and AWS managed; the
+/// UI filters by scope and "attached only").
+pub async fn list_policies(conn: &Connection) -> Result<Vec<PolicySummary>, AppError> {
+    let c = client(conn);
+    let mut out = Vec::new();
+    let mut marker = None;
+    loop {
+        let page = c
+            .list_policies()
+            .scope(aws_sdk_iam::types::PolicyScopeType::All)
+            .max_items(1000)
+            .set_marker(marker.clone())
+            .send()
+            .await
+            .map_err(|e| err(conn, e))?;
+        out.extend(page.policies().iter().map(policy_summary));
+        match next(page.is_truncated(), page.marker(), &marker) {
+            Some(m) => marker = Some(m),
+            None => break,
+        }
+    }
+    out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    Ok(out)
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyVersionInfo {
+    pub id: String,
+    pub default: bool,
+    pub created: Option<String>,
+}
+
+/// A user, group or role using a policy.
+#[derive(Debug, Clone, Serialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Entity {
+    pub name: String,
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyEntities {
+    pub users: Vec<Entity>,
+    pub groups: Vec<Entity>,
+    pub roles: Vec<Entity>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyDetails {
+    #[serde(flatten)]
+    pub summary: PolicySummary,
+    pub description: Option<String>,
+    pub tags: Vec<(String, String)>,
+    /// The default version's document (decoded JSON text).
+    pub document: Option<String>,
+    /// Newest first.
+    pub versions: Vec<PolicyVersionInfo>,
+    /// Where it's attached as a permissions policy.
+    pub attached_to: PolicyEntities,
+    /// Who uses it as a permissions boundary (users and roles only).
+    pub boundary_for: PolicyEntities,
+}
+
+async fn entities_for(
+    conn: &Connection,
+    c: &Client,
+    arn: &str,
+    usage: aws_sdk_iam::types::PolicyUsageType,
+) -> Result<PolicyEntities, AppError> {
+    let mut out = PolicyEntities::default();
+    let mut marker: Option<String> = None;
+    loop {
+        let o = c
+            .list_entities_for_policy()
+            .policy_arn(arn)
+            .policy_usage_filter(usage.clone())
+            .set_marker(marker.clone())
+            .send()
+            .await
+            .map_err(|e| err(conn, e))?;
+        out.users.extend(o.policy_users().iter().map(|u| Entity {
+            name: u.user_name().unwrap_or_default().to_string(),
+            id: u.user_id().unwrap_or_default().to_string(),
+        }));
+        out.groups.extend(o.policy_groups().iter().map(|g| Entity {
+            name: g.group_name().unwrap_or_default().to_string(),
+            id: g.group_id().unwrap_or_default().to_string(),
+        }));
+        out.roles.extend(o.policy_roles().iter().map(|r| Entity {
+            name: r.role_name().unwrap_or_default().to_string(),
+            id: r.role_id().unwrap_or_default().to_string(),
+        }));
+        match next(o.is_truncated(), o.marker(), &marker) {
+            Some(m) => marker = Some(m),
+            None => break,
+        }
+    }
+    for v in [&mut out.users, &mut out.groups, &mut out.roles] {
+        v.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        v.dedup();
+    }
+    Ok(out)
+}
+
+/// One version's document (decoded JSON text).
+pub async fn policy_version(
+    conn: &Connection,
+    arn: &str,
+    version: &str,
+) -> Result<String, AppError> {
+    let o = client(conn)
+        .get_policy_version()
+        .policy_arn(arn)
+        .version_id(version)
+        .send()
+        .await
+        .map_err(|e| err(conn, e))?;
+    o.policy_version()
+        .and_then(|v| v.document())
+        .map(decode_document)
+        .ok_or_else(|| {
+            AppError::new(
+                ErrorKind::Other,
+                format!("Version {version} has no document."),
+            )
+        })
+}
+
+/// Version ids sort as v1, v2 … v10 (numerically).
+fn version_number(id: &str) -> u64 {
+    id.trim_start_matches(['v', 'V']).parse().unwrap_or(0)
+}
+
+pub async fn policy(conn: &Connection, arn: &str) -> Result<PolicyDetails, AppError> {
+    let c = client(conn);
+    let o = c
+        .get_policy()
+        .policy_arn(arn)
+        .send()
+        .await
+        .map_err(|e| err(conn, e))?;
+    let Some(p) = o.policy() else {
+        return Err(AppError::new(
+            ErrorKind::Other,
+            format!("Policy {arn} not found."),
+        ));
+    };
+    let mut d = PolicyDetails {
+        summary: policy_summary(p),
+        description: p.description().filter(|d| !d.is_empty()).map(String::from),
+        tags: tags(p.tags()),
+        ..Default::default()
+    };
+    let mut marker: Option<String> = None;
+    loop {
+        let o = c
+            .list_policy_versions()
+            .policy_arn(arn)
+            .set_marker(marker.clone())
+            .send()
+            .await
+            .map_err(|e| err(conn, e))?;
+        d.versions
+            .extend(o.versions().iter().map(|v| PolicyVersionInfo {
+                id: v.version_id().unwrap_or_default().to_string(),
+                default: v.is_default_version(),
+                created: iso(v.create_date()),
+            }));
+        match next(o.is_truncated(), o.marker(), &marker) {
+            Some(m) => marker = Some(m),
+            None => break,
+        }
+    }
+    d.versions
+        .sort_by(|a, b| version_number(&b.id).cmp(&version_number(&a.id)));
+    let default = d
+        .summary
+        .default_version
+        .clone()
+        .or_else(|| d.versions.iter().find(|v| v.default).map(|v| v.id.clone()));
+    if let Some(v) = default {
+        d.document = Some(policy_version(conn, arn, &v).await?);
+    }
+    d.attached_to = entities_for(
+        conn,
+        &c,
+        arn,
+        aws_sdk_iam::types::PolicyUsageType::PermissionsPolicy,
+    )
+    .await?;
+    // Only asked for when it's used as one: some emulators ignore the filter.
+    if d.summary.boundary_uses > 0 {
+        d.boundary_for = entities_for(
+            conn,
+            &c,
+            arn,
+            aws_sdk_iam::types::PolicyUsageType::PermissionsBoundary,
+        )
+        .await
+        .unwrap_or_default();
+        d.boundary_for.groups.clear();
+    }
+    Ok(d)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -934,6 +1180,13 @@ mod tests {
         // A single statement object and junk.
         assert_eq!(trust_of(r#"{"Statement":{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}}"#).len(), 1);
         assert!(trust_of("not json").is_empty());
+    }
+
+    #[test]
+    fn sorts_policy_versions_numerically() {
+        let mut v = vec!["v2", "v10", "v1"];
+        v.sort_by_key(|x| std::cmp::Reverse(version_number(x)));
+        assert_eq!(v, ["v10", "v2", "v1"]);
     }
 
     #[test]
@@ -1045,5 +1298,69 @@ mod emulator_tests {
         assert!(x[0].error.is_none(), "{:?}", x[0].error);
         let rx = role_extras(conn.clone(), vec!["s3x-iam-role".into()]).await;
         assert!(rx[0].error.is_none(), "{:?}", rx[0].error);
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn lists_and_describes_policies() {
+        let conn = connect().await;
+        ensure_principals(&conn).await;
+        let c = client(&conn);
+        let arn = match c
+            .create_policy()
+            .policy_name("s3x-iam-policy")
+            .policy_document(POLICY)
+            .send()
+            .await
+        {
+            Ok(o) => o
+                .policy()
+                .and_then(|p| p.arn())
+                .unwrap_or_default()
+                .to_string(),
+            Err(_) => {
+                list_policies(&conn)
+                    .await
+                    .unwrap()
+                    .into_iter()
+                    .find(|p| p.name == "s3x-iam-policy")
+                    .expect("policy")
+                    .arn
+            }
+        };
+        let v2 = POLICY.replace("s3:GetObject", "s3:ListBucket");
+        let _ = c
+            .create_policy_version()
+            .policy_arn(&arn)
+            .policy_document(&v2)
+            .set_as_default(true)
+            .send()
+            .await;
+        let _ = c
+            .attach_group_policy()
+            .group_name("s3x-iam-group")
+            .policy_arn(&arn)
+            .send()
+            .await;
+
+        let all = list_policies(&conn).await.unwrap();
+        let mine = all.iter().find(|p| p.arn == arn).expect("listed");
+        assert!(!mine.aws_managed);
+
+        let d = policy(&conn, &arn).await.unwrap();
+        assert!(d.versions.len() >= 2, "{:?}", d.versions);
+        assert!(d.versions[0].default);
+        assert!(d
+            .document
+            .as_deref()
+            .unwrap_or_default()
+            .contains("s3:ListBucket"));
+        assert!(d
+            .attached_to
+            .groups
+            .iter()
+            .any(|g| g.name == "s3x-iam-group"));
+        let old = policy_version(&conn, &arn, "v1").await.unwrap();
+        assert!(old.contains("s3:GetObject"));
     }
 }

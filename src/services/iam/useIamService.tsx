@@ -3,25 +3,56 @@
 // last used (roles) are fetched for the visible page only.
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, type AppError } from "../../api/s3";
-import { iamApi, matchesFilter, sessionText, type GroupSummary, type RoleExtras, type RoleSummary, type UserExtras, type UserSummary } from "../../api/iam";
+import { filterPolicies, iamApi, iamPolicyApi, matchesFilter, sessionText, type PolicyScope, type PolicySummary, type GroupSummary, type RoleExtras, type RoleSummary, type UserExtras, type UserSummary } from "../../api/iam";
 import { CommandButton } from "../../components/CommandButton";
 import type { MenuItem } from "../../components/ContextMenu";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { FilterBox } from "../../components/FilterBox";
 import { HelpTopic } from "../../components/HelpDialog";
-import { IamGroupIcon, IamIcon, IamRoleIcon, IamUserIcon, RefreshIcon } from "../../components/Icons";
+import { IamGroupIcon, IamIcon, IamPolicyIcon, IamRoleIcon, IamUserIcon, RefreshIcon } from "../../components/Icons";
 import { PageBar } from "../../components/PageBar";
 import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { formatDate } from "../../format";
-import { IAM_KIND_LABEL, IAM_ROOT, type IamKind, type Place } from "../../shell/places";
+import { IAM_KIND_LABEL, IAM_ROOT, iamIdLabel, type IamKind, type Place } from "../../shell/places";
 import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePagedDetails, usePaging } from "../../state/paged";
+import { PolicyView } from "./PolicyViews";
 import { GroupView, RoleView, UserView } from "./PrincipalViews";
 
-const KINDS: IamKind[] = ["users", "groups", "roles"];
+const KINDS: IamKind[] = ["users", "groups", "roles", "policies"];
 
-export const KIND_ICON: Record<IamKind, ReactNode> = { users: <IamUserIcon />, groups: <IamGroupIcon />, roles: <IamRoleIcon /> };
+const SINGULAR: Record<IamKind, string> = { users: "user", groups: "user group", roles: "role", policies: "policy" };
+
+const SCOPES: [PolicyScope, string][] = [
+  ["customer", "Customer managed"],
+  ["aws", "AWS managed"],
+  ["all", "All"],
+];
+
+function stored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const v = localStorage.getItem(key) as T | null;
+    return v && allowed.includes(v) ? v : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function store(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* convenience only */
+  }
+}
+
+/** The row / tree key: names, except policies, which are keyed by ARN (names can repeat across scopes). */
+function keyOf(k: IamKind, p: { name: string; arn: string }): string {
+  return k === "policies" ? p.arn : p.name;
+}
+
+export const KIND_ICON: Record<IamKind, ReactNode> = { users: <IamUserIcon />, groups: <IamGroupIcon />, roles: <IamRoleIcon />, policies: <IamPolicyIcon /> };
 
 const USER_COLUMNS: Column[] = [
   { id: "name", label: "User", width: 220 },
@@ -46,6 +77,15 @@ const ROLE_COLUMNS: Column[] = [
   { id: "created", label: "Created", width: 165 },
   { id: "description", label: "Description", width: 320 },
 ];
+const POLICY_COLUMNS: Column[] = [
+  { id: "name", label: "Policy", width: 280 },
+  { id: "type", label: "Type", width: 130 },
+  { id: "attachments", label: "Attachments", width: 95, align: "right" },
+  { id: "path", label: "Path", width: 140 },
+  { id: "version", label: "Version", width: 70 },
+  { id: "updated", label: "Last updated", width: 165 },
+  { id: "created", label: "Created", width: 165 },
+];
 const OVERVIEW_COLUMNS: Column[] = [
   { id: "name", label: "Name", width: 200 },
   { id: "count", label: "Count", width: 80, align: "right" },
@@ -56,6 +96,7 @@ const ABOUT: Record<IamKind, string> = {
   users: "People and applications with long-term credentials",
   groups: "Collections of users that share permissions",
   roles: "Identities that services, accounts and federated users assume",
+  policies: "Managed policies: customer managed and AWS managed",
 };
 
 type Listing<T> = { key: string; items: T[] | null; error: AppError | null };
@@ -105,13 +146,23 @@ export function useIamService(shell: Shell): ServiceUi {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<IamKind>>(new Set());
   const [reloadToken, setReloadToken] = useState(0);
-  const [filters, setFilters] = useState<Record<IamKind, string>>({ users: "", groups: "", roles: "" });
+  const [filters, setFilters] = useState<Record<IamKind, string>>({ users: "", groups: "", roles: "", policies: "" });
+  const [scope, setScopeState] = useState<PolicyScope>(() => stored("iam.policies.scope", ["customer", "aws", "all"] as const, "customer"));
+  const [attachedOnly, setAttachedOnlyState] = useState(() => stored("iam.policies.attachedOnly", ["1", "0"] as const, "0") === "1");
+  const setScope = (s: PolicyScope) => {
+    setScopeState(s);
+    store("iam.policies.scope", s);
+  };
+  const setAttachedOnly = (v: boolean) => {
+    setAttachedOnlyState(v);
+    store("iam.policies.attachedOnly", v ? "1" : "0");
+  };
   const [history, setHistory] = useState<string[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const historyKey = `iam|${profile ?? ""}|${kind ?? ""}`;
 
   useEffect(() => {
-    setFilters({ users: "", groups: "", roles: "" });
+    setFilters({ users: "", groups: "", roles: "", policies: "" });
     setSelected(new Set());
   }, [connectionId]);
   useEffect(() => setSelected(new Set()), [kind]);
@@ -134,7 +185,8 @@ export function useIamService(shell: Shell): ServiceUi {
   const users = useList<UserSummary>(listKey, enabled, iamApi.users);
   const groups = useList<GroupSummary>(listKey, enabled, iamApi.groups);
   const roles = useList<RoleSummary>(listKey, enabled, iamApi.roles);
-  const lists = { users, groups, roles };
+  const policies = useList<PolicySummary>(listKey, enabled, iamPolicyApi.policies);
+  const lists = { users, groups, roles, policies };
   const refresh = useCallback(() => setReloadToken((t) => t + 1), []);
 
   const filter = kind ? filters[kind] : "";
@@ -145,11 +197,12 @@ export function useIamService(shell: Shell): ServiceUi {
   const fUsers = useMemo(() => filtered("users", users.listing?.items), [users.listing, filters.users]); // eslint-disable-line react-hooks/exhaustive-deps
   const fGroups = useMemo(() => filtered("groups", groups.listing?.items), [groups.listing, filters.groups]); // eslint-disable-line react-hooks/exhaustive-deps
   const fRoles = useMemo(() => filtered("roles", roles.listing?.items), [roles.listing, filters.roles]); // eslint-disable-line react-hooks/exhaustive-deps
-  const current = kind === "users" ? fUsers : kind === "groups" ? fGroups : kind === "roles" ? fRoles : null;
+  const fPolicies = useMemo(() => (policies.listing?.items ? filterPolicies(policies.listing.items, scope, attachedOnly, filters.policies) : null), [policies.listing, scope, attachedOnly, filters.policies]);
+  const current: { name: string; arn: string }[] | null = kind === "users" ? fUsers : kind === "groups" ? fGroups : kind === "roles" ? fRoles : kind === "policies" ? fPolicies : null;
   const listing = kind ? lists[kind].listing : null;
 
-  const paging = usePaging(`${listKey}|${kind ?? ""}|${filter}`, current?.length ?? 0, `iam.${kind ?? "x"}.pageSize`, active && !!kind && !id);
-  const pageNames = useMemo(() => paging.slice(current ?? []).map((p) => p.name), [paging, current]);
+  const paging = usePaging(`${listKey}|${kind ?? ""}|${filter}${kind === "policies" ? `|${scope}|${attachedOnly}` : ""}`, current?.length ?? 0, `iam.${kind ?? "x"}.pageSize`, active && !!kind && !id);
+  const pageNames = useMemo(() => paging.slice(current ?? []).map((p) => keyOf(kind ?? "users", p)), [paging, current, kind]);
   const userX = usePagedDetails<UserExtras>(`u|${listKey}`, kind === "users" ? pageNames : [], iamApi.userExtras, (x) => x.name, active && kind === "users" && !id);
   const roleX = usePagedDetails<RoleExtras>(`r|${listKey}`, kind === "roles" ? pageNames : [], iamApi.roleExtras, (x) => x.name, active && kind === "roles" && !id);
 
@@ -226,10 +279,29 @@ export function useIamService(shell: Shell): ServiceUi {
             },
           };
         });
+    if (kind === "policies")
+      return (fPolicies ?? [])
+        .filter((p) => page.has(p.arn))
+        .map((p) => ({
+          key: p.arn,
+          icon: <IamPolicyIcon />,
+          isContainer: false,
+          dimmed: p.attachments === 0 && p.boundaryUses === 0,
+          cells: {
+            name: { text: p.name, sort: p.name.toLowerCase() },
+            type: { text: p.awsManaged ? "AWS managed" : "Customer managed", sort: p.awsManaged ? 1 : 0 },
+            attachments: { text: p.boundaryUses ? `${p.attachments} + ${p.boundaryUses} boundary` : String(p.attachments), sort: p.attachments + p.boundaryUses },
+            path: { text: p.path, sort: p.path },
+            version: { text: p.defaultVersion ?? "", sort: Number((p.defaultVersion ?? "").replace(/\D/g, "")) || 0 },
+            updated: { text: formatDate(p.updated), sort: p.updated ?? "" },
+            created: { text: formatDate(p.created), sort: p.created ?? "" },
+          },
+        }));
     return [];
-  }, [kind, pageNames, fUsers, fGroups, fRoles, userX.details, roleX.details]);
+  }, [kind, pageNames, fUsers, fGroups, fRoles, fPolicies, userX.details, roleX.details]);
 
   function arnOf(k: IamKind, name: string): string | null {
+    if (k === "policies") return name;
     const items: { name: string; arn: string }[] = lists[k].listing?.items ?? [];
     return items.find((p) => p.name === name)?.arn ?? null;
   }
@@ -241,7 +313,7 @@ export function useIamService(shell: Shell): ServiceUi {
       items.push(
         { label: "Open", bold: true, shortcut: "Enter", onClick: () => go({ kind: k, id: name }) },
         "separator",
-        { label: "Copy name", onClick: () => void shell.copyText(name) },
+        { label: "Copy name", onClick: () => void shell.copyText(iamIdLabel(k, name)) },
         { label: "Copy ARN", disabled: !arn, onClick: () => arn && void shell.copyText(arn) },
         { label: "Add bookmark…", onClick: () => shell.addBookmark({ ...IAM_ROOT, kind: k, id: name }, null, null) },
         "separator",
@@ -253,7 +325,7 @@ export function useIamService(shell: Shell): ServiceUi {
     shell.openMenu(x, y, items);
   }
 
-  const filteredList: Record<IamKind, { name: string }[] | null> = { users: fUsers, groups: fGroups, roles: fRoles };
+  const filteredList: Record<IamKind, { name: string; arn: string }[] | null> = { users: fUsers, groups: fGroups, roles: fRoles, policies: fPolicies };
   const tree = connection ? (
     <TreeRow depth={1} label="IAM" icon={<IamIcon />} selected={active && !kind} expanded={open} title="IAM · global (the region doesn't apply)" onClick={() => go({})} onToggle={() => setOpen((v) => !v)}>
       {KINDS.map((k) => {
@@ -263,7 +335,7 @@ export function useIamService(shell: Shell): ServiceUi {
           <TreeRow
             key={k}
             depth={2}
-            label={filters[k] ? `${IAM_KIND_LABEL[k]} (filtered)` : IAM_KIND_LABEL[k]}
+            label={filters[k] || (k === "policies" && attachedOnly) ? `${IAM_KIND_LABEL[k]} (filtered)` : IAM_KIND_LABEL[k]}
             icon={KIND_ICON[k]}
             selected={active && kind === k && !id}
             expanded={expanded.has(k)}
@@ -287,7 +359,7 @@ export function useIamService(shell: Shell): ServiceUi {
             ) : (
               <>
                 {items.slice(0, TREE_LIMIT).map((p) => (
-                  <TreeRow key={p.name} depth={3} label={p.name} icon={KIND_ICON[k]} selected={active && kind === k && id === p.name} onClick={() => go({ kind: k, id: p.name })} onContextMenu={(x, y) => menu(k, p.name, x, y)} />
+                  <TreeRow key={keyOf(k, p)} depth={3} label={p.name} icon={KIND_ICON[k]} selected={active && kind === k && id === keyOf(k, p)} onClick={() => go({ kind: k, id: keyOf(k, p) })} onContextMenu={(x, y) => menu(k, keyOf(k, p), x, y)} />
                 ))}
                 {items.length > TREE_LIMIT && <TreeNote depth={3}>{`${(items.length - TREE_LIMIT).toLocaleString()} more in the list`}</TreeNote>}
               </>
@@ -297,6 +369,14 @@ export function useIamService(shell: Shell): ServiceUi {
       })}
     </TreeRow>
   ) : null;
+
+  function countText(k: IamKind): string {
+    const l = lists[k].listing;
+    if (!l?.items) return l?.error ? "?" : "…";
+    if (k !== "policies") return l.items.length.toLocaleString();
+    const aws = (l.items as PolicySummary[]).filter((p) => p.awsManaged).length;
+    return `${(l.items.length - aws).toLocaleString()} + ${aws.toLocaleString()} AWS`;
+  }
 
   let content: ReactNode = null;
   let status = "";
@@ -308,7 +388,7 @@ export function useIamService(shell: Shell): ServiceUi {
       isContainer: true,
       cells: {
         name: { text: IAM_KIND_LABEL[k], sort: KINDS.indexOf(k) },
-        count: { text: lists[k].listing?.items ? lists[k].listing!.items!.length.toLocaleString() : lists[k].listing?.error ? "?" : "…", sort: lists[k].listing?.items?.length ?? -1 },
+        count: { text: countText(k), sort: lists[k].listing?.items?.length ?? -1 },
         about: { text: ABOUT[k], sort: k },
       },
     }));
@@ -325,7 +405,8 @@ export function useIamService(shell: Shell): ServiceUi {
     );
     status = "IAM · global";
   } else if (active && kind && !id) {
-    const columns = kind === "users" ? USER_COLUMNS : kind === "groups" ? GROUP_COLUMNS : ROLE_COLUMNS;
+    const columns = kind === "users" ? USER_COLUMNS : kind === "groups" ? GROUP_COLUMNS : kind === "roles" ? ROLE_COLUMNS : POLICY_COLUMNS;
+    const scopeNoun = kind === "policies" && scope !== "all" ? (scope === "aws" ? "AWS managed " : "customer managed ") : "";
     const noun = IAM_KIND_LABEL[kind].toLowerCase();
     content = (
       <div className="service-pane">
@@ -339,7 +420,22 @@ export function useIamService(shell: Shell): ServiceUi {
           onClear={() => setFilters((f) => ({ ...f, [kind]: "" }))}
           onForget={(v) => void forget(v)}
           onClearHistory={() => void forget(null)}
-        />
+        >
+          {kind === "policies" && (
+            <>
+              <div className="segmented small">
+                {SCOPES.map(([s, label]) => (
+                  <button key={s} className={scope === s ? "active" : ""} onClick={() => setScope(s)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <label className="check-row" title="Only policies attached to a user, user group or role, or used as a permissions boundary">
+                <input type="checkbox" checked={attachedOnly} onChange={(e) => setAttachedOnly(e.target.checked)} /> Attached only
+              </label>
+            </>
+          )}
+        </FilterBox>
         {listing?.error ? (
           <ErrorPanel error={listing.error} profile={profile} onRetry={refresh} />
         ) : (
@@ -352,28 +448,31 @@ export function useIamService(shell: Shell): ServiceUi {
               onSelectionChange={setSelected}
               onOpen={(k) => go({ kind, id: k })}
               onContextMenu={(k, x, y) => menu(kind, k, x, y)}
-              emptyText={!current ? "Loading…" : filter ? `No ${noun} match "${filter}".` : `No ${noun} in this account.`}
+              emptyText={!current ? "Loading…" : filter ? `No ${scopeNoun}${noun} match "${filter}".` : `No ${attachedOnly && kind === "policies" ? "attached " : ""}${scopeNoun}${noun} in this account.`}
             />
             {current && current.length > paging.pageSize && <PageBar {...paging.bar} loading={userX.loading || roleX.loading} />}
           </>
         )}
       </div>
     );
-    if (current) status = `${current.length.toLocaleString()} ${current.length === 1 ? noun.replace(/s$/, "") : noun}${filter ? ` matching "${filter}"` : ""} · global`;
+    if (current) status = `${current.length.toLocaleString()} ${scopeNoun}${current.length === 1 ? SINGULAR[kind] : noun}${filter ? ` matching "${filter}"` : ""} · global`;
   } else if (active && kind && id) {
     const view =
       kind === "users" ? (
         <UserView key={id} name={id} shell={shell} reloadToken={reloadToken} />
       ) : kind === "groups" ? (
         <GroupView key={id} name={id} shell={shell} reloadToken={reloadToken} />
-      ) : (
+      ) : kind === "roles" ? (
         <RoleView key={id} name={id} shell={shell} reloadToken={reloadToken} />
+      ) : (
+        <PolicyView key={id} arn={id} shell={shell} reloadToken={reloadToken} />
       );
     content = <div className="service-pane scroll-pane">{view}</div>;
-    status = `${IAM_KIND_LABEL[kind].replace(/s$/, "")} ${id} · global`;
+    const single = SINGULAR[kind];
+    status = `${single[0].toUpperCase()}${single.slice(1)} ${iamIdLabel(kind, id)} · global`;
   }
 
-  const anyLoading = users.loading || groups.loading || roles.loading;
+  const anyLoading = users.loading || groups.loading || roles.loading || policies.loading;
   const commands = active ? <CommandButton icon={<RefreshIcon />} label="Refresh" title="Refresh (F5)" disabled={!connection} onClick={refresh} /> : null;
 
   return { tree, content, commands, status, busy: active && anyLoading, refresh, dialogs: null };

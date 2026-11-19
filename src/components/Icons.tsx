@@ -614,3 +614,14 @@ export function IamRoleIcon({ size = 16 }: P) {
     </svg>
   );
 }
+
+/** An IAM managed policy: a document with a check mark. */
+export function IamPolicyIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M3.5 1.5 H9.5 L12.5 4.5 V14.5 H3.5 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" strokeLinejoin="round" />
+      <path d="M9.5 1.5 V4.5 H12.5" fill="none" stroke="#c0392b" strokeWidth="0.9" />
+      <path d="M5.5 9.4 L7.3 11.2 L10.6 7.4" fill="none" stroke="#c0392b" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

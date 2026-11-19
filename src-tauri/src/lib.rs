@@ -5,18 +5,18 @@ mod ddb_items;
 mod ddb_tables;
 mod dynamo;
 mod ecs;
+mod ecs_actions;
+mod ecs_taskdefs;
 mod elasticache;
-mod iam;
 mod elasticache_actions;
 mod elasticache_events;
 mod elasticache_params;
 mod elasticache_snapshots;
 mod elasticache_updates;
 mod elasticache_users;
-mod ecs_actions;
-mod ecs_taskdefs;
 mod error;
 mod history;
+mod iam;
 mod lambda;
 mod lambda_admin;
 mod lambda_code;
@@ -225,6 +225,9 @@ pub fn run() {
             commands::iam::iam_user,
             commands::iam::iam_group,
             commands::iam::iam_role,
+            commands::iam::iam_policies,
+            commands::iam::iam_policy,
+            commands::iam::iam_policy_version,
             commands::sfn::sfn_list,
             commands::sfn::sfn_details_many,
             commands::sfn::sfn_describe,
