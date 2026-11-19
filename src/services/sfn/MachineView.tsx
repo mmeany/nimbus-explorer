@@ -17,6 +17,7 @@ import { LogViewer } from "../logs/LogViewer";
 import { GraphView } from "./graph/GraphView";
 import { exportExecutions } from "./exports";
 import { VersionsTab } from "./VersionsTab";
+import { RoleLink } from "../../components/RoleLink";
 
 type Tab = "graph" | "definition" | "executions" | "config" | "versions" | "logs";
 
@@ -293,7 +294,7 @@ function ConfigTab({ m, shell }: { m: MachineDetails; shell: Shell }) {
           ["Type", m.kind === "EXPRESS" ? "Express" : "Standard"],
           ["Status", m.status],
           ["Created", formatDate(m.created)],
-          ["Execution role", m.roleArn],
+          ["Execution role", <RoleLink shell={shell} arn={m.roleArn} owner={m.arn} />],
           ["Revision", m.revisionId],
           ["Logging", l && l.level !== "OFF" ? `${l.level}${l.includeExecutionData ? ", with execution data" : ", without execution data"}` : "Off"],
           [

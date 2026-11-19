@@ -84,7 +84,7 @@ The list shows every activity in the region; the tree shows how many there are.`
 - **Name**: 1 to 80 characters, no spaces or special characters; unique in the region.
 - **Type**: **Standard** runs up to a year, exactly once, with a full execution history (kept 90 days). **Express** runs up to 5 minutes at high volume, at least once, and keeps no history: turn logging on to see its runs. The type can't be changed later.
 - **Start from a template…**: a Pass state, a Lambda call with retry and catch, Choice and Wait, Parallel branches, or a Map over items. Edit the definition as you like; the graph and Step Functions' checks follow as you type.
-- **Role, logging and tracing**: the execution role is required (the IAM role Step Functions assumes, allowed to call what your states use). A log group can be given by name.
+- **Role, logging and tracing**: the execution role is required (the IAM role Step Functions assumes, allowed to call what your states use). **Choose…** lists the roles whose trust policy allows Step Functions (\`states.amazonaws.com\`); tick **Show all roles** for the rest. You can also type an ARN. A log group can be given by name.
 - **Publish as a new version** publishes version 1 straight away.
 
 Creating IAM roles isn't part of this app; use the console, the CLI or your infrastructure code.`,
@@ -94,7 +94,7 @@ Creating IAM roles isn't part of this app; use the console, the CLI or your infr
     body: `Change the machine's definition and settings. Only what you change is sent.
 
 - **Definition**: the Amazon States Language as JSON. The graph on the right redraws as you type (while the text is valid JSON). Step Functions checks the definition when you pause; problems are listed under the editor and outlined in red on the graph. Click a state's name in a problem to find it on the graph.
-- **Role, logging and tracing**: the execution role (an IAM role ARN), the log level and log group (a name or ARN), whether logs include inputs and outputs, and X-Ray tracing. Logging needs the role to be allowed to deliver logs.
+- **Role, logging and tracing**: the execution role (an IAM role ARN; **Choose…** lists the roles Step Functions can assume), the log level and log group (a name or ARN), whether logs include inputs and outputs, and X-Ray tracing. Logging needs the role to be allowed to deliver logs.
 - **Publish as a new version**: saves and freezes the result as a numbered version (with an optional description), for aliases to point at.
 - **Ctrl+Enter** saves.
 
@@ -121,7 +121,7 @@ Express machines don't keep executions that AWS can list. Their runs appear in t
   },
   "sfn.configuration": {
     title: "Configuration",
-    body: `The execution role, logging (level, whether execution data is included, log group), X-Ray tracing, encryption, revision and tags.`,
+    body: `The execution role (click it to open the role in IAM, when it's in this account), logging (level, whether execution data is included, log group), X-Ray tracing, encryption, revision and tags.`,
   },
   "sfn.versions": {
     title: "Versions and aliases",

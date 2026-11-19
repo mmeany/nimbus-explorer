@@ -1115,7 +1115,14 @@ Usual rules: "Add bookmark…" in row and tree menus, `storageKey` on every
   grouped by severity (error, security warning, warning, suggestion),
   highlighted at their location in the document, with the learn-more link
   shown as text.
-- 16.6 Role picker and links (`components/RolePicker.tsx`): in Step
+- 16.6 ✅ (`RoleSummary.trustedServices` from the AssumeRolePolicyDocument that
+  ListRoles already returns, so the picker costs no extra calls;
+  `components/RolePicker.tsx` (service-linked roles left out; listing
+  errors fall back to typing) in the Step Functions editor;
+  `components/RoleLink.tsx` + `roleLinkName`: "this account" = the account
+  in the ARN of the resource showing the role (IAM has no call for the
+  account ID); RDS gained `monitoringRole` and `associatedRoles`, untested in
+  the app since MiniStack had no database) Role picker and links (`components/RolePicker.tsx`): in Step
   Functions' create / edit dialog the role ARN field gets a picker of roles
   whose trust policy allows the service principal (`states.amazonaws.com`),
   filterable, other roles behind "Show all"; typing an ARN still works.

@@ -27,6 +27,8 @@ export interface RoleSummary {
   description: string | null;
   maxSessionSecs: number | null;
   serviceLinked: boolean;
+  /** Services the trust policy allows (for role pickers). */
+  trustedServices: string[];
 }
 
 export interface UserExtras {
@@ -511,4 +513,30 @@ export function highlightSegments(doc: string, findings: Finding[], selected: nu
     else out.push(seg);
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Role picker and role links (16.6)
+
+/** The account in an ARN (its fifth field), or null. */
+export function accountOf(arn: string | null | undefined): string | null {
+  const a = arn?.split(":")[4];
+  return a && /^\d{12}$/.test(a) ? a : null;
+}
+
+/**
+ * The role name to open in IAM for a role ARN shown on a resource, or null
+ * when it isn't a role ARN or belongs to another account than the resource.
+ */
+export function roleLinkName(roleArn: string | null | undefined, ownerArn: string | null | undefined): string | null {
+  const m = roleArn ? /^arn:aws[\w-]*:iam::(\d{12}):role\/(?:.*\/)?([^/]+)$/.exec(roleArn) : null;
+  if (!m) return null;
+  return accountOf(ownerArn) === m[1] ? m[2] : null;
+}
+
+/** Roles that trust `service` first (by name), then the others; filtered by name prefix or path. */
+export function pickerRoles(roles: RoleSummary[], service: string, showAll: boolean, filter: string): { trusting: RoleSummary[]; others: RoleSummary[] } {
+  const f = roles.filter((r) => !r.serviceLinked && matchesFilter(r, filter.trim()));
+  const trusting = f.filter((r) => r.trustedServices.includes(service));
+  return { trusting, others: showAll ? f.filter((r) => !r.trustedServices.includes(service)) : [] };
 }

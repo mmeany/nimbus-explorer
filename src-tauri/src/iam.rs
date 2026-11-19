@@ -70,6 +70,9 @@ pub struct RoleSummary {
     pub max_session_secs: Option<i32>,
     /// Created and managed by an AWS service (path /aws-service-role/).
     pub service_linked: bool,
+    /// Services its trust policy allows (Allow statements with a Service
+    /// principal), for role pickers.
+    pub trusted_services: Vec<String>,
 }
 
 fn user_summary(u: &aws_sdk_iam::types::User) -> UserSummary {
@@ -103,7 +106,23 @@ fn role_summary(r: &aws_sdk_iam::types::Role) -> RoleSummary {
         description: r.description().filter(|d| !d.is_empty()).map(String::from),
         max_session_secs: r.max_session_duration(),
         service_linked: r.path().starts_with("/aws-service-role/"),
+        trusted_services: trusted_services(r.assume_role_policy_document()),
     }
+}
+
+/// Service principals a trust policy allows, sorted and unique.
+pub fn trusted_services(document: Option<&str>) -> Vec<String> {
+    let Some(d) = document else {
+        return Vec::new();
+    };
+    let mut v: Vec<String> = trust_of(&decode_document(d))
+        .into_iter()
+        .filter(|t| t.effect == "Allow" && t.kind == "Service")
+        .map(|t| t.principal)
+        .collect();
+    v.sort();
+    v.dedup();
+    v
 }
 
 /// Next marker, or None when the listing is complete (also stops on a
@@ -1183,6 +1202,16 @@ mod tests {
     }
 
     #[test]
+    fn lists_trusted_services() {
+        let doc = "%7B%22Statement%22%3A%5B%7B%22Effect%22%3A%22Allow%22%2C%22Principal%22%3A%7B%22Service%22%3A%5B%22states.amazonaws.com%22%2C%22lambda.amazonaws.com%22%5D%7D%7D%2C%7B%22Effect%22%3A%22Deny%22%2C%22Principal%22%3A%7B%22Service%22%3A%22ec2.amazonaws.com%22%7D%7D%5D%7D";
+        assert_eq!(
+            trusted_services(Some(doc)),
+            ["lambda.amazonaws.com", "states.amazonaws.com"]
+        );
+        assert!(trusted_services(None).is_empty());
+    }
+
+    #[test]
     fn sorts_policy_versions_numerically() {
         let mut v = vec!["v2", "v10", "v1"];
         v.sort_by_key(|x| std::cmp::Reverse(version_number(x)));
@@ -1264,7 +1293,7 @@ mod emulator_tests {
             .await
             .unwrap()
             .iter()
-            .any(|r| r.name == "s3x-iam-role"));
+            .any(|r| r.name == "s3x-iam-role" && r.trusted_services == ["states.amazonaws.com"]));
 
         let u = user(&conn, "s3x-iam-user").await.unwrap();
         assert!(u.groups.iter().any(|g| g.name == "s3x-iam-group"));

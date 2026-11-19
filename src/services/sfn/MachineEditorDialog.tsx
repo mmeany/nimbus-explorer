@@ -11,6 +11,7 @@ import { ValueEditor } from "../../components/ValueEditor";
 import type { Shell } from "../../shell/shell";
 import { parseMachine, type ParsedMachine } from "./graph/asl";
 import { StateGraph } from "./graph/StateGraph";
+import { RolePicker } from "../../components/RolePicker";
 
 const MAX_DEFINITION = 1024 * 1024;
 const LEVELS = ["OFF", "ALL", "ERROR", "FATAL"] as const;
@@ -343,7 +344,7 @@ export function MachineEditorDialog({ shell, machine, create, onClose, onDone }:
               <label className="form-label" htmlFor="se-role">
                 Execution role
               </label>
-              <input id="se-role" className="text-input mono" value={role} onChange={(e) => setRole(e.target.value)} placeholder="arn:aws:iam::123456789012:role/my-role" />
+              <RolePicker id="se-role" value={role} onChange={setRole} service="states.amazonaws.com" />
               <label className="form-label" htmlFor="se-level">
                 Logging
               </label>

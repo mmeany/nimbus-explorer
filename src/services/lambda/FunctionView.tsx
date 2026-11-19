@@ -10,6 +10,7 @@ import { formatDate, formatSize } from "../../format";
 import type { Shell } from "../../shell/shell";
 import { AliasDialog, downloadCode, UploadCodeDialog } from "./LambdaDialogs";
 import { HelpTopic } from "../../components/HelpDialog";
+import { RoleLink } from "../../components/RoleLink";
 
 export interface FunctionTab {
   id: string;
@@ -228,7 +229,7 @@ function Details({ f, shell, onOpenLogs, onChanged }: { f: FunctionDetails; shel
             "Execution role",
             f.role ? (
               <>
-                <span className="mono">{f.role.split("/").pop()}</span>{" "}
+                <RoleLink shell={shell} arn={f.role} owner={f.arn} />{" "}
                 <button className="link-btn" onClick={() => void shell.copyText(f.role!)}>
                   Copy ARN
                 </button>

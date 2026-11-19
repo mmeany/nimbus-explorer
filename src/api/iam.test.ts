@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysSince, filterPolicies, groupFindings, highlightSegments, type Finding, parseActions, splitList, statementRange, limitRows, quotaRows, unusedCredentials, type CredentialRow, type KeyCredential, matchesFilter, policyNameOf, prettyJson, sessionText, trustText, type PolicySummary, type Trust } from "./iam";
+import { accountOf, daysSince, filterPolicies, pickerRoles, roleLinkName, type RoleSummary, groupFindings, highlightSegments, type Finding, parseActions, splitList, statementRange, limitRows, quotaRows, unusedCredentials, type CredentialRow, type KeyCredential, matchesFilter, policyNameOf, prettyJson, sessionText, trustText, type PolicySummary, type Trust } from "./iam";
 
 const t = (kind: string, principal: string): Trust => ({ effect: "Allow", kind, principal, actions: ["sts:AssumeRole"], conditions: false, sid: null });
 
@@ -139,5 +139,25 @@ describe("policy validation", () => {
       { text: "fgh", severity: null, selected: false },
     ]);
     expect(highlightSegments("ab", [f("ERROR", 5, 9)], null)).toEqual([{ text: "ab", severity: null, selected: false }]);
+  });
+});
+
+describe("role links and picker", () => {
+  it("links roles of the resource's account", () => {
+    const fn = "arn:aws:lambda:eu-west-2:123456789012:function:f";
+    expect(roleLinkName("arn:aws:iam::123456789012:role/service-role/my-role", fn)).toBe("my-role");
+    expect(roleLinkName("arn:aws:iam::999999999999:role/my-role", fn)).toBeNull();
+    expect(roleLinkName("arn:aws:iam::123456789012:user/u", fn)).toBeNull();
+    expect(roleLinkName(null, fn)).toBeNull();
+    expect(roleLinkName("arn:aws:iam::123456789012:role/r", null)).toBeNull();
+    expect(accountOf("arn:aws:states:us-east-1:000000000000:stateMachine:m")).toBe("000000000000");
+  });
+
+  it("puts roles trusting the service first", () => {
+    const r = (name: string, trustedServices: string[], serviceLinked = false): RoleSummary => ({ name, id: name, arn: `arn:aws:iam::1:role/${name}`, path: "/", created: null, description: null, maxSessionSecs: null, serviceLinked, trustedServices });
+    const roles = [r("a", ["states.amazonaws.com"]), r("b", ["lambda.amazonaws.com"]), r("c", []), r("AWSServiceRoleForX", ["states.amazonaws.com"], true)];
+    expect(pickerRoles(roles, "states.amazonaws.com", false, "")).toEqual({ trusting: [roles[0]], others: [] });
+    expect(pickerRoles(roles, "states.amazonaws.com", true, "").others.map((x) => x.name)).toEqual(["b", "c"]);
+    expect(pickerRoles(roles, "states.amazonaws.com", true, "B").others.map((x) => x.name)).toEqual(["b"]);
   });
 });

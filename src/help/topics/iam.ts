@@ -49,7 +49,9 @@ Secret access keys and passwords can't be read from AWS at all.`,
   },
   "iam.role": {
     title: "IAM role",
-    body: `One role: description, maximum session duration (how long credentials from assuming it last, at most), when it was last used and in which region, instance profiles (how EC2 instances use it), permissions boundary and tags.`,
+    body: `Role ARNs shown elsewhere in the app (Lambda and Step Functions execution roles, ECS task and execution roles, RDS monitoring and feature roles) open this view when the role is in the same account as the resource.
+
+One role: description, maximum session duration (how long credentials from assuming it last, at most), when it was last used and in which region, instance profiles (how EC2 instances use it), permissions boundary and tags.`,
   },
   "iam.trust": {
     title: "Trust",

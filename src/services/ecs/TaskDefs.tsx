@@ -16,6 +16,7 @@ import type { Shell } from "../../shell/shell";
 import { usePaging } from "../../state/paged";
 import { PropRows } from "./EcsViews";
 import { DialogHelp, HelpTopic } from "../../components/HelpDialog";
+import { RoleLink } from "../../components/RoleLink";
 
 const COLUMNS: Column[] = [{ id: "name", label: "Family", width: 420 }];
 
@@ -135,7 +136,7 @@ function ContainerDetails({ c }: { c: Container }) {
   );
 }
 
-function Details({ td }: { td: TaskDefJson }) {
+function Details({ td, shell }: { td: TaskDefJson; shell: Shell }) {
   const d = useMemo(() => JSON.parse(td.json) as Def, [td.json]);
   const rp = (d.runtimePlatform ?? null) as Record<string, string> | null;
   return (
@@ -147,8 +148,8 @@ function Details({ td }: { td: TaskDefJson }) {
           ["CPU / memory", d.cpu || d.memory ? `${str(d.cpu) || "?"} CPU units · ${str(d.memory) || "?"} MB` : null],
           ["Network mode", str(d.networkMode)],
           ["Platform", rp ? [rp.operatingSystemFamily, rp.cpuArchitecture].filter(Boolean).join(", ") : null],
-          ["Task role", d.taskRoleArn ? <span className="mono">{str(d.taskRoleArn)}</span> : null],
-          ["Execution role", d.executionRoleArn ? <span className="mono">{str(d.executionRoleArn)}</span> : null],
+          ["Task role", d.taskRoleArn ? <RoleLink shell={shell} arn={str(d.taskRoleArn)} owner={td.arn} /> : null],
+          ["Execution role", d.executionRoleArn ? <RoleLink shell={shell} arn={str(d.executionRoleArn)} owner={td.arn} /> : null],
           ["Volumes", arr(d.volumes).map((v) => str(v.name)).join(", ")],
           ["Ephemeral storage", d.ephemeralStorage ? `${str((d.ephemeralStorage as Record<string, unknown>).sizeInGiB)} GiB` : null],
           ["Registered", d.registeredAt ? formatDate(typeof d.registeredAt === "number" ? new Date((d.registeredAt as number) * 1000).toISOString() : str(d.registeredAt)) : null],
@@ -319,7 +320,7 @@ export function FamilyView({ shell, family, reloadToken, onChanged }: { shell: S
   const active = data?.status === "ACTIVE";
   let body: ReactNode = <div className="empty-note">Loading…</div>;
   if (current?.error) body = <ErrorPanel error={current.error} profile={shell.profile} onRetry={() => setTick((t) => t + 1)} />;
-  else if (data) body = tab === "json" ? <ValueView key={data.name} value={data.json} /> : tab === "compare" ? <Compare key={data.name} td={data} revisions={all} /> : <Details td={data} />;
+  else if (data) body = tab === "json" ? <ValueView key={data.name} value={data.json} /> : tab === "compare" ? <Compare key={data.name} td={data} revisions={all} /> : <Details td={data} shell={shell} />;
   return (
     <div className="queue-view db-view">
       <div className="qv-head">

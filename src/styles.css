@@ -936,3 +936,11 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .sim-doc mark.selected { background: var(--sel); }
 .pv-dialog { width: min(860px, 94vw); }
 .pv-input.text-input { width: 100%; box-sizing: border-box; height: auto; resize: vertical; padding: 3px 6px; margin: 6px 0; }
+.role-picker { min-width: 0; }
+.role-pick-panel { margin-top: 4px; padding: 6px; border: 1px solid var(--border); background: var(--input-bg); }
+.role-pick-list { max-height: 220px; overflow: auto; margin-top: 4px; }
+.role-pick-head { margin: 6px 0 2px; font-weight: 600; }
+.role-pick { display: block; width: 100%; text-align: left; padding: 3px 6px; border: 0; background: transparent; color: var(--text); font: inherit; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.role-pick:hover { background: var(--hover); }
+.role-pick.selected { background: var(--sel); }
+.role-pick-name { font-weight: 600; }
