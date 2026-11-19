@@ -6,6 +6,7 @@ mod ddb_tables;
 mod dynamo;
 mod ecs;
 mod elasticache;
+mod iam;
 mod elasticache_actions;
 mod elasticache_events;
 mod elasticache_params;
@@ -216,6 +217,14 @@ pub fn run() {
             commands::elasticache::ec_updates,
             commands::elasticache::ec_apply_update,
             commands::elasticache::ec_users,
+            commands::iam::iam_users,
+            commands::iam::iam_groups,
+            commands::iam::iam_roles,
+            commands::iam::iam_user_extras,
+            commands::iam::iam_role_extras,
+            commands::iam::iam_user,
+            commands::iam::iam_group,
+            commands::iam::iam_role,
             commands::sfn::sfn_list,
             commands::sfn::sfn_details_many,
             commands::sfn::sfn_describe,

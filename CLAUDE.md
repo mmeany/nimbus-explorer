@@ -50,7 +50,7 @@ Minimise shipped dependencies; every addition needs a reason.
   (`preserve_order`, so YAML/JSON keys keep document order), `tokio`
   (sync, fs, io-util, rt, time), the AWS crates above plus `aws-sdk-ssm`,
   `aws-sdk-sqs`, `aws-sdk-sns`, `aws-sdk-dynamodb`, `aws-sdk-rds`,
-  `aws-sdk-rdsdata`, `aws-sdk-cloudwatchlogs`, `aws-sdk-lambda`, `aws-sdk-ecs`, `aws-sdk-sfn`, `aws-sdk-elasticache` and `aws-sdk-secretsmanager` (default features off) (+ `aws-smithy-types` for base64, `aws-smithy-runtime-api` (already part of
+  `aws-sdk-rdsdata`, `aws-sdk-cloudwatchlogs`, `aws-sdk-lambda`, `aws-sdk-ecs`, `aws-sdk-sfn`, `aws-sdk-elasticache`, `aws-sdk-iam` and `aws-sdk-secretsmanager` (default features off) (+ `aws-smithy-types` for base64, `aws-smithy-runtime-api` (already part of
   the SDK) to fetch Lambda code download links with the SDK's own HTTP client,
   `aws-credential-types` for credential expiry), `yaml-rust2` (no default
   features) for YAML previews.
@@ -1033,9 +1033,14 @@ local exports get history rules. Emulator tests: MiniStack where it has
 the operation, else the test accepts the refusal (check its docs per item).
 Usual rules: "Add bookmark…" in row and tree menus, `storageKey` on every
 `FileList`, help topic per view / tab / dialog, one commit per item.
-- 16.1 Browse principals (`src-tauri/src/iam.rs`, `services/iam/`; Place
-  `{service:"iam", kind:"users"|"groups"|"roles"|"policies"|"account"|null,
-  id}`). Users, groups and roles: names and list fields load in full (List*
+- 16.1 ✅ (`src-tauri/src/iam.rs`, `services/iam/` `useIamService`,
+  `PrincipalViews.tsx`; Place `{service:"iam", kind:"users"|"groups"|"roles"|null,
+  id}`, 16.2 / 16.3 add their kinds; `isGlobalService` in `places.ts` (S3 and
+  IAM) decides that history and bookmarks store no region; the overview
+  counts all three lists; a filter starting with "/" is a path prefix, else a
+  name prefix ignoring case; per page: ListAccessKeys + GetAccessKeyLastUsed +
+  ListMFADevices per user, GetRole per role, 6 at a time; MiniStack runs it
+  all) Browse principals. Users, groups and roles: names and list fields load in full (List*
   return them cheaply), paged on screen, path prefix filter with the
   remembered history; tags and last used fetched for the visible page only
   (Phase 7 pattern). User view: groups, attached and inline policies,

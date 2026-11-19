@@ -568,3 +568,49 @@ export function CacheUsersIcon({ size = 16 }: P) {
     </svg>
   );
 }
+
+/** IAM: a badge with a person and lines of text. */
+export function IamIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="2" y="2.5" width="12" height="11" rx="1.6" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+      <circle cx="6" cy="6.6" r="1.7" fill="#c0392b" />
+      <path d="M3.4 11.4 C3.8 9.2 8.2 9.2 8.6 11.4 Z" fill="#c0392b" />
+      <path d="M10 6 H12.4 M10 8.2 H12.4 M10 10.4 H11.6" stroke="#c0392b" strokeWidth="0.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** An IAM user: one person. */
+export function IamUserIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy="5.4" r="2.6" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+      <path d="M3 14 C3.4 9.9 12.6 9.9 13 14 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** An IAM user group: three people. */
+export function IamGroupIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="4.2" cy="6" r="1.7" fill="none" stroke="#c0392b" strokeWidth="0.8" />
+      <circle cx="11.8" cy="6" r="1.7" fill="none" stroke="#c0392b" strokeWidth="0.8" />
+      <circle cx="8" cy="5.2" r="2.1" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+      <path d="M3.6 13.8 C4 10.2 12 10.2 12.4 13.8 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+      <path d="M1.2 12.4 C1.4 10.4 3 9.6 4.6 9.7 M14.8 12.4 C14.6 10.4 13 9.6 11.4 9.7" fill="none" stroke="#c0392b" strokeWidth="0.8" />
+    </svg>
+  );
+}
+
+/** An IAM role: a hard hat (a role is worn, not owned). */
+export function IamRoleIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M3 10.5 C3 6.4 5.2 4 8 4 C10.8 4 13 6.4 13 10.5 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+      <path d="M8 4 V7.4" stroke="#c0392b" strokeWidth="0.9" />
+      <rect x="1.5" y="10.5" width="13" height="2" rx="0.8" fill="#c0392b" />
+    </svg>
+  );
+}

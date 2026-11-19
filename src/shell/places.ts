@@ -2,7 +2,7 @@
 // a location inside a service. History, the address bar and Up work on places.
 import { breadcrumbs as s3Crumbs, parentOf as s3Parent, sameLocation, toS3Uri, type Location } from "../state/navigation";
 
-export type ServiceId = "s3" | "ssm" | "sqs" | "sns" | "dynamodb" | "rds" | "elasticache" | "ecs" | "lambda" | "sfn" | "logs" | "secrets";
+export type ServiceId = "s3" | "ssm" | "sqs" | "sns" | "dynamodb" | "rds" | "elasticache" | "ecs" | "lambda" | "sfn" | "logs" | "secrets" | "iam";
 
 export type Place =
   | { service: "home" }
@@ -32,7 +32,11 @@ export type Place =
   /** CloudWatch Logs: the log group list (null) or one group. */
   | { service: "logs"; group: string | null }
   /** Secrets Manager folder: "" (root) or a name prefix ending in "/" ("prod/app/"). */
-  | { service: "secrets"; path: string };
+  | { service: "secrets"; path: string }
+  /** IAM (global): the overview (kind null), the users / groups / roles list (id null), or one of them. */
+  | { service: "iam"; kind: IamKind | null; id: string | null };
+
+export type IamKind = "users" | "groups" | "roles";
 
 export const HOME: Place = { service: "home" };
 export const S3_ROOT: Place = { service: "s3", bucket: null, prefix: "" };
@@ -47,6 +51,14 @@ export const LAMBDA_ROOT: Place = { service: "lambda", fn: null };
 export const SFN_ROOT: Place & { service: "sfn" } = { service: "sfn", view: null, machine: null, execution: null, mapRun: null };
 export const LOGS_ROOT: Place = { service: "logs", group: null };
 export const SECRETS_ROOT: Place = { service: "secrets", path: "" };
+export const IAM_ROOT: Place & { service: "iam" } = { service: "iam", kind: null, id: null };
+
+/** Services that ignore the region switcher (history and bookmarks store no region for them). */
+export function isGlobalService(service: string): boolean {
+  return service === "s3" || service === "iam";
+}
+
+export const IAM_KIND_LABEL: Record<IamKind, string> = { users: "Users", groups: "User groups", roles: "Roles" };
 
 export interface ServiceInfo {
   id: ServiceId;
@@ -69,6 +81,7 @@ export const SERVICES: ServiceInfo[] = [
   { id: "sfn", name: "Step Functions", description: "State machines, executions and their history", root: SFN_ROOT },
   { id: "logs", name: "CloudWatch Logs", description: "Log groups, streams and events", root: LOGS_ROOT },
   { id: "secrets", name: "Secrets Manager", description: "Secrets, versions and rotation", root: SECRETS_ROOT },
+  { id: "iam", name: "IAM", description: "Users, groups and roles with their policies (view only; global)", root: IAM_ROOT },
 ];
 
 export function samePlace(a: Place, b: Place): boolean {
@@ -85,6 +98,7 @@ export function samePlace(a: Place, b: Place): boolean {
   if (a.service === "sfn" && b.service === "sfn") return a.view === b.view && a.machine === b.machine && a.execution === b.execution && a.mapRun === b.mapRun;
   if (a.service === "logs" && b.service === "logs") return a.group === b.group;
   if (a.service === "secrets" && b.service === "secrets") return a.path === b.path;
+  if (a.service === "iam" && b.service === "iam") return a.kind === b.kind && a.id === b.id;
   return true;
 }
 
@@ -125,6 +139,10 @@ export function placeCrumbs(p: Place): { label: string; place: Place }[] {
     if (p.mapRun) out.push({ label: `map run ${p.mapRun.slice(0, p.mapRun.lastIndexOf(":"))}`, place: p });
   }
   if (p.service === "logs" && p.group) out.push({ label: p.group, place: p });
+  if (p.service === "iam" && p.kind) {
+    out.push({ label: IAM_KIND_LABEL[p.kind], place: { ...IAM_ROOT, kind: p.kind } });
+    if (p.id) out.push({ label: p.id, place: p });
+  }
   if (p.service === "secrets") {
     let acc = "";
     for (const seg of p.path.split("/").slice(0, -1)) {
@@ -161,6 +179,7 @@ export function parentPlace(p: Place): Place | null {
     return p.machine || p.view ? SFN_ROOT : HOME;
   }
   if (p.service === "logs") return p.group ? LOGS_ROOT : HOME;
+  if (p.service === "iam") return p.id ? { ...IAM_ROOT, kind: p.kind } : p.kind ? IAM_ROOT : HOME;
   if (p.service === "secrets") {
     if (!p.path) return HOME;
     const t = p.path.slice(0, -1);
@@ -183,6 +202,7 @@ export function placeUri(p: Place): string {
   if (p.service === "sfn") return p.mapRun ?? p.execution ?? p.machine ?? "";
   if (p.service === "logs") return p.group ?? "";
   if (p.service === "secrets") return p.path;
+  if (p.service === "iam") return p.id ?? "";
   return "";
 }
 
@@ -200,5 +220,6 @@ export function placeKey(p: Place): string {
   if (p.service === "sfn") return `sfn:${p.view ?? ""}:${p.machine ?? ""}:${p.execution ?? ""}:${p.mapRun ?? ""}`;
   if (p.service === "logs") return `logs:${p.group ?? ""}`;
   if (p.service === "secrets") return `sm:${p.path}`;
+  if (p.service === "iam") return `iam:${p.kind ?? ""}:${p.id ?? ""}`;
   return p.service;
 }

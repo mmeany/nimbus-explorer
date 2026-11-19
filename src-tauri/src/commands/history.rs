@@ -27,7 +27,7 @@ pub fn history_record(state: State<'_, AppState>, entry: NewEntry) -> Result<(),
     let Ok(conn) = state.connection() else {
         return Ok(());
     };
-    let region = if entry.service == "s3" || entry.service == "app" {
+    let region = if entry.service == "s3" || entry.service == "iam" || entry.service == "app" {
         String::new()
     } else {
         conn.service_region()

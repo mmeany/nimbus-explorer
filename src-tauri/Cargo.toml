@@ -51,6 +51,7 @@ aws-sdk-lambda = { version = "1", default-features = false, features = ["rt-toki
 aws-sdk-ecs = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
 aws-sdk-sfn = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
 aws-sdk-elasticache = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-iam = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
 
 [profile.release]
 codegen-units = 1

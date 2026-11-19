@@ -77,7 +77,7 @@ pub struct Entry {
     /// UTC, "2026-11-05T09:30:00.123Z" (sorts as text).
     pub time: String,
     pub profile: String,
-    /// Region of the regional services at the time ("" for S3 and app events).
+    /// Region of the regional services at the time ("" for S3, IAM and app events).
     #[serde(default)]
     pub region: String,
     pub service: String,

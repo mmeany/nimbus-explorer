@@ -19,7 +19,7 @@ import { BookmarkImportDialog, exportBookmarks, pickImport } from "./components/
 import { bookmarksApi, type Bookmark } from "./api/bookmarks";
 import { currentBookmarks, findBookmark, isPlaceBookmarked, loadBookmarks, useBookmarks } from "./state/bookmarks";
 import { currentSelection } from "./state/selection";
-import { BucketIcon, CloudIcon, LockIcon, ParamStoreIcon, ServerIcon, SqsIcon, DynamoIcon, SecretsIcon, SnsIcon, RdsIcon, LogsIcon, LambdaIcon, EcsIcon, StepFunctionsIcon, ElastiCacheIcon } from "./components/Icons";
+import { BucketIcon, CloudIcon, LockIcon, ParamStoreIcon, ServerIcon, SqsIcon, DynamoIcon, SecretsIcon, SnsIcon, RdsIcon, LogsIcon, LambdaIcon, EcsIcon, StepFunctionsIcon, ElastiCacheIcon, IamIcon } from "./components/Icons";
 import { PromptDialog } from "./components/PromptDialog";
 import { TypedConfirmDialog } from "./components/TypedConfirmDialog";
 import { StatusBar } from "./components/StatusBar";
@@ -36,12 +36,13 @@ import { useLogsService } from "./services/logs/useLogsService";
 import { useLambdaService } from "./services/lambda/useLambdaService";
 import { useSfnService } from "./services/sfn/useSfnService";
 import { useElastiCacheService } from "./services/elasticache/useElastiCacheService";
+import { useIamService } from "./services/iam/useIamService";
 import { useEcsService } from "./services/ecs/useEcsService";
 import { useSecretsService } from "./services/secrets/useSecretsService";
 import { DEFAULT_HISTORY_SETTINGS, type HistoryEntry } from "./api/history";
 import { placeTopic } from "./help";
 import { openHelp, registeredHelpTopic, useOpenHelp } from "./help/store";
-import { HOME, parentPlace, placeCrumbs, placeUri, S3_ROOT, samePlace, SERVICES, type Place, type ServiceId } from "./shell/places";
+import { HOME, isGlobalService, parentPlace, placeCrumbs, placeUri, S3_ROOT, samePlace, SERVICES, type Place, type ServiceId } from "./shell/places";
 import type { ServiceUi, Shell } from "./shell/shell";
 import { installHistoryRecorder, setHistoryPlace } from "./history/recorder";
 import { useHistory } from "./state/navigation";
@@ -93,6 +94,7 @@ const SERVICE_ICONS: Record<ServiceId, ReactNode> = {
   logs: <LogsIcon />,
   dynamodb: <DynamoIcon />,
   secrets: <SecretsIcon />,
+  iam: <IamIcon />,
 };
 
 const HOME_COLUMNS: Column[] = [
@@ -265,7 +267,8 @@ export default function App() {
   const sfn = useSfnService(shell);
   const logs = useLogsService(shell);
   const secrets = useSecretsService(shell);
-  const services: Record<ServiceId, ServiceUi> = { s3, ssm, sqs, sns, dynamodb, rds, elasticache, ecs, lambda, sfn, logs, secrets };
+  const iam = useIamService(shell);
+  const services: Record<ServiceId, ServiceUi> = { s3, ssm, sqs, sns, dynamodb, rds, elasticache, ecs, lambda, sfn, logs, secrets, iam };
   const active: ServiceUi | null = place.service === "home" ? null : services[place.service];
 
   const servicesRef = useRef(services);
@@ -363,7 +366,7 @@ export default function App() {
       info = await connectTo(t.profile);
       if (!info) return false;
     }
-    if (t.region && target.service !== "s3" && t.region !== info.serviceRegion) {
+    if (t.region && !isGlobalService(target.service) && t.region !== info.serviceRegion) {
       try {
         setConnection(await api.setRegion(t.region));
         showFlash(`Region set to ${t.region} (${what === "entry" ? "where this happened" : "the bookmark's region"})`);
@@ -405,7 +408,7 @@ export default function App() {
         folder,
         draft: {
           profile,
-          region: at.service === "s3" ? "" : (who?.region || connection.serviceRegion),
+          region: isGlobalService(at.service) ? "" : (who?.region || connection.serviceRegion),
           service: at.service,
           place: at,
           select,

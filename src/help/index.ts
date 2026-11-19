@@ -6,6 +6,7 @@ import { bookmarksTopics } from "./topics/bookmarks";
 import { dynamodbTopics } from "./topics/dynamodb";
 import { ecsTopics } from "./topics/ecs";
 import { elasticacheTopics } from "./topics/elasticache";
+import { iamTopics } from "./topics/iam";
 import { generalTopics } from "./topics/general";
 import { lambdaTopics } from "./topics/lambda";
 import { logsTopics } from "./topics/logs";
@@ -38,6 +39,7 @@ export const HELP_TOPICS = {
   ...sfnTopics,
   ...logsTopics,
   ...secretsTopics,
+  ...iamTopics,
 };
 
 export type HelpTopicId = keyof typeof HELP_TOPICS;
@@ -77,5 +79,8 @@ export function placeTopic(p: Place): HelpTopicId {
       return p.group ? "logs.events" : "logs.groups";
     case "secrets":
       return "secrets.browse";
+    case "iam":
+      if (!p.kind) return "iam.overview";
+      return p.id ? (p.kind === "users" ? "iam.user" : p.kind === "groups" ? "iam.group" : "iam.role") : `iam.${p.kind}`;
   }
 }

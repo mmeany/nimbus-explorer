@@ -15,7 +15,7 @@ Every connection starts **read-only**. Nothing that changes AWS is allowed, and 
 
 ### Region
 
-The **Region** list applies to every service except S3, whose buckets always use their own region. It's remembered per profile.
+The **Region** list applies to every service except S3, whose buckets always use their own region, and IAM, which is global. It's remembered per profile.
 
 ### Moving around
 
@@ -72,6 +72,7 @@ Secret values stay masked until you choose **Reveal** or **Copy**. They're never
 - **Step Functions**: state machines, executions, graphs and activities
 - **CloudWatch Logs**: log groups, streams and events
 - **Secrets Manager**: secrets, versions and rotation
+- **IAM**: users, user groups and roles with their policies (view only)
 
 Press **F1** anywhere for help with what's on screen. **General help** below covers the profile, the read-only lock, regions and shortcuts.
 

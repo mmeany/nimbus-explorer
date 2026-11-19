@@ -905,3 +905,7 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .sfn-create-bar #sc-name { width: 240px; }
 .sfn-publish .text-input { flex: 1; }
 .sfn-counts th, .sfn-counts td { padding-right: 14px; }
+.iam-note { padding: 6px 10px; }
+.iam-inline { margin: 2px 0 6px; }
+.iam-inline > .link-btn { font-weight: 600; }
+.sync-table tr.dimmed td { opacity: 0.55; }

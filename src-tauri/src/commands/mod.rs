@@ -6,6 +6,7 @@ pub mod bookmarks;
 pub mod dynamo;
 pub mod ecs;
 pub mod elasticache;
+pub mod iam;
 pub mod history;
 pub mod lambda;
 pub mod logs;
