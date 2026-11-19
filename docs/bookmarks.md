@@ -35,7 +35,7 @@ moves into the **»** menu at the right.
 Click a bookmark. The app goes to its place and selects its item when the item
 is on the visible page. If the bookmark was made in another region, the region
 switches and the status bar says so; the drop-down marks such bookmarks with a
-region tag. S3 bookmarks have no region (buckets use their own).
+region tag. S3 and IAM bookmarks have no region (buckets use their own; IAM is global).
 
 Bookmarks of other profiles open from the manager, which asks before
 switching profile. The new connection starts read-only, as every connection

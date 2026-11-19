@@ -72,7 +72,7 @@ Secret values stay masked until you choose **Reveal** or **Copy**. They're never
 - **Step Functions**: state machines, executions, graphs and activities
 - **CloudWatch Logs**: log groups, streams and events
 - **Secrets Manager**: secrets, versions and rotation
-- **IAM**: users, user groups and roles with their policies (view only)
+- **IAM**: users, user groups, roles, policies and the account (view only), with a policy simulator and policy validation
 
 Press **F1** anywhere for help with what's on screen. **General help** below covers the profile, the read-only lock, regions and shortcuts.
 

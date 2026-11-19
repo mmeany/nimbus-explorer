@@ -1,7 +1,7 @@
 # Nimbus Explorer
 
 A classic Explorer-style desktop app that works with Amazon Web Services, using your AWS
-profiles: Amazon S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ElastiCache, ECS, Lambda, Step Functions, CloudWatch Logs and Secrets Manager. Works with emulators such
+profiles: Amazon S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ElastiCache, ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager and IAM. Works with emulators such
 as LocalStack and MiniStack.
 
 Built with Tauri 2 (Rust backend), React and TypeScript. See `CLAUDE.md` for
@@ -84,6 +84,7 @@ GitHub Release. Each version is then submitted to winget by hand. See
 | Step Functions  | [docs/step-functions.md](docs/step-functions.md): state machines (paged, filter history), graph (collapsible Parallel / Map, SVG export), executions coloured on the graph, event history, start / stop / redrive / re-run with saved inputs, Distributed Map runs, edit with live graph and validation, create / delete, versions and aliases, activities, export                                               |
 | CloudWatch Logs | [docs/cloudwatch-logs.md](docs/cloudwatch-logs.md): log groups (paged, prefix filter with history), streams, events newest first for a time range with filter patterns, load older, follow live, full message view (JSON tree), download (read only)                                                                                                                                                             |
 | Secrets Manager | [docs/secrets-manager.md](docs/secrets-manager.md): folders, filter history, masked values with Reveal / Copy (key/value view), create / edit / delete / restore, versions and labels (compare, roll back), rotation, tags and resource policy                                                                                                                                                                   |
+| IAM             | [docs/iam.md](docs/iam.md): view only, global: users (credentials, MFA, keys), user groups, roles (trust in plain words), managed policies (versions with compare, where attached), account overview (quotas, password policy, credential report, unused credentials), policy simulator, Access Analyzer validation, role picker and role links in other services |
 | SQS             | [docs/sqs.md](docs/sqs.md): queues with live counts and filter history, create/edit/delete, purge, send (single or from a file), peek / receive & hold, delete/release/export messages, dead-letter redrive                                                                                                                                                                                                      |
 | SNS             | [docs/sns.md](docs/sns.md): topics and all subscriptions with filter history, create/edit/delete topics (FIFO, encryption, policies, tags), subscribe (any protocol, filter policies, DLQ, queue-policy helper), confirm/unsubscribe, publish (per-protocol messages, attributes, from a file), watch messages live via a temporary queue                                                                        |
 
@@ -109,7 +110,8 @@ Each service is a node in the tree under the profile. Shared controls:
   [docs/history.md](docs/history.md).
 - **Region** list in the toolbar for the regional services (Parameter Store,
   SQS, SNS, DynamoDB, RDS, ElastiCache, ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager); remembered per profile. S3 always
-  uses each bucket's own region.
+  uses each bucket's own region, and IAM is global (only its policy validation
+  uses the selected region).
 - **Read-only lock** in the toolbar: on, nothing that changes AWS is allowed
   (enforced in the app's backend, not just hidden in the UI). The app always
   starts read-only, and so does every connection, including switching
@@ -117,7 +119,8 @@ Each service is a node in the tree under the profile. Shared controls:
   whose names contain `prod` or `prd`) and lasts until you lock it again or
   connect to a profile.
 - **Paging**: long lists (queues, topics, tables, parameters, secrets,
-  functions, log groups, ECS services and tasks, snapshots, events) are shown 100, 500 or 1,000 at a time with a pager under
+  functions, log groups, ECS services and tasks, snapshots, events, IAM users,
+  groups, roles and policies) are shown 100, 500 or 1,000 at a time with a pager under
   the list (Ctrl+PgUp / Ctrl+PgDn). Where each row costs an AWS call
   (queue counts, topic and table details, parameter values), only the page
   on screen is fetched.
