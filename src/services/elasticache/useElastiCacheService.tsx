@@ -19,6 +19,7 @@ import { GroupView, ServerlessView, type GroupTab, type ServerlessTab } from "./
 import { ConnectTab } from "./ConnectTab";
 import { EventsTab } from "./EventsTab";
 import { ParametersTab } from "./ParametersTab";
+import { UpdatesTab } from "./UpdatesTab";
 import { SnapshotList } from "./Snapshots";
 
 const COLUMNS: Column[] = [
@@ -259,6 +260,7 @@ export function useElastiCacheService(shell: Shell): ServiceUi {
       help: "elasticache.parameters",
       render: (g) => <ParametersTab shell={shell} group={g.settings?.parameterGroup ?? null} status={g.settings?.parameterStatus ?? null} nodeType={g.nodeType} />,
     },
+    { id: "updates", label: "Updates", help: "elasticache.updates", render: (g) => <UpdatesTab shell={shell} group={g.id} replicas={g.shards.every((s) => s.members.length > 1)} reloadToken={reloadToken} /> },
   ];
   const serverlessTabs: ServerlessTab[] = [
     { id: "connect", label: "Connect", help: "elasticache.connect", render: (s) => <ConnectTab shell={shell} t={serverlessTarget(s)} /> },

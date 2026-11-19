@@ -67,6 +67,15 @@ The new cache has its own endpoint, and is billed from when it's created.`,
 
 Default groups (default.*) can't be changed; a cache that needs other values uses its own parameter group. Serverless caches have no parameter groups.`,
   },
+  "elasticache.updates": {
+    title: "Service updates",
+    body: `Engine and security patches AWS has released for this cache, most urgent first: severity (critical, important, medium, low), this cache's status, the recommended apply-by date (overdue ones in red), release date and how many nodes are done.
+
+- **Apply now…**: starts the update instead of waiting for the maintenance window. Nodes are updated one at a time; with replicas the cache stays available (the primary fails over), without one the node is unavailable while it's updated.
+- **Show completed and not applicable** includes updates that are finished or don't apply.
+
+While an update runs, the list checks again every 30 seconds. Serverless caches are patched by AWS without anything to apply.`,
+  },
   "elasticache.serverless": {
     title: "Serverless cache",
     body: `A serverless Valkey or Redis OSS cache: endpoint and reader endpoint, usage limits (data storage and ECPUs per second; none means it scales as needed), encryption (always in transit), RBAC user group, network, backups and tags.`,

@@ -8,6 +8,7 @@ use crate::elasticache_params::{self as params, ParameterGroup};
 use crate::elasticache_snapshots::{
     self as snapshots, Kind, RestoreRequest, Restored, Snapshot, SnapshotList,
 };
+use crate::elasticache_updates::{self as updates, Updates};
 use crate::error::AppError;
 use tauri::State;
 
@@ -130,4 +131,21 @@ pub async fn ec_parameters(
     changed_only: bool,
 ) -> Result<ParameterGroup, AppError> {
     params::parameter_group(&*state.connection()?, &name, changed_only).await
+}
+
+/// Service updates for a replication group (any status).
+#[tauri::command]
+pub async fn ec_updates(state: State<'_, AppState>, group: String) -> Result<Updates, AppError> {
+    updates::list(&*state.connection()?, &group).await
+}
+
+/// Starts applying a service update to the group now.
+#[tauri::command]
+pub async fn ec_apply_update(
+    state: State<'_, AppState>,
+    group: String,
+    update: String,
+) -> Result<Option<String>, AppError> {
+    state.ensure_writable()?;
+    updates::apply(&*state.connection()?, &group, &update).await
 }

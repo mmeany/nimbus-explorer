@@ -1002,7 +1002,12 @@ connections, no Redis client crate), metrics.
   changed-only toggle remembered in localStorage `elasticache.params.changedOnly`)
   Parameter group (read only): the group in use, option to show only
   values changed from the default.
-- 15.7 Service updates: pending updates per cache (severity, status,
+- 15.7 ✅ (`src-tauri/src/elasticache_updates.rs`, `services/elasticache/UpdatesTab.tsx`;
+  groups only (serverless caches are patched by AWS); ordered critical →
+  low, then soonest apply-by; completed / not-applicable hidden unless
+  ticked; re-checks every 30 s while one runs; MiniStack has no update API,
+  so the tab says so and only that path is checked in the app; the table
+  itself is untested against real data) Service updates: pending updates per cache (severity, status,
   apply-by date); "Apply now" via BatchApplyUpdateAction (a write).
 - 15.8 Users & user groups (tree node, view only): users (access string,
   auth type), groups (members), which caches use each group.

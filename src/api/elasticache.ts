@@ -112,11 +112,34 @@ export const ecApi = {
   events: (kind: SnapshotKind, id: string, minutes: number) => call<EcEvent[]>("ec_events", { kind, id, minutes }),
   /** A parameter group and its parameters (only those changed from the defaults when `changedOnly`). */
   parameters: (name: string, changedOnly: boolean) => call<ParameterGroup>("ec_parameters", { name, changedOnly }),
+  /** Service updates for a replication group (any status); `unsupported` on endpoints without the API. */
+  updates: (group: string) => call<{ items: ServiceUpdate[]; unsupported: boolean }>("ec_updates", { group }),
+  /** Starts applying a service update now; returns its new status. */
+  applyUpdate: (group: string, update: string) => call<string | null>("ec_apply_update", { group, update }),
   restoreSnapshot: (request: { kind: SnapshotKind; snapshot: string; name: string; description: string | null; nodeType: string | null; replicas: number }) =>
     call<{ name: string; copiedFromSource: boolean }>("ec_restore_snapshot", { request }),
 };
 
 export type SnapshotKind = "group" | "serverless";
+
+export interface ServiceUpdate {
+  name: string;
+  /** critical, important, medium or low. */
+  severity: string | null;
+  kind: string | null;
+  /** The update itself: available, cancelled or expired. */
+  updateStatus: string | null;
+  /** This cache's progress: not-applied, in-progress, complete, … */
+  status: string | null;
+  released: string | null;
+  applyBy: string | null;
+  available: string | null;
+  statusChanged: string | null;
+  nodesUpdated: string | null;
+  slaMet: string | null;
+  estimatedTime: string | null;
+  engine: string | null;
+}
 
 export interface CacheParameter {
   name: string;
