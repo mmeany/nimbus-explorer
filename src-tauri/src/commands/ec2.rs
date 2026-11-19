@@ -4,6 +4,7 @@ use super::AppState;
 use crate::ec2::{self, Instance, InstanceDetails, Interface, Volume};
 use crate::ec2_network::{self as network, Address, GroupDetails, SecurityGroup, Subnet, SubnetDetails, Vpc, VpcDetails};
 use crate::ec2_templates::{self as templates, KeyPair, LaunchTemplate, TemplateDetails};
+use crate::elb::{self, LoadBalancer, LoadBalancerDetails, TargetGroup, TargetGroupDetails, TargetRef};
 use crate::ec2_storage::{self as storage, Image, Snapshot, SnapshotDetails};
 use crate::ec2_actions::{self as actions, StateChange, TypeInfo};
 use crate::ec2_tags::{self as tags, CreatedSnapshot, ImageRequest};
@@ -252,4 +253,38 @@ pub async fn ec2_launch_templates(state: State<'_, AppState>) -> Result<Vec<Laun
 #[tauri::command]
 pub async fn ec2_launch_template(state: State<'_, AppState>, id: String) -> Result<TemplateDetails, AppError> {
     templates::template_details(&*state.connection()?, &id).await
+}
+
+#[tauri::command]
+pub async fn ec2_load_balancers(state: State<'_, AppState>) -> Result<Vec<LoadBalancer>, AppError> {
+    elb::list_load_balancers(&*state.connection()?).await
+}
+
+/// A load balancer with its listeners, rules, attributes and tags.
+#[tauri::command]
+pub async fn ec2_load_balancer(state: State<'_, AppState>, name: String) -> Result<LoadBalancerDetails, AppError> {
+    elb::load_balancer(&*state.connection()?, &name).await
+}
+
+#[tauri::command]
+pub async fn ec2_target_groups(state: State<'_, AppState>) -> Result<Vec<TargetGroup>, AppError> {
+    elb::list_target_groups(&*state.connection()?).await
+}
+
+/// A target group with the health of each target.
+#[tauri::command]
+pub async fn ec2_target_group(state: State<'_, AppState>, name: String) -> Result<TargetGroupDetails, AppError> {
+    elb::target_group(&*state.connection()?, &name).await
+}
+
+#[tauri::command]
+pub async fn ec2_register_targets(state: State<'_, AppState>, group: String, targets: Vec<TargetRef>) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    elb::register(&*state.connection()?, &group, &targets).await
+}
+
+#[tauri::command]
+pub async fn ec2_deregister_targets(state: State<'_, AppState>, group: String, targets: Vec<TargetRef>) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    elb::deregister(&*state.connection()?, &group, &targets).await
 }

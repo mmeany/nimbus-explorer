@@ -204,6 +204,37 @@ AWS keeps only the public key; the private key was downloaded once, when the pai
 - User data is never shown, only its size, since it often holds secrets.
 - Settings are shown with the AWS CLI's names; a few rarely used ones aren't mapped.`,
   },
+  "ec2.loadBalancers": {
+    title: "Load balancers",
+    body: `Application, network and gateway load balancers in the region (Elastic Load Balancing v2), with their scheme (internet-facing or internal), state and DNS name. Classic load balancers aren't listed.
+
+**Filter**: part of the name or DNS name, or the start of a VPC ID.`,
+  },
+  "ec2.loadBalancer": {
+    title: "Load balancer",
+    body: `One load balancer: DNS name (**Copy** it to point a domain or client at it), zones and subnets, security groups, main settings, and its listeners.
+
+For each listener (protocol and port), an application load balancer shows its rules in priority order: *when* a request matches the conditions, *then* the actions run (forward to target groups, redirect, fixed response, sign in first). The default rule applies when no other matches. Click a target group to see its targets and their health.
+
+The app doesn't change load balancers, listeners or rules.`,
+  },
+  "ec2.targetGroups": {
+    title: "Target groups",
+    body: `Groups of targets (instances, IP addresses, Lambda functions) that load balancers send traffic to, with protocol and port, target type, which load balancers use them and the health check. Groups no load balancer uses are dimmed.`,
+  },
+  "ec2.targetGroup": {
+    title: "Target group",
+    body: `One target group: its health check settings and every target with its health. *initial* targets are still being checked, *draining* ones are being removed; the view checks again every 10 seconds while any are.
+
+- **Register targets…**: add instances (from the group's VPC) or IP addresses.
+- **Deregister selected…**: tick targets and remove them; existing connections drain first. An Auto Scaling group attached to the target group may register its instances again.
+
+Both are disabled in read-only mode.`,
+  },
+  "ec2.targetGroup.register": {
+    title: "Register targets",
+    body: `Adds targets to the group. For an *instance* group, tick instances in the group's VPC (already registered ones aren't listed); for an *ip* group, type addresses from the VPC's ranges (or reachable private ranges). Leave the port blank to use the group's port. Health checks start straight away; a target gets traffic once it's *healthy*.`,
+  },
   "ec2.tags": {
     title: "Tags",
     body: `Key / value labels on an EC2 resource. Edit, add or remove rows and **Save**: new and changed tags are set, removed ones deleted, the rest left alone.
@@ -253,6 +284,8 @@ export function ec2PlaceTopic(kind: Ec2Kind | null, id: string | null): Ec2Topic
   if (kind === "interfaces") return id ? "ec2.interface" : "ec2.interfaces";
   if (kind === "addresses") return "ec2.addresses";
   if (kind === "keyPairs") return "ec2.keyPairs";
+  if (kind === "loadBalancers") return id ? "ec2.loadBalancer" : "ec2.loadBalancers";
+  if (kind === "targetGroups") return id ? "ec2.targetGroup" : "ec2.targetGroups";
   if (kind === "launchTemplates") return id ? "ec2.launchTemplate" : "ec2.launchTemplates";
   return "ec2.overview";
 }

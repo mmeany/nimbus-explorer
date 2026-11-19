@@ -50,7 +50,7 @@ Minimise shipped dependencies; every addition needs a reason.
   (`preserve_order`, so YAML/JSON keys keep document order), `tokio`
   (sync, fs, io-util, rt, time), the AWS crates above plus `aws-sdk-ssm`,
   `aws-sdk-sqs`, `aws-sdk-sns`, `aws-sdk-dynamodb`, `aws-sdk-rds`,
-  `aws-sdk-rdsdata`, `aws-sdk-cloudwatchlogs`, `aws-sdk-lambda`, `aws-sdk-ecs`, `aws-sdk-sfn`, `aws-sdk-elasticache`, `aws-sdk-iam`, `aws-sdk-accessanalyzer`, `aws-sdk-ec2` and `aws-sdk-secretsmanager` (default features off) (+ `aws-smithy-types` for base64, `aws-smithy-runtime-api` (already part of
+  `aws-sdk-rdsdata`, `aws-sdk-cloudwatchlogs`, `aws-sdk-lambda`, `aws-sdk-ecs`, `aws-sdk-sfn`, `aws-sdk-elasticache`, `aws-sdk-iam`, `aws-sdk-accessanalyzer`, `aws-sdk-ec2`, `aws-sdk-elasticloadbalancingv2` and `aws-sdk-secretsmanager` (default features off) (+ `aws-smithy-types` for base64, `aws-smithy-runtime-api` (already part of
   the SDK) to fetch Lambda code download links with the SDK's own HTTP client,
   `aws-credential-types` for credential expiry), `yaml-rust2` (no default
   features) for YAML previews.
@@ -1229,7 +1229,14 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   endpoint has no IDs; usage counted from the instance list)
   Key pairs (names, type, fingerprint) and launch templates (versions,
   default / latest, data as a tree, Compare two versions).
-- 17.9 Load balancers and target groups (ELBv2): load balancers with
+- 17.9 ✅ (`src-tauri/src/elb.rs`, `services/ec2/ElbViews.tsx`; places keyed by
+  load balancer / target group NAME (unique per region); rule conditions and
+  actions become sentences in Rust (`condition_text`, `action_text`, tested),
+  forward actions keep target group names + weights so the UI links them;
+  only ALB listeners list rules; selected attributes only; register picks
+  instances in the group's VPC (or IPs), deregister ticks rows and asks;
+  re-checks every 10 s while targets are initial / draining; MiniStack runs
+  it all) Load balancers and target groups (ELBv2): load balancers with
   listeners and rules, target groups with target health; register /
   deregister targets.
 - 17.10 Auto Scaling groups: details, instances, activities, suspended

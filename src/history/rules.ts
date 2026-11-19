@@ -474,6 +474,8 @@ export const RULES: Record<string, Rule> = {
     place: { service: "ec2", kind: "instances", id: String(a.instanceId) },
     detail: Array.isArray(r) ? r.map((x: { snapshotId: string }) => x.snapshotId).join(", ") : null,
   }),
+  ec2_register_targets: (a) => ({ service: "ec2", action: "Register targets", target: String(a.group), place: { service: "ec2", kind: "targetGroups", id: String(a.group) }, detail: (a.targets ?? []).map((t: { id: string; port?: number | null }) => (t.port ? `${t.id}:${t.port}` : t.id)).join(", ") }),
+  ec2_deregister_targets: (a) => ({ service: "ec2", action: "Deregister targets", target: String(a.group), place: { service: "ec2", kind: "targetGroups", id: String(a.group) }, detail: (a.targets ?? []).map((t: { id: string; port?: number | null }) => (t.port ? `${t.id}:${t.port}` : t.id)).join(", ") }),
   ec2_set_protection: (a) => ({
     service: "ec2",
     action: "Change instance protection",

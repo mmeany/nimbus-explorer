@@ -15,6 +15,7 @@ mod ec2_storage;
 mod ec2_tags;
 mod ec2_templates;
 mod elasticache;
+mod elb;
 mod elasticache_actions;
 mod elasticache_events;
 mod elasticache_params;
@@ -247,6 +248,12 @@ pub fn run() {
             commands::ec2::ec2_key_pairs,
             commands::ec2::ec2_launch_templates,
             commands::ec2::ec2_launch_template,
+            commands::ec2::ec2_load_balancers,
+            commands::ec2::ec2_load_balancer,
+            commands::ec2::ec2_target_groups,
+            commands::ec2::ec2_target_group,
+            commands::ec2::ec2_register_targets,
+            commands::ec2::ec2_deregister_targets,
             commands::elasticache::ec_list_groups,
             commands::elasticache::ec_list_serverless,
             commands::elasticache::ec_group,

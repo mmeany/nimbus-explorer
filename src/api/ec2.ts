@@ -228,6 +228,12 @@ export const ec2Api = {
   keyPairs: () => call<KeyPair[]>("ec2_key_pairs"),
   launchTemplates: () => call<LaunchTemplate[]>("ec2_launch_templates"),
   launchTemplate: (id: string) => call<TemplateDetails>("ec2_launch_template", { id }),
+  loadBalancers: () => call<LoadBalancer[]>("ec2_load_balancers"),
+  loadBalancer: (name: string) => call<LoadBalancerDetails>("ec2_load_balancer", { name }),
+  targetGroups: () => call<TargetGroup[]>("ec2_target_groups"),
+  targetGroup: (name: string) => call<TargetGroupDetails>("ec2_target_group", { name }),
+  registerTargets: (group: string, targets: { id: string; port: number | null }[]) => call<void>("ec2_register_targets", { group, targets }),
+  deregisterTargets: (group: string, targets: { id: string; port: number | null }[]) => call<void>("ec2_deregister_targets", { group, targets }),
   ssmAgent: (id: string) => call<SsmAgent>("ec2_ssm_agent", { id }),
   snapshotInstance: (instanceId: string, description: string | null, excludeRoot: boolean) => call<CreatedSnapshot[]>("ec2_snapshot_instance", { instanceId, description, excludeRoot }),
 };
@@ -432,6 +438,97 @@ export interface TemplateVersion {
 export interface TemplateDetails extends LaunchTemplate {
   /** Newest first. */
   versions: TemplateVersion[];
+}
+
+export interface LbZone {
+  zone: string;
+  subnetId: string | null;
+  addresses: string[];
+}
+
+export interface LoadBalancer {
+  name: string;
+  arn: string;
+  /** application, network or gateway. */
+  lbType: string | null;
+  scheme: string | null;
+  state: string | null;
+  stateReason: string | null;
+  dnsName: string | null;
+  vpcId: string | null;
+  zones: LbZone[];
+  securityGroups: string[];
+  ipType: string | null;
+  created: string | null;
+}
+
+export interface RuleAction {
+  kind: string;
+  text: string;
+  /** [target group name, weight] for forward actions. */
+  targetGroups: [string, number | null][];
+}
+
+export interface LbRule {
+  priority: string;
+  isDefault: boolean;
+  conditions: string[];
+  actions: RuleAction[];
+}
+
+export interface Listener {
+  arn: string;
+  port: number | null;
+  protocol: string | null;
+  sslPolicy: string | null;
+  certificates: string[];
+  defaultActions: RuleAction[];
+  rules: LbRule[];
+}
+
+export interface LoadBalancerDetails extends LoadBalancer {
+  listeners: Listener[];
+  attributes: [string, string][];
+  tags: [string, string][];
+}
+
+export interface HealthCheck {
+  protocol: string | null;
+  port: string | null;
+  path: string | null;
+  interval: number | null;
+  timeout: number | null;
+  healthyThreshold: number | null;
+  unhealthyThreshold: number | null;
+  matcher: string | null;
+}
+
+export interface TargetGroup {
+  name: string;
+  arn: string;
+  protocol: string | null;
+  port: number | null;
+  /** instance, ip, lambda or alb. */
+  targetType: string | null;
+  vpcId: string | null;
+  healthCheck: HealthCheck;
+  /** Load balancer names. */
+  loadBalancers: string[];
+}
+
+export interface TargetHealth {
+  id: string;
+  port: number | null;
+  az: string | null;
+  state: string | null;
+  reason: string | null;
+  description: string | null;
+}
+
+export interface TargetGroupDetails extends TargetGroup {
+  targets: TargetHealth[];
+  attributes: [string, string][];
+  tags: [string, string][];
 }
 
 export interface SsmAgent {
