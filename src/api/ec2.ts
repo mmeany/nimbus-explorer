@@ -200,7 +200,44 @@ export const ec2Api = {
   consoleOutput: (id: string, latest: boolean) => call<ConsoleOutput>("ec2_console_output", { id, latest }),
   screenshot: (id: string) => call<string>("ec2_screenshot", { id }),
   userData: (id: string) => call<UserData>("ec2_user_data", { id }),
+  start: (ids: string[]) => call<StateChange[]>("ec2_start", { ids }),
+  stop: (ids: string[], hibernate: boolean, force: boolean) => call<StateChange[]>("ec2_stop", { ids, hibernate, force }),
+  reboot: (ids: string[]) => call<void>("ec2_reboot", { ids }),
+  terminate: (ids: string[]) => call<StateChange[]>("ec2_terminate", { ids }),
+  setType: (id: string, instanceType: string) => call<void>("ec2_set_type", { id, instanceType }),
+  setProtection: (id: string, termination: boolean | null, stop: boolean | null) => call<void>("ec2_set_protection", { id, termination, stop }),
+  instanceTypes: (az: string, architecture: string | null) => call<TypeInfo[]>("ec2_instance_types", { az, architecture }),
 };
+
+export interface StateChange {
+  id: string;
+  previous: string | null;
+  current: string | null;
+}
+
+export interface TypeInfo {
+  name: string;
+  vcpus: number | null;
+  memoryMib: number | null;
+  currentGeneration: boolean | null;
+}
+
+/** "t3.small · 2 vCPUs · 2 GiB". */
+export function typeText(t: TypeInfo): string {
+  const mem = t.memoryMib == null ? "" : t.memoryMib % 1024 === 0 ? `${t.memoryMib / 1024} GiB` : `${(t.memoryMib / 1024).toFixed(1)} GiB`;
+  return [t.name, t.vcpus == null ? "" : `${t.vcpus} vCPU${t.vcpus === 1 ? "" : "s"}`, mem].filter(Boolean).join(" · ");
+}
+
+/** Which lifecycle actions make sense for instances in these states. */
+export function allowedActions(states: (string | null)[]): { start: boolean; stop: boolean; reboot: boolean; terminate: boolean } {
+  const all = (ok: string[]) => states.length > 0 && states.every((s) => ok.includes(s ?? ""));
+  return {
+    start: all(["stopped"]),
+    stop: all(["running", "pending"]),
+    reboot: all(["running"]),
+    terminate: all(["pending", "running", "stopping", "stopped"]),
+  };
+}
 
 /** What the masked user data field reveals: the text, or a note when there's nothing to show. */
 export function userDataText(u: UserData): string {

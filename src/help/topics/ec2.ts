@@ -13,7 +13,8 @@ What the app changes in EC2 is limited on purpose: instance state, instance type
 
 - **States**: click a state to show or hide its instances. Terminated instances are hidden at first; AWS lists them for about an hour after they end. Your choice is remembered.
 - **Filter**: part of the Name tag, the start of an instance ID, or a tag as *key=value* (the value's start; *key=* finds instances that have the tag at all). Press Enter; previous filters are remembered for this profile and region.
-- **Open** an instance: Enter or double-click. Right-click for copying its ID or addresses and for bookmarks.
+- **Open** an instance: Enter or double-click. Right-click for actions, copying its ID or addresses, and bookmarks.
+- **Actions** (command bar or right-click) work on the selected instances: **Start**, **Stop…**, **Reboot**, **Change type** (one stopped instance, Ctrl+E) and **Terminate…** (Del). Each asks first; terminating needs the instance ID (or, for several, the phrase shown) typed in. Read-only mode disables them all.
 
 The tree under **Instances** shows the same filtered list (the first 200).`,
   },
@@ -24,7 +25,9 @@ The tree under **Instances** shows the same filtered list (the first 200).`,
 - **IAM role**: the role in the instance's instance profile. A role in this account opens in IAM.
 - **Instance metadata**: *IMDSv2 only* means software on the instance must use session tokens, which is the safer setting.
 - **Termination / stop protection**: when on, the instance can't be terminated or stopped through the API until it's turned off.
-- **Public IP**: an auto-assigned public address changes every time the instance stops and starts; an Elastic IP stays.`,
+- **Public IP**: an auto-assigned public address changes every time the instance stops and starts; an Elastic IP stays.
+
+The command bar acts on this instance: Start, Stop…, Reboot, Change type (when stopped), **Protection** and Terminate….`,
   },
   "ec2.instance.storage": {
     title: "Instance storage",
@@ -70,6 +73,28 @@ Your choice of Output or Screenshot is remembered.`,
     body: `The script or cloud-init configuration passed to the instance at launch. It often holds passwords, tokens or keys, so it stays masked until you choose **Reveal** or **Copy**, and it's dropped again when you hide it or leave the tab. The app never saves it.
 
 Plain JSON user data can be viewed as a tree; anything else (scripts, cloud-init) shows as text. Compressed (gzip) user data can't be shown: only its size is.`,
+  },
+  "ec2.instance.stop": {
+    title: "Stop instances",
+    body: `Shuts the instances down. Their EBS volumes keep their data and still cost money; the instances themselves don't while stopped. Instance store disks are wiped, and an auto-assigned public IP is released (the next start gets a new one).
+
+- **Hibernate**: saves memory to the root volume so programs carry on where they were at the next start. Only for instances launched with hibernation configured.
+- **Force stop**: for an instance stuck in *stopping*. The OS gets no chance to shut down cleanly, so unsaved data is lost.
+
+Spot instances can only be stopped when their request is persistent.`,
+  },
+  "ec2.instance.type": {
+    title: "Change instance type",
+    body: `Gives a stopped instance more (or less) CPU and memory. The list shows the types offered in the instance's availability zone for its architecture, the current family first; search to find others, including older generations, or type a type into the box on the right.
+
+The new type must support the instance's image and settings (architecture, virtualization, ENA networking, any EBS optimisation or hibernation). If it doesn't, AWS refuses and the instance keeps its type. Start the instance afterwards to use it.`,
+  },
+  "ec2.instance.protection": {
+    title: "Instance protection",
+    body: `- **Termination protection**: AWS refuses to terminate the instance through the API or console until it's turned off.
+- **Stop protection**: the same for stopping and hibernating.
+
+Turning either off asks first. Neither prevents a shutdown from inside the operating system (which stops or terminates the instance, as its shutdown behaviour says), or an Auto Scaling group replacing it.`,
   },
 };
 

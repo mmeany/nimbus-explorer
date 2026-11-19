@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { instanceLabel, isOpenToWorld, matchesInstanceFilter, ruleSource, type Rule } from "./ec2";
+import { allowedActions, instanceLabel, isOpenToWorld, matchesInstanceFilter, ruleSource, typeText, type Rule } from "./ec2";
 
 const inst = { id: "i-0abc123", name: "Web Server", tags: [["Name", "Web Server"], ["env", "Prod"]] as [string, string][] };
 
@@ -34,5 +34,19 @@ describe("labels", () => {
     expect(ruleSource({ ...r, sourceAccount: "222" })).toBe("bastion (sg-1) · account 222");
     expect(ruleSource({ ...r, sourceKind: "cidr", source: "10.0.0.0/8" })).toBe("10.0.0.0/8");
     expect(isOpenToWorld({ ...r, sourceKind: "cidr", source: "0.0.0.0/0" })).toBe(true);
+  });
+});
+
+describe("actions", () => {
+  it("allows actions by state", () => {
+    expect(allowedActions(["running"])).toEqual({ start: false, stop: true, reboot: true, terminate: true });
+    expect(allowedActions(["stopped", "running"])).toEqual({ start: false, stop: false, reboot: false, terminate: true });
+    expect(allowedActions(["terminated"]).terminate).toBe(false);
+    expect(allowedActions([]).start).toBe(false);
+  });
+  it("describes instance types", () => {
+    expect(typeText({ name: "t3.small", vcpus: 2, memoryMib: 2048, currentGeneration: true })).toBe("t3.small · 2 vCPUs · 2 GiB");
+    expect(typeText({ name: "t3.nano", vcpus: 1, memoryMib: 512, currentGeneration: true })).toBe("t3.nano · 1 vCPU · 0.5 GiB");
+    expect(typeText({ name: "x.y", vcpus: null, memoryMib: null, currentGeneration: null })).toBe("x.y");
   });
 });

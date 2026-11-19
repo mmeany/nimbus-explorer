@@ -38,6 +38,13 @@ type Rule = (a: Args, result: any, ctx: RuleContext) => Described | null;
 const plural = (n: number, word: string) => `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;
 const lastAfter = (s: string, sep: string) => s.slice(s.lastIndexOf(sep) + 1);
 const base = (path: string) => lastAfter(path.replace(/[\\/]+$/, ""), path.includes("\\") ? "\\" : "/");
+
+/** An action on one instance (place: the instance) or several (place: the list, first selected). */
+function ec2Instances(action: string, ids: unknown): Described {
+  const list = Array.isArray(ids) ? ids.map(String) : [];
+  if (list.length === 1) return { service: "ec2", action, target: list[0], place: { service: "ec2", kind: "instances", id: list[0] } };
+  return { service: "ec2", action: `${action}s`, target: plural(list.length, "instance"), place: { service: "ec2", kind: "instances", id: null }, select: list[0] ?? null, detail: list.join(", ") };
+}
 const firstWord = (sql: string) => (sql.replace(/^(\s|--[^\n]*\n|\/\*[\s\S]*?\*\/)+/, "").match(/^[A-Za-z]+/)?.[0] ?? "").toUpperCase();
 
 /** Folder prefix holding an S3 key (a folder key "a/b/" lives in "a/"). */
@@ -435,6 +442,20 @@ export const RULES: Record<string, Rule> = {
   ec_delete_snapshot: (a) => ({ service: "elasticache", action: "Delete snapshot", target: String(a.name), place: { service: "elasticache", kind: "snapshots", id: null } }),
   ec_restore_snapshot: (a) => ({ service: "elasticache", action: "Restore snapshot", target: String(a.request.name), place: { service: "elasticache", kind: a.request.kind, id: String(a.request.name) }, detail: `from ${a.request.snapshot}` }),
   ec_apply_update: (a, r) => ({ service: "elasticache", action: "Apply service update", target: String(a.group), place: { service: "elasticache", kind: "group", id: String(a.group) }, detail: [String(a.update), r ? String(r) : ""].filter(Boolean).join(", ") }),
+  // EC2
+  ec2_start: (a) => ec2Instances("Start instance", a.ids),
+  ec2_stop: (a) => ({ ...ec2Instances(a.hibernate ? "Hibernate instance" : "Stop instance", a.ids), ...(a.force ? { detail: "forced" } : {}) }),
+  ec2_reboot: (a) => ec2Instances("Reboot instance", a.ids),
+  ec2_terminate: (a) => ec2Instances("Terminate instance", a.ids),
+  ec2_set_type: (a) => ({ service: "ec2", action: "Change instance type", target: String(a.id), place: { service: "ec2", kind: "instances", id: String(a.id) }, detail: `to ${a.instanceType}` }),
+  ec2_set_protection: (a) => ({
+    service: "ec2",
+    action: "Change instance protection",
+    target: String(a.id),
+    place: { service: "ec2", kind: "instances", id: String(a.id) },
+    detail: [a.termination == null ? "" : `termination protection ${a.termination ? "on" : "off"}`, a.stop == null ? "" : `stop protection ${a.stop ? "on" : "off"}`].filter(Boolean).join(", "),
+  }),
+
   iam_export_credential_report: (a, r) => ({ service: "iam", action: "Export credential report", target: base(String(a.dest)), place: { service: "iam", kind: "account", id: null }, detail: [typeof r === "number" ? plural(r, "row") : "", `to ${a.dest}`].filter(Boolean).join(", ") }),
   sfn_export_svg: (a) => ({ service: "sfn", action: "Export graph", target: base(a.path), detail: `to ${a.path}` }),
   lambda_download_code: (a) => ({ service: "lambda", action: "Download code", target: a.qualifier ? `${a.name}:${a.qualifier}` : a.name, place: fnPlace(a.name), detail: `to ${a.dest}` }),

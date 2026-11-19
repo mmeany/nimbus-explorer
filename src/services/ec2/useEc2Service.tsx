@@ -1,22 +1,23 @@
 // EC2 controller: an overview of the resource kinds, then one list per kind
 // and a view per resource. Instances load in full and page on screen; state
 // chips and the remembered filter narrow the list (and the tree).
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, type AppError } from "../../api/s3";
-import { DEFAULT_STATES, ec2Api, INSTANCE_STATES, instanceLabel, matchesInstanceFilter, type Instance, type InstanceDetails, type InstanceState } from "../../api/ec2";
+import { allowedActions, DEFAULT_STATES, ec2Api, INSTANCE_STATES, instanceLabel, matchesInstanceFilter, type Instance, type InstanceDetails, type InstanceState } from "../../api/ec2";
 import { CommandButton } from "../../components/CommandButton";
 import type { MenuItem } from "../../components/ContextMenu";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { FilterBox } from "../../components/FilterBox";
 import { HelpTopic } from "../../components/HelpDialog";
-import { Ec2Icon, InstanceIcon, RefreshIcon } from "../../components/Icons";
+import { DeleteIcon, Ec2Icon, EditIcon, InstanceIcon, LockIcon, PlayIcon, RedriveIcon, RefreshIcon, StopIcon } from "../../components/Icons";
 import { PageBar } from "../../components/PageBar";
 import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { formatDate } from "../../format";
 import { EC2_KIND_LABEL, EC2_ROOT, type Ec2Kind, type Place } from "../../shell/places";
 import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePaging } from "../../state/paged";
+import { ChangeTypeDialog, ProtectionDialog, StopDialog } from "./InstanceDialogs";
 import { ConsoleTab, StatusTab, UserDataTab } from "./InstanceExtras";
 import { InstanceView, type InstanceTab } from "./InstanceView";
 
@@ -76,6 +77,8 @@ function storedStates(): Set<InstanceState> {
 
 type Listing<T> = { key: string; items: T[] | null; error: AppError | null };
 
+type Dialog = { kind: "stop"; instances: Instance[] } | { kind: "type"; instance: Instance } | { kind: "protection"; instance: InstanceDetails } | null;
+
 export function useEc2Service(shell: Shell): ServiceUi {
   const { connection, connectionId, profile, place } = shell;
   const active = place.service === "ec2";
@@ -93,6 +96,7 @@ export function useEc2Service(shell: Shell): ServiceUi {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [states, setStatesState] = useState<Set<InstanceState>>(storedStates);
   const [viewInstance, setViewInstance] = useState<InstanceDetails | null>(null);
+  const [dialog, setDialog] = useState<Dialog>(null);
   const historyKey = `ec2|${profile ?? ""}|${region}|${kind ?? ""}`;
   const filter = kind ? (filters[kind] ?? "") : "";
 
@@ -198,12 +202,147 @@ export function useEc2Service(shell: Shell): ServiceUi {
     [paging, shownInstances],
   );
 
+  // ---------------------------------------------------------------------------
+  // Instance actions: on the open instance, or the selected rows of the list.
+
+  const inView = active && kind === "instances" && !!id;
+  function targets(): Instance[] {
+    if (inView) return viewInstance?.id === id ? [viewInstance] : [];
+    if (!listView) return [];
+    return [...selected].map((k) => byId.get(k)).filter((i): i is Instance => !!i);
+  }
+  const denied = () => shell.showFlash("Read-only mode: changes are disabled.");
+  const done = (msg: string) => {
+    setDialog(null);
+    shell.showFlash(msg);
+    refresh();
+  };
+  const listText = (list: Instance[]) =>
+    list.length === 1 ? (
+      <span className="mono">{instanceLabel(list[0])}</span>
+    ) : (
+      <>
+        {list.length} instances: <span className="mono">{list.map((i) => i.name ?? i.id).join(", ")}</span>
+      </>
+    );
+
+  async function simple(verb: "start" | "reboot", list: Instance[]) {
+    if (shell.readOnly) return denied();
+    if (!list.length) return;
+    const title = verb === "start" ? "Start" : "Reboot";
+    const ok = await shell.ask(
+      `${title} instance${list.length === 1 ? "" : "s"}`,
+      <>
+        <p>
+          {title} {listText(list)}?
+        </p>
+        <p className="hint">
+          {verb === "start"
+            ? "Charges for running time begin again. An auto-assigned public IP address will be a new one."
+            : "The operating system restarts; the instance keeps its addresses and disks. Unsaved work in programs is lost."}
+        </p>
+      </>,
+      [
+        { label: title, value: "yes", danger: verb === "reboot" },
+        { label: "Cancel", value: "no" },
+      ],
+      "no",
+    );
+    if (ok !== "yes") return;
+    shell.setWorking(verb === "start" ? "Starting…" : "Rebooting…");
+    try {
+      const ids = list.map((i) => i.id);
+      if (verb === "start") await ec2Api.start(ids);
+      else await ec2Api.reboot(ids);
+      done(`${verb === "start" ? "Starting" : "Rebooting"} ${list.length === 1 ? instanceLabel(list[0]) : `${list.length} instances`}.`);
+    } catch (e) {
+      shell.showError(e);
+    } finally {
+      shell.setWorking(null);
+    }
+  }
+
+  async function terminate(list: Instance[]) {
+    if (shell.readOnly) return denied();
+    if (!list.length) return;
+    const confirmText = list.length === 1 ? list[0].id : `terminate ${list.length} instances`;
+    const keepVolumes = list.some((i) => i.blockDevices.some((b) => b.deleteOnTermination === false));
+    const ok = await shell.confirmTyped(
+      `Terminate instance${list.length === 1 ? "" : "s"}`,
+      <>
+        <p>Terminate {listText(list)}? This can't be undone: the instance is deleted.</p>
+        <p className="hint">
+          Volumes marked "deleted with instance" (usually the root volume) are deleted too{keepVolumes ? "; the others stay and keep costing until you delete them" : ""}. Instance store data is lost. An Auto Scaling group will launch a
+          replacement.
+        </p>
+      </>,
+      confirmText,
+      "Terminate",
+    );
+    if (!ok) return;
+    shell.setWorking("Terminating…");
+    try {
+      await ec2Api.terminate(list.map((i) => i.id));
+      done(`Terminating ${list.length === 1 ? instanceLabel(list[0]) : `${list.length} instances`}.`);
+    } catch (e) {
+      shell.showError(e);
+    } finally {
+      shell.setWorking(null);
+    }
+  }
+
+  const openDialog = (d: Dialog) => (shell.readOnly ? denied() : setDialog(d));
+  const can = (list: Instance[]) => {
+    const a = allowedActions(list.map((i) => i.state));
+    return { ...a, type: list.length === 1 && list[0].state === "stopped", protection: list.length === 1 && inView && list[0].state !== "terminated" };
+  };
+
+  // Explorer shortcuts: Del terminates, Ctrl+E changes the type.
+  const keyOps = useRef({ active: false, modal: false, targets, can, terminate, openDialog });
+  keyOps.current = { active: active && kind === "instances", modal: !!dialog, targets, can, terminate, openDialog };
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const o = keyOps.current;
+      if (!o.active || o.modal) return;
+      if ((e.target as HTMLElement).closest("input, textarea, select, .modal-backdrop")) return;
+      const ctrl = e.ctrlKey || e.metaKey;
+      const list = o.targets();
+      if (!list.length) return;
+      const c = o.can(list);
+      if (e.key === "Delete" && !ctrl && c.terminate) {
+        e.preventDefault();
+        void o.terminate(list);
+      } else if (ctrl && !e.shiftKey && e.key === "e" && c.type) {
+        e.preventDefault();
+        o.openDialog({ kind: "type", instance: list[0] });
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  function actionItems(list: Instance[]): MenuItem[] {
+    const c = can(list);
+    const ro = shell.readOnly;
+    return [
+      { label: "Start", disabled: ro || !c.start, onClick: () => void simple("start", list) },
+      { label: "Stop…", disabled: ro || !c.stop, onClick: () => openDialog({ kind: "stop", instances: list }) },
+      { label: "Reboot", disabled: ro || !c.reboot, onClick: () => void simple("reboot", list) },
+      { label: "Change instance type…", shortcut: "Ctrl+E", disabled: ro || !c.type, onClick: () => openDialog({ kind: "type", instance: list[0] }) },
+      { label: "Terminate…", shortcut: "Del", disabled: ro || !c.terminate, onClick: () => void terminate(list) },
+    ];
+  }
+
   function instanceMenu(key: string | null, x: number, y: number) {
     const i = key ? byId.get(key) : undefined;
     const items: MenuItem[] = [];
     if (i) {
+      // Right-clicking a selected row acts on the whole selection.
+      const list = selected.has(i.id) && selected.size > 1 ? [...selected].map((k) => byId.get(k)).filter((x): x is Instance => !!x) : [i];
       items.push(
         { label: "Open", bold: true, shortcut: "Enter", onClick: () => go({ kind: "instances", id: i.id }) },
+        "separator",
+        ...actionItems(list),
         "separator",
         { label: "Copy instance ID", onClick: () => void shell.copyText(i.id) },
         { label: "Copy private IP", disabled: !i.privateIp, onClick: () => i.privateIp && void shell.copyText(i.privateIp) },
@@ -375,8 +514,41 @@ export function useEc2Service(shell: Shell): ServiceUi {
     status = `${v ? instanceLabel(v) : id}${v?.state ? ` · ${v.state}` : ""} · ${region}`;
   }
 
-  const commands = active ? <CommandButton icon={<RefreshIcon />} label="Refresh" title="Refresh (F5)" disabled={!connection} onClick={refresh} /> : null;
-  return { tree, content, commands, status, busy: active && loading, refresh, dialogs: null };
+  const t = active && kind === "instances" ? targets() : [];
+  const c = can(t);
+  const off = (ok: boolean) => !connection || shell.readOnly || !ok;
+  const commands = active ? (
+    <>
+      <CommandButton icon={<RefreshIcon />} label="Refresh" title="Refresh (F5)" disabled={!connection} onClick={refresh} />
+      {kind === "instances" && (
+        <>
+          <CommandButton icon={<PlayIcon />} label="Start" title="Start the stopped instances" disabled={off(c.start)} onClick={() => void simple("start", t)} />
+          <CommandButton icon={<StopIcon />} label="Stop" title="Stop (or hibernate) the instances" disabled={off(c.stop)} onClick={() => openDialog({ kind: "stop", instances: t })} />
+          <CommandButton icon={<RedriveIcon />} label="Reboot" title="Restart the operating system" disabled={off(c.reboot)} onClick={() => void simple("reboot", t)} />
+          <CommandButton icon={<EditIcon />} label="Change type" title="Change a stopped instance's type (Ctrl+E)" disabled={off(c.type)} onClick={() => openDialog({ kind: "type", instance: t[0] })} />
+          {inView && (
+            <CommandButton
+              icon={<LockIcon />}
+              label="Protection"
+              title="Termination and stop protection"
+              disabled={off(c.protection)}
+              onClick={() => viewInstance && openDialog({ kind: "protection", instance: viewInstance })}
+            />
+          )}
+          <CommandButton icon={<DeleteIcon />} label="Terminate" title="Terminate the instances (Del)" disabled={off(c.terminate)} onClick={() => void terminate(t)} />
+        </>
+      )}
+    </>
+  ) : null;
+  const dialogs =
+    dialog?.kind === "stop" ? (
+      <StopDialog instances={dialog.instances} onClose={() => setDialog(null)} onDone={done} />
+    ) : dialog?.kind === "type" ? (
+      <ChangeTypeDialog instance={dialog.instance} onClose={() => setDialog(null)} onDone={done} />
+    ) : dialog?.kind === "protection" ? (
+      <ProtectionDialog shell={shell} instance={dialog.instance} onClose={() => setDialog(null)} onDone={done} />
+    ) : null;
+  return { tree, content, commands, status, busy: active && loading, refresh, dialogs };
 }
 
 /** Sorts dotted IPv4 addresses numerically ("" last). */

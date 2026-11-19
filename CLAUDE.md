@@ -1172,7 +1172,16 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   `ec2.console.mode`; MiniStack answers all four calls) Instance read views: status checks (system / instance / EBS) and
   scheduled events; console output (text with line numbers); console
   screenshot (image); user data decoded, masked with Reveal, never cached.
-- 17.3 Instance actions: start, stop (optionally hibernate, force), reboot,
+- 17.3 ✅ (`src-tauri/src/ec2_actions.rs`, `services/ec2/InstanceDialogs.tsx`;
+  commands act on the open instance or the list's selection (right-click on
+  a selected row = the whole selection); `allowedActions` decides by state;
+  Del = Terminate (typed: the instance ID, or "terminate N instances"),
+  Ctrl+E = Change type; the type list = DescribeInstanceTypeOfferings for
+  the AZ ∩ DescribeInstanceTypes for the architecture, sorted by
+  `type_order`; set_type re-checks "stopped" in the backend; protection is
+  one ModifyInstanceAttribute per flag; MiniStack has no
+  ModifyInstanceAttribute, so `unsupported` gives a plain message and the
+  emulator test accepts it) Instance actions: start, stop (optionally hibernate, force), reboot,
   terminate (typed confirmation), change instance type (stopped only, types
   offered for the AZ), termination / stop protection (turning off asks).
 - 17.4 Tags editor (instances and every EC2 resource view) and create AMI /
