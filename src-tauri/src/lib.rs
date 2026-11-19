@@ -1,3 +1,4 @@
+mod autoscaling;
 mod bookmarks;
 mod commands;
 mod ddb_io;
@@ -254,6 +255,12 @@ pub fn run() {
             commands::ec2::ec2_target_group,
             commands::ec2::ec2_register_targets,
             commands::ec2::ec2_deregister_targets,
+            commands::ec2::ec2_asgs,
+            commands::ec2::ec2_asg,
+            commands::ec2::ec2_asg_capacity,
+            commands::ec2::ec2_asg_processes,
+            commands::ec2::ec2_asg_start_refresh,
+            commands::ec2::ec2_asg_cancel_refresh,
             commands::elasticache::ec_list_groups,
             commands::elasticache::ec_list_serverless,
             commands::elasticache::ec_group,

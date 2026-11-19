@@ -5,6 +5,7 @@ use crate::ec2::{self, Instance, InstanceDetails, Interface, Volume};
 use crate::ec2_network::{self as network, Address, GroupDetails, SecurityGroup, Subnet, SubnetDetails, Vpc, VpcDetails};
 use crate::ec2_templates::{self as templates, KeyPair, LaunchTemplate, TemplateDetails};
 use crate::elb::{self, LoadBalancer, LoadBalancerDetails, TargetGroup, TargetGroupDetails, TargetRef};
+use crate::autoscaling::{self as asg, Group as AsgGroup, GroupDetails as AsgDetails};
 use crate::ec2_storage::{self as storage, Image, Snapshot, SnapshotDetails};
 use crate::ec2_actions::{self as actions, StateChange, TypeInfo};
 use crate::ec2_tags::{self as tags, CreatedSnapshot, ImageRequest};
@@ -287,4 +288,47 @@ pub async fn ec2_register_targets(state: State<'_, AppState>, group: String, tar
 pub async fn ec2_deregister_targets(state: State<'_, AppState>, group: String, targets: Vec<TargetRef>) -> Result<(), AppError> {
     state.ensure_writable()?;
     elb::deregister(&*state.connection()?, &group, &targets).await
+}
+
+/// Auto Scaling groups in the region (with their instances).
+#[tauri::command]
+pub async fn ec2_asgs(state: State<'_, AppState>) -> Result<Vec<AsgGroup>, AppError> {
+    asg::list_groups(&*state.connection()?).await
+}
+
+/// One group with activities, instance refreshes and policies.
+#[tauri::command]
+pub async fn ec2_asg(state: State<'_, AppState>, name: String) -> Result<AsgDetails, AppError> {
+    asg::group_details(&*state.connection()?, &name).await
+}
+
+#[tauri::command]
+pub async fn ec2_asg_capacity(state: State<'_, AppState>, name: String, min: i32, max: i32, desired: i32) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    asg::set_capacity(&*state.connection()?, &name, min, max, desired).await
+}
+
+/// Suspends (suspend = true) or resumes processes.
+#[tauri::command]
+pub async fn ec2_asg_processes(state: State<'_, AppState>, name: String, processes: Vec<String>, suspend: bool) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    asg::set_processes(&*state.connection()?, &name, &processes, suspend).await
+}
+
+#[tauri::command]
+pub async fn ec2_asg_start_refresh(
+    state: State<'_, AppState>,
+    name: String,
+    min_healthy: i32,
+    warmup: Option<i32>,
+    skip_matching: bool,
+) -> Result<String, AppError> {
+    state.ensure_writable()?;
+    asg::start_refresh(&*state.connection()?, &name, min_healthy, warmup, skip_matching).await
+}
+
+#[tauri::command]
+pub async fn ec2_asg_cancel_refresh(state: State<'_, AppState>, name: String) -> Result<(), AppError> {
+    state.ensure_writable()?;
+    asg::cancel_refresh(&*state.connection()?, &name).await
 }

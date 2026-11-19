@@ -50,7 +50,7 @@ Minimise shipped dependencies; every addition needs a reason.
   (`preserve_order`, so YAML/JSON keys keep document order), `tokio`
   (sync, fs, io-util, rt, time), the AWS crates above plus `aws-sdk-ssm`,
   `aws-sdk-sqs`, `aws-sdk-sns`, `aws-sdk-dynamodb`, `aws-sdk-rds`,
-  `aws-sdk-rdsdata`, `aws-sdk-cloudwatchlogs`, `aws-sdk-lambda`, `aws-sdk-ecs`, `aws-sdk-sfn`, `aws-sdk-elasticache`, `aws-sdk-iam`, `aws-sdk-accessanalyzer`, `aws-sdk-ec2`, `aws-sdk-elasticloadbalancingv2` and `aws-sdk-secretsmanager` (default features off) (+ `aws-smithy-types` for base64, `aws-smithy-runtime-api` (already part of
+  `aws-sdk-rdsdata`, `aws-sdk-cloudwatchlogs`, `aws-sdk-lambda`, `aws-sdk-ecs`, `aws-sdk-sfn`, `aws-sdk-elasticache`, `aws-sdk-iam`, `aws-sdk-accessanalyzer`, `aws-sdk-ec2`, `aws-sdk-elasticloadbalancingv2`, `aws-sdk-autoscaling` and `aws-sdk-secretsmanager` (default features off) (+ `aws-smithy-types` for base64, `aws-smithy-runtime-api` (already part of
   the SDK) to fetch Lambda code download links with the SDK's own HTTP client,
   `aws-credential-types` for credential expiry), `yaml-rust2` (no default
   features) for YAML previews.
@@ -1239,7 +1239,13 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   it all) Load balancers and target groups (ELBv2): load balancers with
   listeners and rules, target groups with target health; register /
   deregister targets.
-- 17.10 Auto Scaling groups: details, instances, activities, suspended
+- 17.10 ✅ (`src-tauri/src/autoscaling.rs`, `services/ec2/AsgViews.tsx`; place
+  id = group name; the list includes each group's instances; details add 50
+  newest activities, instance refreshes and policy names; capacity checked
+  min ≤ desired ≤ max in both layers; the processes dialog diffs ticked vs
+  suspended and sends one suspend and one resume call; re-checks every 10 s
+  while a refresh / launch runs or instances ≠ desired; an instance's ASG
+  links here; MiniStack runs it all) Auto Scaling groups: details, instances, activities, suspended
   processes; set desired / min / max, suspend / resume processes, start /
   cancel instance refresh.
 - 17.11 Unused resources report: unattached volumes, unassociated Elastic

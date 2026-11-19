@@ -55,6 +55,7 @@ aws-sdk-iam = { version = "1", default-features = false, features = ["rt-tokio",
 aws-sdk-accessanalyzer = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
 aws-sdk-ec2 = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
 aws-sdk-elasticloadbalancingv2 = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
+aws-sdk-autoscaling = { version = "1", default-features = false, features = ["rt-tokio", "behavior-version-latest"] }
 
 [profile.release]
 codegen-units = 1

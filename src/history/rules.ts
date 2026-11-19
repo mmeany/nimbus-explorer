@@ -476,6 +476,10 @@ export const RULES: Record<string, Rule> = {
   }),
   ec2_register_targets: (a) => ({ service: "ec2", action: "Register targets", target: String(a.group), place: { service: "ec2", kind: "targetGroups", id: String(a.group) }, detail: (a.targets ?? []).map((t: { id: string; port?: number | null }) => (t.port ? `${t.id}:${t.port}` : t.id)).join(", ") }),
   ec2_deregister_targets: (a) => ({ service: "ec2", action: "Deregister targets", target: String(a.group), place: { service: "ec2", kind: "targetGroups", id: String(a.group) }, detail: (a.targets ?? []).map((t: { id: string; port?: number | null }) => (t.port ? `${t.id}:${t.port}` : t.id)).join(", ") }),
+  ec2_asg_capacity: (a) => ({ service: "ec2", action: "Change Auto Scaling capacity", target: String(a.name), place: { service: "ec2", kind: "autoScaling", id: String(a.name) }, detail: `min ${a.min}, max ${a.max}, desired ${a.desired}` }),
+  ec2_asg_processes: (a) => ({ service: "ec2", action: a.suspend ? "Suspend processes" : "Resume processes", target: String(a.name), place: { service: "ec2", kind: "autoScaling", id: String(a.name) }, detail: (a.processes ?? []).join(", ") }),
+  ec2_asg_start_refresh: (a, r) => ({ service: "ec2", action: "Start instance refresh", target: String(a.name), place: { service: "ec2", kind: "autoScaling", id: String(a.name) }, detail: [`min healthy ${a.minHealthy}%`, r ? String(r) : ""].filter(Boolean).join(", ") }),
+  ec2_asg_cancel_refresh: (a) => ({ service: "ec2", action: "Cancel instance refresh", target: String(a.name), place: { service: "ec2", kind: "autoScaling", id: String(a.name) } }),
   ec2_set_protection: (a) => ({
     service: "ec2",
     action: "Change instance protection",

@@ -235,6 +235,40 @@ Both are disabled in read-only mode.`,
     title: "Register targets",
     body: `Adds targets to the group. For an *instance* group, tick instances in the group's VPC (already registered ones aren't listed); for an *ip* group, type addresses from the VPC's ranges (or reachable private ranges). Leave the port blank to use the group's port. Health checks start straight away; a target gets traffic once it's *healthy*.`,
   },
+  "ec2.autoScaling": {
+    title: "Auto Scaling groups",
+    body: `Groups that keep a number of instances running, launched from a launch template: how many instances each has against its desired, minimum and maximum, where it launches from, its health check and any suspended processes. Groups with desired 0 are dimmed.
+
+**Filter**: part of the group name or a target group name, or the start of an instance ID (finds the group it belongs to).`,
+  },
+  "ec2.asg": {
+    title: "Auto Scaling group",
+    body: `One group: capacity, launch template (click to open it), subnets, target groups, health check, suspended processes and scaling policies; its instances with lifecycle and health; instance refreshes; and recent activity (launches, terminations and why). While instances are launching or a refresh runs, the view checks again every 10 seconds.
+
+- **Set capacity…**: desired, minimum and maximum.
+- **Suspend / resume…**: pause what Auto Scaling does (launching, terminating, health checks, …), e.g. while you debug an instance.
+- **Start instance refresh…**: replace every instance with a new one from the current settings; **Cancel instance refresh…** stops one that's running.
+
+All three are disabled in read-only mode.`,
+  },
+  "ec2.asg.capacity": {
+    title: "Capacity",
+    body: `**Desired** is how many instances the group aims for; it must be between **minimum** and **maximum**. Raising it launches instances; lowering it terminates some (newest launch template version and zone balance decide which; instances protected from scale-in stay). Scaling policies can move desired again, but only within the minimum and maximum you set.`,
+  },
+  "ec2.asg.processes": {
+    title: "Suspend and resume processes",
+    body: `Tick a process to suspend it, untick to resume it, then **Save**. Suspending *Launch* and *Terminate* freezes the group's size; suspending *HealthCheck* and *ReplaceUnhealthy* stops it replacing an instance you're fixing; *AZRebalance* stops it moving instances between zones. Remember to resume them.`,
+  },
+  "ec2.asg.refresh": {
+    title: "Instance refresh",
+    body: `Replaces the group's instances in batches, so they pick up a new launch template version, image or settings.
+
+- **Minimum healthy**: the share of capacity kept in service during the refresh (90% replaces a tenth at a time). Lower is faster but leaves less capacity.
+- **Warm-up**: how long a new instance gets before it counts as healthy (blank = the group's default).
+- **Skip matching**: instances already on the launch template version the group uses aren't replaced.
+
+You can cancel a running refresh; instances already replaced stay replaced.`,
+  },
   "ec2.tags": {
     title: "Tags",
     body: `Key / value labels on an EC2 resource. Edit, add or remove rows and **Save**: new and changed tags are set, removed ones deleted, the rest left alone.
@@ -284,6 +318,7 @@ export function ec2PlaceTopic(kind: Ec2Kind | null, id: string | null): Ec2Topic
   if (kind === "interfaces") return id ? "ec2.interface" : "ec2.interfaces";
   if (kind === "addresses") return "ec2.addresses";
   if (kind === "keyPairs") return "ec2.keyPairs";
+  if (kind === "autoScaling") return id ? "ec2.asg" : "ec2.autoScaling";
   if (kind === "loadBalancers") return id ? "ec2.loadBalancer" : "ec2.loadBalancers";
   if (kind === "targetGroups") return id ? "ec2.targetGroup" : "ec2.targetGroups";
   if (kind === "launchTemplates") return id ? "ec2.launchTemplate" : "ec2.launchTemplates";

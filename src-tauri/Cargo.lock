@@ -192,6 +192,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-sdk-autoscaling"
+version = "1.138.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9484653c8b1841fae20ca5e25c595f901b207c1a3c7f2ea34ed47b8d6921dd9"
+dependencies = [
+ "arc-swap",
+ "aws-credential-types",
+ "aws-runtime",
+ "aws-smithy-async",
+ "aws-smithy-http",
+ "aws-smithy-json",
+ "aws-smithy-observability",
+ "aws-smithy-query",
+ "aws-smithy-runtime",
+ "aws-smithy-runtime-api",
+ "aws-smithy-schema",
+ "aws-smithy-types",
+ "aws-smithy-xml",
+ "aws-types",
+ "fastrand",
+ "http",
+ "regex-lite",
+ "tracing",
+]
+
+[[package]]
 name = "aws-sdk-cloudwatchlogs"
 version = "1.160.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2908,6 +2934,7 @@ dependencies = [
  "aws-config",
  "aws-credential-types",
  "aws-sdk-accessanalyzer",
+ "aws-sdk-autoscaling",
  "aws-sdk-cloudwatchlogs",
  "aws-sdk-dynamodb",
  "aws-sdk-ec2",

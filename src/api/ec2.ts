@@ -234,6 +234,12 @@ export const ec2Api = {
   targetGroup: (name: string) => call<TargetGroupDetails>("ec2_target_group", { name }),
   registerTargets: (group: string, targets: { id: string; port: number | null }[]) => call<void>("ec2_register_targets", { group, targets }),
   deregisterTargets: (group: string, targets: { id: string; port: number | null }[]) => call<void>("ec2_deregister_targets", { group, targets }),
+  asgs: () => call<AsgGroup[]>("ec2_asgs"),
+  asg: (name: string) => call<AsgGroupDetails>("ec2_asg", { name }),
+  asgCapacity: (name: string, min: number, max: number, desired: number) => call<void>("ec2_asg_capacity", { name, min, max, desired }),
+  asgProcesses: (name: string, processes: string[], suspend: boolean) => call<void>("ec2_asg_processes", { name, processes, suspend }),
+  asgStartRefresh: (name: string, minHealthy: number, warmup: number | null, skipMatching: boolean) => call<string>("ec2_asg_start_refresh", { name, minHealthy, warmup, skipMatching }),
+  asgCancelRefresh: (name: string) => call<void>("ec2_asg_cancel_refresh", { name }),
   ssmAgent: (id: string) => call<SsmAgent>("ec2_ssm_agent", { id }),
   snapshotInstance: (instanceId: string, description: string | null, excludeRoot: boolean) => call<CreatedSnapshot[]>("ec2_snapshot_instance", { instanceId, description, excludeRoot }),
 };
@@ -530,6 +536,78 @@ export interface TargetGroupDetails extends TargetGroup {
   attributes: [string, string][];
   tags: [string, string][];
 }
+
+export interface AsgInstance {
+  id: string;
+  az: string | null;
+  lifecycle: string | null;
+  health: string | null;
+  instanceType: string | null;
+  protected: boolean;
+  launchedFrom: string | null;
+}
+
+export interface AsgGroup {
+  name: string;
+  arn: string | null;
+  min: number;
+  max: number;
+  desired: number;
+  launchSource: string | null;
+  launchTemplateId: string | null;
+  subnets: string[];
+  zones: string[];
+  /** Target group names. */
+  targetGroups: string[];
+  classicLoadBalancers: string[];
+  healthCheckType: string | null;
+  healthCheckGrace: number | null;
+  status: string | null;
+  suspended: string[];
+  created: string | null;
+  instances: AsgInstance[];
+  tags: [string, string][];
+}
+
+export interface AsgActivity {
+  description: string | null;
+  cause: string | null;
+  status: string | null;
+  statusMessage: string | null;
+  started: string | null;
+  ended: string | null;
+  progress: number | null;
+}
+
+export interface AsgRefresh {
+  id: string;
+  status: string | null;
+  statusReason: string | null;
+  percentage: number | null;
+  instancesToUpdate: number | null;
+  started: string | null;
+  ended: string | null;
+  minHealthy: number | null;
+}
+
+export interface AsgGroupDetails extends AsgGroup {
+  activities: AsgActivity[];
+  refreshes: AsgRefresh[];
+  policies: string[];
+}
+
+/** The processes Auto Scaling can suspend, with what each does. */
+export const ASG_PROCESSES: [string, string][] = [
+  ["Launch", "adds instances when the group scales out"],
+  ["Terminate", "removes instances when it scales in"],
+  ["HealthCheck", "marks instances unhealthy"],
+  ["ReplaceUnhealthy", "replaces unhealthy instances"],
+  ["AZRebalance", "evens instances across zones"],
+  ["AlarmNotification", "acts on CloudWatch alarms of scaling policies"],
+  ["ScheduledActions", "runs scheduled scaling"],
+  ["AddToLoadBalancer", "registers new instances with target groups"],
+  ["InstanceRefresh", "replaces instances during an instance refresh"],
+];
 
 export interface SsmAgent {
   managed: boolean;

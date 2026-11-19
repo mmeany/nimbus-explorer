@@ -11,6 +11,7 @@ import type { HelpTopicId } from "../../help";
 import { EC2_ROOT } from "../../shell/places";
 import type { Shell } from "../../shell/shell";
 import { Pill, PropsTable, RulesTable, TagsTable, useLoad, yesNo } from "./common";
+import { Ref } from "./StorageViews";
 
 const CHANGING = new Set(["pending", "stopping", "shutting-down"]);
 
@@ -117,7 +118,7 @@ function DetailsTab({ i, shell, onEditTags }: { i: InstanceDetails; shell: Shell
           ["AMI", i.imageId],
           ["Key pair", i.keyName ?? "None"],
           ["Purchase", i.lifecycle === "spot" ? "Spot" : i.lifecycle === "scheduled" ? "Scheduled" : "On demand"],
-          ["Auto Scaling group", i.autoScalingGroup],
+          ["Auto Scaling group", i.autoScalingGroup ? <Ref key="asg" shell={shell} kind="autoScaling" id={i.autoScalingGroup} /> : null],
           ["Tenancy", i.tenancy],
           ["Monitoring", i.monitoring === "enabled" ? "Detailed (1 minute)" : i.monitoring === "disabled" ? "Basic (5 minutes)" : i.monitoring],
           ["Hibernation", i.hibernation ? "Configured" : "Not configured"],
