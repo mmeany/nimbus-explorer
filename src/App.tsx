@@ -19,7 +19,7 @@ import { BookmarkImportDialog, exportBookmarks, pickImport } from "./components/
 import { bookmarksApi, type Bookmark } from "./api/bookmarks";
 import { currentBookmarks, findBookmark, isPlaceBookmarked, loadBookmarks, useBookmarks } from "./state/bookmarks";
 import { currentSelection } from "./state/selection";
-import { BucketIcon, CloudIcon, LockIcon, ParamStoreIcon, ServerIcon, SqsIcon, DynamoIcon, SecretsIcon, SnsIcon, RdsIcon, LogsIcon, LambdaIcon, EcsIcon, StepFunctionsIcon, ElastiCacheIcon, IamIcon } from "./components/Icons";
+import { BucketIcon, CloudIcon, LockIcon, ParamStoreIcon, ServerIcon, SqsIcon, DynamoIcon, SecretsIcon, SnsIcon, RdsIcon, LogsIcon, LambdaIcon, EcsIcon, StepFunctionsIcon, ElastiCacheIcon, IamIcon, Ec2Icon } from "./components/Icons";
 import { PromptDialog } from "./components/PromptDialog";
 import { TypedConfirmDialog } from "./components/TypedConfirmDialog";
 import { StatusBar } from "./components/StatusBar";
@@ -37,6 +37,7 @@ import { useLambdaService } from "./services/lambda/useLambdaService";
 import { useSfnService } from "./services/sfn/useSfnService";
 import { useElastiCacheService } from "./services/elasticache/useElastiCacheService";
 import { useIamService } from "./services/iam/useIamService";
+import { useEc2Service } from "./services/ec2/useEc2Service";
 import { useEcsService } from "./services/ecs/useEcsService";
 import { useSecretsService } from "./services/secrets/useSecretsService";
 import { DEFAULT_HISTORY_SETTINGS, type HistoryEntry } from "./api/history";
@@ -88,6 +89,7 @@ const SERVICE_ICONS: Record<ServiceId, ReactNode> = {
   sns: <SnsIcon />,
   rds: <RdsIcon />,
   elasticache: <ElastiCacheIcon />,
+  ec2: <Ec2Icon />,
   ecs: <EcsIcon />,
   lambda: <LambdaIcon />,
   sfn: <StepFunctionsIcon />,
@@ -268,7 +270,8 @@ export default function App() {
   const logs = useLogsService(shell);
   const secrets = useSecretsService(shell);
   const iam = useIamService(shell);
-  const services: Record<ServiceId, ServiceUi> = { s3, ssm, sqs, sns, dynamodb, rds, elasticache, ecs, lambda, sfn, logs, secrets, iam };
+  const ec2 = useEc2Service(shell);
+  const services: Record<ServiceId, ServiceUi> = { s3, ssm, sqs, sns, dynamodb, rds, elasticache, ec2, ecs, lambda, sfn, logs, secrets, iam };
   const active: ServiceUi | null = place.service === "home" ? null : services[place.service];
 
   const servicesRef = useRef(services);

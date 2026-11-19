@@ -50,7 +50,7 @@ Minimise shipped dependencies; every addition needs a reason.
   (`preserve_order`, so YAML/JSON keys keep document order), `tokio`
   (sync, fs, io-util, rt, time), the AWS crates above plus `aws-sdk-ssm`,
   `aws-sdk-sqs`, `aws-sdk-sns`, `aws-sdk-dynamodb`, `aws-sdk-rds`,
-  `aws-sdk-rdsdata`, `aws-sdk-cloudwatchlogs`, `aws-sdk-lambda`, `aws-sdk-ecs`, `aws-sdk-sfn`, `aws-sdk-elasticache`, `aws-sdk-iam`, `aws-sdk-accessanalyzer` and `aws-sdk-secretsmanager` (default features off) (+ `aws-smithy-types` for base64, `aws-smithy-runtime-api` (already part of
+  `aws-sdk-rdsdata`, `aws-sdk-cloudwatchlogs`, `aws-sdk-lambda`, `aws-sdk-ecs`, `aws-sdk-sfn`, `aws-sdk-elasticache`, `aws-sdk-iam`, `aws-sdk-accessanalyzer`, `aws-sdk-ec2` and `aws-sdk-secretsmanager` (default features off) (+ `aws-smithy-types` for base64, `aws-smithy-runtime-api` (already part of
   the SDK) to fetch Lambda code download links with the SDK's own HTTP client,
   `aws-credential-types` for credential expiry), `yaml-rust2` (no default
   features) for YAML previews.
@@ -1151,7 +1151,15 @@ decryption (would need an RSA crate), metrics, costs. Emulator tests: moto
 refusal. Usual rules: `ensure_writable` + a `rules.ts` entry for every
 write, "Add bookmark…" in row and tree menus, `storageKey` on every
 `FileList`, help topic per view / tab / dialog, one commit per item.
-- 17.1 Browse instances: flat list (Name tag, ID, state, type, AZ, private /
+- 17.1 ✅ (`src-tauri/src/ec2.rs`, `ec2_network.rs` (security groups, rules
+  flattened per source, referenced group names looked up best effort),
+  `services/ec2/` `useEc2Service`, `InstanceView`, `common.tsx`; Place
+  `{service:"ec2", kind: Ec2Kind|null, id}`, `EC2_ROOT` (`EC_ROOT` is
+  ElastiCache), commands prefixed `ec2_` (`ec_` is ElastiCache); instance
+  details load the instance, then volumes, interfaces, groups, protection
+  attributes and the instance profile's role concurrently (spawned tasks),
+  each best effort; state chips remembered in localStorage
+  `ec2.instances.states`) Browse instances: flat list (Name tag, ID, state, type, AZ, private /
   public IP, launched), state chips (terminated hidden by default), filter by
   name / ID / tag with the remembered history; instance view with details,
   storage (volumes), networking (ENIs, security groups with their rules

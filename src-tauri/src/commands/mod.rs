@@ -5,6 +5,7 @@
 pub mod bookmarks;
 pub mod dynamo;
 pub mod ecs;
+pub mod ec2;
 pub mod elasticache;
 pub mod iam;
 pub mod history;

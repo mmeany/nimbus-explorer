@@ -944,3 +944,8 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .role-pick:hover { background: var(--hover); }
 .role-pick.selected { background: var(--sel); }
 .role-pick-name { font-weight: 600; }
+
+/* EC2 */
+.qbadge.warn-badge { margin-left: 6px; background: var(--badge-custom-bg); color: var(--badge-custom-text); border-color: var(--badge-custom-border); }
+.ec2-states { display: inline-flex; gap: 2px; }
+.ec2-group-head { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; }
