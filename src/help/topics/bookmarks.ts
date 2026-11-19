@@ -21,7 +21,7 @@ A folder's description is its tooltip and the first line of its drop-down. Drop-
 
 ### Opening a bookmark
 
-Click it. The app goes there and selects the item when it's on the page. A bookmark from another region switches the region and says so in the status bar (the drop-down shows a region tag). S3 bookmarks have no region.
+Click it. The app goes there and selects the item when it's on the page. A bookmark from another region switches the region and says so in the status bar (the drop-down shows a region tag). S3 and IAM bookmarks have no region.
 
 ### Arranging the bar
 
