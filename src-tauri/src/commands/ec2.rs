@@ -6,6 +6,7 @@ use crate::ec2_network::{self as network, Address, GroupDetails, SecurityGroup, 
 use crate::ec2_templates::{self as templates, KeyPair, LaunchTemplate, TemplateDetails};
 use crate::elb::{self, LoadBalancer, LoadBalancerDetails, TargetGroup, TargetGroupDetails, TargetRef};
 use crate::autoscaling::{self as asg, Group as AsgGroup, GroupDetails as AsgDetails};
+use crate::ec2_unused::{self as unused, UnusedItem, UnusedReport};
 use crate::ec2_storage::{self as storage, Image, Snapshot, SnapshotDetails};
 use crate::ec2_actions::{self as actions, StateChange, TypeInfo};
 use crate::ec2_tags::{self as tags, CreatedSnapshot, ImageRequest};
@@ -331,4 +332,16 @@ pub async fn ec2_asg_start_refresh(
 pub async fn ec2_asg_cancel_refresh(state: State<'_, AppState>, name: String) -> Result<(), AppError> {
     state.ensure_writable()?;
     asg::cancel_refresh(&*state.connection()?, &name).await
+}
+
+/// Unattached volumes, idle Elastic IPs, unused security groups, orphaned snapshots, unused images.
+#[tauri::command]
+pub async fn ec2_unused(state: State<'_, AppState>) -> Result<UnusedReport, AppError> {
+    unused::report(&*state.connection()?).await
+}
+
+/// Saves the report rows as CSV or JSON (a local write, allowed in read-only mode).
+#[tauri::command]
+pub async fn ec2_export_unused(items: Vec<UnusedItem>, dest: String, format: String) -> Result<usize, AppError> {
+    unused::export(&items, &dest, &format).await
 }

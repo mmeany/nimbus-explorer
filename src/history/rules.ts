@@ -480,6 +480,7 @@ export const RULES: Record<string, Rule> = {
   ec2_asg_processes: (a) => ({ service: "ec2", action: a.suspend ? "Suspend processes" : "Resume processes", target: String(a.name), place: { service: "ec2", kind: "autoScaling", id: String(a.name) }, detail: (a.processes ?? []).join(", ") }),
   ec2_asg_start_refresh: (a, r) => ({ service: "ec2", action: "Start instance refresh", target: String(a.name), place: { service: "ec2", kind: "autoScaling", id: String(a.name) }, detail: [`min healthy ${a.minHealthy}%`, r ? String(r) : ""].filter(Boolean).join(", ") }),
   ec2_asg_cancel_refresh: (a) => ({ service: "ec2", action: "Cancel instance refresh", target: String(a.name), place: { service: "ec2", kind: "autoScaling", id: String(a.name) } }),
+  ec2_export_unused: (a, r) => ({ service: "ec2", action: "Export unused resources", target: base(String(a.dest)), place: { service: "ec2", kind: "unused", id: null }, detail: [typeof r === "number" ? plural(r, "row") : "", `to ${a.dest}`].filter(Boolean).join(", ") }),
   ec2_set_protection: (a) => ({
     service: "ec2",
     action: "Change instance protection",

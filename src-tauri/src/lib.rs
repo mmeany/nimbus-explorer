@@ -15,6 +15,7 @@ mod ec2_network;
 mod ec2_storage;
 mod ec2_tags;
 mod ec2_templates;
+mod ec2_unused;
 mod elasticache;
 mod elb;
 mod elasticache_actions;
@@ -261,6 +262,8 @@ pub fn run() {
             commands::ec2::ec2_asg_processes,
             commands::ec2::ec2_asg_start_refresh,
             commands::ec2::ec2_asg_cancel_refresh,
+            commands::ec2::ec2_unused,
+            commands::ec2::ec2_export_unused,
             commands::elasticache::ec_list_groups,
             commands::elasticache::ec_list_serverless,
             commands::elasticache::ec_group,

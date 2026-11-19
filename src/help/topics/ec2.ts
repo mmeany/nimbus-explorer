@@ -269,6 +269,18 @@ All three are disabled in read-only mode.`,
 
 You can cancel a running refresh; instances already replaced stay replaced.`,
   },
+  "ec2.unused": {
+    title: "Unused resources",
+    body: `Resources in this region that look unused and may be costing money:
+
+- **Volumes** not attached to any instance.
+- **Elastic IPs** not associated with anything (charged by the hour).
+- **Security groups** no network interface has (default groups aren't listed; one that other groups' rules refer to says so).
+- **Snapshots** whose volume no longer exists and that none of your images use.
+- **AMIs** no instance in this region was launched from (launch templates or Auto Scaling groups may still refer to them).
+
+Check before deleting anything: the app doesn't delete them. Click a kind to narrow the list; open a row to see the resource. **Export CSV… / JSON…** saves the rows shown. Parts AWS wouldn't let the app read are named at the top and left out.`,
+  },
   "ec2.tags": {
     title: "Tags",
     body: `Key / value labels on an EC2 resource. Edit, add or remove rows and **Save**: new and changed tags are set, removed ones deleted, the rest left alone.
@@ -318,6 +330,7 @@ export function ec2PlaceTopic(kind: Ec2Kind | null, id: string | null): Ec2Topic
   if (kind === "interfaces") return id ? "ec2.interface" : "ec2.interfaces";
   if (kind === "addresses") return "ec2.addresses";
   if (kind === "keyPairs") return "ec2.keyPairs";
+  if (kind === "unused") return "ec2.unused";
   if (kind === "autoScaling") return id ? "ec2.asg" : "ec2.autoScaling";
   if (kind === "loadBalancers") return id ? "ec2.loadBalancer" : "ec2.loadBalancers";
   if (kind === "targetGroups") return id ? "ec2.targetGroup" : "ec2.targetGroups";

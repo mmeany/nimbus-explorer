@@ -957,3 +957,4 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .sync-table tr.selected-row td { background: var(--sel); }
 .ec2-pick-list { max-height: 280px; overflow: auto; border: 1px solid var(--border-light); padding: 4px 8px; margin-bottom: 8px; }
 .sync-table.ec2-wrap td { white-space: normal; }
+.ec2-bar { padding: 6px 8px; gap: 6px; border-bottom: 1px solid var(--border-light); }

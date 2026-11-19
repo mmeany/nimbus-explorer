@@ -1248,7 +1248,13 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   links here; MiniStack runs it all) Auto Scaling groups: details, instances, activities, suspended
   processes; set desired / min / max, suspend / resume processes, start /
   cancel instance refresh.
-- 17.11 Unused resources report: unattached volumes, unassociated Elastic
+- 17.11 ✅ (`src-tauri/src/ec2_unused.rs` `compute` (pure, tested) + `report`,
+  `services/ec2/UnusedView.tsx`, Place kind "unused"; each part loads on its
+  own and one that fails is named in `skipped` and left out rather than
+  counted as unused; default security groups are never listed; a snapshot
+  counts only if its volume is gone and no own image uses it; export writes
+  the rows shown (CSV or JSON, `.s3x-part` then rename; a local write with a
+  history rule)) Unused resources report: unattached volumes, unassociated Elastic
   IPs, security groups nothing uses, snapshots of deleted volumes, AMIs no
   instance uses; export to CSV / JSON.
 - 17.12 Docs (`docs/ec2.md`, README, help topics).

@@ -240,6 +240,8 @@ export const ec2Api = {
   asgProcesses: (name: string, processes: string[], suspend: boolean) => call<void>("ec2_asg_processes", { name, processes, suspend }),
   asgStartRefresh: (name: string, minHealthy: number, warmup: number | null, skipMatching: boolean) => call<string>("ec2_asg_start_refresh", { name, minHealthy, warmup, skipMatching }),
   asgCancelRefresh: (name: string) => call<void>("ec2_asg_cancel_refresh", { name }),
+  unused: () => call<UnusedReport>("ec2_unused"),
+  exportUnused: (items: UnusedItem[], dest: string, format: "csv" | "json") => call<number>("ec2_export_unused", { items, dest, format }),
   ssmAgent: (id: string) => call<SsmAgent>("ec2_ssm_agent", { id }),
   snapshotInstance: (instanceId: string, description: string | null, excludeRoot: boolean) => call<CreatedSnapshot[]>("ec2_snapshot_instance", { instanceId, description, excludeRoot }),
 };
@@ -608,6 +610,22 @@ export const ASG_PROCESSES: [string, string][] = [
   ["AddToLoadBalancer", "registers new instances with target groups"],
   ["InstanceRefresh", "replaces instances during an instance refresh"],
 ];
+
+export interface UnusedItem {
+  /** The EC2 list kind: volumes, addresses, securityGroups, snapshots or images. */
+  kind: string;
+  id: string;
+  name: string | null;
+  reason: string;
+  sizeGib: number | null;
+  created: string | null;
+}
+
+export interface UnusedReport {
+  items: UnusedItem[];
+  /** Parts that couldn't be checked. */
+  skipped: string[];
+}
 
 export interface SsmAgent {
   managed: boolean;

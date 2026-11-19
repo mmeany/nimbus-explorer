@@ -10,7 +10,7 @@ import { ErrorPanel } from "../../components/ErrorPanel";
 import { FileList, type Column, type Row } from "../../components/FileList";
 import { FilterBox } from "../../components/FilterBox";
 import { HelpTopic } from "../../components/HelpDialog";
-import { AutoScalingIcon, DeleteIcon, Ec2Icon, EditIcon, ImageIcon, InstanceIcon, KeyIcon, LoadBalancerIcon, TargetIcon, NetworkIcon, TemplateIcon, ShieldIcon, SnapshotIcon, LockIcon, PlayIcon, RedriveIcon, RefreshIcon, StopIcon } from "../../components/Icons";
+import { AutoScalingIcon, UnusedIcon, DeleteIcon, Ec2Icon, EditIcon, ImageIcon, InstanceIcon, KeyIcon, LoadBalancerIcon, TargetIcon, NetworkIcon, TemplateIcon, ShieldIcon, SnapshotIcon, LockIcon, PlayIcon, RedriveIcon, RefreshIcon, StopIcon } from "../../components/Icons";
 import { PageBar } from "../../components/PageBar";
 import { TreeNote, TreeRow } from "../../components/TreeRow";
 import { formatDate } from "../../format";
@@ -26,12 +26,13 @@ import { addressConfig, AddressView, groupConfig, interfaceConfig, InterfaceView
 import { ResourceList, type KindConfig } from "./ResourceList";
 import { lbConfig, LoadBalancerView, TargetGroupView, tgConfig } from "./ElbViews";
 import { asgConfig, AsgView } from "./AsgViews";
+import { UnusedView } from "./UnusedView";
 import { keyPairConfig, KeyPairView, templateConfig, TemplateView } from "./TemplateViews";
 import { imageConfig, ImageView, snapshotConfig, SnapshotView, STORAGE_ICONS, volumeConfig, VolumeView, type ImageScope } from "./StorageViews";
 import { store, stored } from "./common";
 
 /** Kinds built so far, in tree / overview order. */
-const KINDS: Ec2Kind[] = ["instances", "images", "volumes", "snapshots", "securityGroups", "vpcs", "subnets", "interfaces", "addresses", "keyPairs", "launchTemplates", "loadBalancers", "targetGroups", "autoScaling"];
+const KINDS: Ec2Kind[] = ["instances", "images", "volumes", "snapshots", "securityGroups", "vpcs", "subnets", "interfaces", "addresses", "keyPairs", "launchTemplates", "loadBalancers", "targetGroups", "autoScaling", "unused"];
 
 /** Shown under a Network node in the tree. */
 const NETWORK_KINDS: Ec2Kind[] = ["vpcs", "subnets", "interfaces", "addresses"];
@@ -54,7 +55,7 @@ const SINGULAR: Record<Ec2Kind, string> = {
   unused: "Unused resources",
 };
 
-const KIND_ICON: Partial<Record<Ec2Kind, ReactNode>> = { instances: <InstanceIcon state="running" />, ...STORAGE_ICONS, securityGroups: <ShieldIcon />, vpcs: <NetworkIcon />, subnets: <NetworkIcon />, interfaces: <NetworkIcon />, addresses: <NetworkIcon />, keyPairs: <KeyIcon />, launchTemplates: <TemplateIcon />, loadBalancers: <LoadBalancerIcon />, targetGroups: <TargetIcon />, autoScaling: <AutoScalingIcon /> };
+const KIND_ICON: Partial<Record<Ec2Kind, ReactNode>> = { instances: <InstanceIcon state="running" />, ...STORAGE_ICONS, securityGroups: <ShieldIcon />, vpcs: <NetworkIcon />, subnets: <NetworkIcon />, interfaces: <NetworkIcon />, addresses: <NetworkIcon />, keyPairs: <KeyIcon />, launchTemplates: <TemplateIcon />, loadBalancers: <LoadBalancerIcon />, targetGroups: <TargetIcon />, autoScaling: <AutoScalingIcon />, unused: <UnusedIcon /> };
 
 const ABOUT: Record<Ec2Kind, string> = {
   instances: "Virtual machines: state, type, addresses, storage, networking",
@@ -555,7 +556,10 @@ export function useEc2Service(shell: Shell): ServiceUi {
   let content: ReactNode = null;
   let status = "";
   const listConfig = kind ? lists[kind] : undefined;
-  if (active && kind && !id && listConfig) {
+  if (active && kind === "unused") {
+    content = <UnusedView shell={shell} reloadToken={reloadToken} onStatus={setListStatus} />;
+    status = listStatus;
+  } else if (active && kind && !id && listConfig) {
     content = <ResourceList key={kind} shell={shell} config={listConfig} reloadToken={reloadToken} onStatus={setListStatus} />;
     status = listStatus;
   } else if (active && kind && kind !== "instances" && id) {
