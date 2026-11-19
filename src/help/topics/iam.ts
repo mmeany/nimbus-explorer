@@ -141,6 +141,19 @@ Documents are loaded when you first show them.`,
 
 Both numbers are remembered. Inactive keys are left out. Click a user to open it; disabling or deleting credentials is done in the console or the CLI.`,
   },
+  "iam.simulate": {
+    title: "Policy simulator",
+    body: `Asks AWS (SimulatePrincipalPolicy) whether this user, user group or role may perform actions. Nothing is changed.
+
+- **Actions**: exact names such as \`s3:GetObject\`, separated by commas or new lines (up to 100). The simulator doesn't accept wildcards.
+- **Resource ARNs**: optional; empty means any resource.
+- **Context keys**: values for conditions (\`aws:SourceIp\`, \`aws:MultiFactorAuthPresent\`…). Keys the policies use but you didn't give are listed in the results, with a button to add them.
+- **Extra identity policy**: tests a policy as if it were attached.
+
+Each result is **Allowed**, **Denied (explicit)** (a Deny matched) or **Denied (implicit)** (nothing allows it). Click a row for the matching statements, highlighted in their policies, and the permissions boundary and SCP effects. Resource-based policies aren't included. A user's simulation includes its groups' policies.
+
+Inputs and results are kept while the app runs.`,
+  },
   "iam.policy.attached": {
     title: "Attached to",
     body: `The users, user groups and roles in this account that have the policy attached, and those using it as their **permissions boundary** (users and roles only). Click a name to open it.`,

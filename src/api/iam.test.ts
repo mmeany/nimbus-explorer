@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysSince, filterPolicies, limitRows, quotaRows, unusedCredentials, type CredentialRow, type KeyCredential, matchesFilter, policyNameOf, prettyJson, sessionText, trustText, type PolicySummary, type Trust } from "./iam";
+import { daysSince, filterPolicies, parseActions, splitList, statementRange, limitRows, quotaRows, unusedCredentials, type CredentialRow, type KeyCredential, matchesFilter, policyNameOf, prettyJson, sessionText, trustText, type PolicySummary, type Trust } from "./iam";
 
 const t = (kind: string, principal: string): Trust => ({ effect: "Allow", kind, principal, actions: ["sts:AssumeRole"], conditions: false, sid: null });
 
@@ -102,5 +102,21 @@ describe("iam account", () => {
     expect(f.map((x) => `${x.user}:${x.credential}:${x.kind}`)).toEqual(["idle:Console password:unused", "never:Console password:never", "never:Access key 1:never", "old:Access key 1:old"]);
     expect(f[0].issue).toBe("Not used for 322 days");
     expect(f[2].days).toBe(10);
+  });
+});
+
+describe("iam simulator", () => {
+  it("parses action lists", () => {
+    expect(parseActions("s3:GetObject, s3:PutObject\n s3:GetObject")).toEqual({ actions: ["s3:GetObject", "s3:PutObject"], error: null });
+    expect(parseActions("s3:Get*").error).toMatch(/wildcards/);
+    expect(parseActions("GetObject").error).toMatch(/service:Action/);
+    expect(splitList(" a\n\nb , c ")).toEqual(["a", "b", "c"]);
+  });
+
+  it("finds a statement by line and column", () => {
+    const doc = '{\n  "Statement": [\n    {"Effect": "Allow"}\n  ]\n}';
+    expect(statementRange(doc, [3, 5], [3, 23])).toEqual(['{\n  "Statement": [\n    ', '{"Effect": "Allow"}', "\n  ]\n}"]);
+    expect(statementRange(doc, [9, 1], [9, 2])).toBeNull();
+    expect(statementRange(doc, null, [1, 1])).toBeNull();
   });
 });

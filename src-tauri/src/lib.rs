@@ -18,6 +18,7 @@ mod error;
 mod history;
 mod iam;
 mod iam_account;
+mod iam_simulate;
 mod lambda;
 mod lambda_admin;
 mod lambda_code;
@@ -232,6 +233,7 @@ pub fn run() {
             commands::iam::iam_account,
             commands::iam::iam_credential_report,
             commands::iam::iam_export_credential_report,
+            commands::iam::iam_simulate,
             commands::sfn::sfn_list,
             commands::sfn::sfn_details_many,
             commands::sfn::sfn_describe,

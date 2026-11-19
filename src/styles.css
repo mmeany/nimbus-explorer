@@ -909,3 +909,14 @@ body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-sel
 .iam-inline { margin: 2px 0 6px; }
 .iam-inline > .link-btn { font-weight: 600; }
 .sync-table tr.dimmed td { opacity: 0.55; }
+.sim-inputs { max-width: 900px; }
+.sim-field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+.sim-field > span { font-weight: 600; }
+.sim-field .row { margin: 2px 0; }
+.sim-inputs textarea.text-input { width: 100%; box-sizing: border-box; resize: vertical; height: auto; padding: 3px 6px; }
+.qbadge.sim-allowed { border-color: var(--tok-string); color: var(--tok-string); background: transparent; }
+.qbadge.sim-explicit { border-color: var(--danger); color: var(--danger); background: transparent; }
+.qbadge.sim-implicit { border-color: var(--muted); color: var(--muted); background: transparent; }
+.sim-match { margin: 6px 0 10px; }
+.sim-doc { max-height: 320px; overflow: auto; margin: 4px 0; padding: 6px 8px; border: 1px solid var(--border); white-space: pre; }
+.sim-doc mark { background: var(--sel); color: inherit; }

@@ -6,6 +6,7 @@ import { daysSince, iamApi, sessionText, trustText, type Attached, type GroupDet
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { HelpTopic } from "../../components/HelpDialog";
 import { PolicyDocument } from "./PolicyDocument";
+import { SimulatorTab } from "./SimulatorTab";
 import { formatDate } from "../../format";
 import type { HelpTopicId } from "../../help";
 import { IAM_ROOT } from "../../shell/places";
@@ -308,6 +309,7 @@ function UserBody({ shell, u }: { shell: Shell; u: UserDetails }) {
       ),
     },
     { id: "tags", label: `Tags (${u.tags.length})`, help: "iam.user", render: () => <Tags tags={u.tags} /> },
+    { id: "simulate", label: "Simulate", help: "iam.simulate", render: () => <SimulatorTab kind="users" name={u.name} arn={u.arn} /> },
   ];
   return (
     <PrincipalFrame
@@ -388,6 +390,7 @@ function GroupBody({ shell, g }: { shell: Shell; g: GroupDetails }) {
         />
       ),
     },
+    { id: "simulate", label: "Simulate", help: "iam.simulate", render: () => <SimulatorTab kind="groups" name={g.name} arn={g.arn} /> },
   ];
   return <PrincipalFrame shell={shell} title={g.name} arn={g.arn} badges={<span className="qbadge">User group</span>} tabs={tabs} />;
 }
@@ -463,6 +466,7 @@ function RoleBody({ shell, r }: { shell: Shell; r: RoleDetails }) {
       ),
     },
     { id: "tags", label: `Tags (${r.tags.length})`, help: "iam.role", render: () => <Tags tags={r.tags} /> },
+    { id: "simulate", label: "Simulate", help: "iam.simulate", render: () => <SimulatorTab kind="roles" name={r.name} arn={r.arn} /> },
   ];
   return (
     <PrincipalFrame

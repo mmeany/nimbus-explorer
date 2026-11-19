@@ -103,3 +103,12 @@ pub async fn iam_export_credential_report(
 ) -> Result<usize, AppError> {
     crate::iam_account::export_report(&*state.connection()?, &dest).await
 }
+
+/// Policy simulator (SimulatePrincipalPolicy; changes nothing).
+#[tauri::command]
+pub async fn iam_simulate(
+    state: State<'_, AppState>,
+    request: crate::iam_simulate::SimRequest,
+) -> Result<Vec<crate::iam_simulate::SimResult>, AppError> {
+    crate::iam_simulate::simulate(&*state.connection()?, &request).await
+}

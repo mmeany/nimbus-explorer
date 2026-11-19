@@ -1079,7 +1079,19 @@ Usual rules: "Add bookmark…" in row and tree menus, `storageKey` on every
   to a file). **Unused credentials**: from the credential report, passwords
   and access keys not used for N days (remembered) or never used, plus
   active keys older than N days, each linking to its user.
-- 16.4 Policy simulator (`iam_simulate.rs`, a tab on users, groups and
+- 16.4 ✅ (`src-tauri/src/iam_simulate.rs`, `services/iam/SimulatorTab.tsx`, a
+  Simulate tab on users, groups and roles; inputs and results kept per ARN
+  for the session (module map) so switching tabs doesn't lose them; checked
+  in both layers: 1–100 exact actions (**no wildcards: the API refuses
+  them**, so the plan's "wildcards" became a clear message), ≤ 100 resources,
+  context key types, extra policy JSON; results paged by marker; matched
+  statements resolved in Rust to the principal's (and, for users, its
+  groups') inline / managed policies or the pasted one via
+  `matches_source` (name, ARN, or "_name" / "/name" suffix, since
+  SourcePolicyId's format isn't documented), highlighted with
+  `statementRange` (1-based line / column, end inclusive: unverified against
+  real AWS); MiniStack always answers implicit deny without evaluating, so
+  only the call is covered there) Policy simulator (`iam_simulate.rs`, a tab on users, groups and
   roles): SimulatePrincipalPolicy with actions (free text, comma / line
   separated, wildcards), optional resource ARNs, context keys, and an
   optional extra policy to test (pasted JSON); results per action and

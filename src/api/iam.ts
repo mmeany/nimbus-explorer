@@ -349,3 +349,87 @@ export function unusedCredentials(rows: CredentialRow[], unusedDays: number, age
   }
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// Policy simulator (16.4)
+
+export interface ContextIn {
+  key: string;
+  type: string;
+  values: string[];
+}
+
+export interface SimRequest {
+  kind: "users" | "groups" | "roles";
+  name: string;
+  arn: string;
+  actions: string[];
+  resources: string[];
+  context: ContextIn[];
+  extraPolicy: string | null;
+}
+
+export interface Matched {
+  sourceId: string;
+  sourceType: string | null;
+  policy: string | null;
+  document: string | null;
+  /** 1-based [line, column]. */
+  start: [number, number] | null;
+  end: [number, number] | null;
+}
+
+export interface SimResult {
+  action: string;
+  resource: string;
+  decision: "allowed" | "explicitDeny" | "implicitDeny" | string;
+  matched: Matched[];
+  missingContext: string[];
+  boundaryAllowed: boolean | null;
+  organizationsAllowed: boolean | null;
+  details: [string, string][];
+}
+
+export const iamSimApi = {
+  simulate: (request: SimRequest) => call<SimResult[]>("iam_simulate", { request }),
+};
+
+export const CONTEXT_TYPES = ["string", "stringList", "numeric", "numericList", "boolean", "booleanList", "ip", "ipList", "binary", "binaryList", "date", "dateList"] as const;
+
+/** Splits on commas, whitespace and new lines; drops blanks and repeats (keeping order). */
+export function splitList(text: string): string[] {
+  return [...new Set(text.split(/[\s,]+/).filter(Boolean))];
+}
+
+/** Action names, and a message for the first one the simulator would refuse (it needs exact names). */
+export function parseActions(text: string): { actions: string[]; error: string | null } {
+  const actions = splitList(text);
+  for (const a of actions) {
+    if (/[*?]/.test(a)) return { actions, error: `${a}: the simulator needs exact action names; wildcards aren't supported.` };
+    if (!/^[A-Za-z0-9-]+:[A-Za-z0-9]+$/.test(a)) return { actions, error: `${a}: actions look like service:Action, for example s3:GetObject.` };
+  }
+  return { actions, error: null };
+}
+
+export function decisionText(d: string): string {
+  return d === "allowed" ? "Allowed" : d === "explicitDeny" ? "Denied (explicit)" : d === "implicitDeny" ? "Denied (implicit)" : d;
+}
+
+/**
+ * A document split around a statement from 1-based [line, column] positions
+ * (end column inclusive). Positions outside the text give null.
+ */
+export function statementRange(doc: string, start: [number, number] | null, end: [number, number] | null): [string, string, string] | null {
+  if (!start || !end) return null;
+  const lines = doc.split("\n");
+  const offset = ([line, col]: [number, number]) => {
+    if (line < 1 || line > lines.length || col < 1) return -1;
+    let o = 0;
+    for (let i = 0; i < line - 1; i++) o += lines[i].length + 1;
+    return Math.min(o + col - 1, o + lines[line - 1].length);
+  };
+  const a = offset(start);
+  const b = offset(end);
+  if (a < 0 || b < a) return null;
+  return [doc.slice(0, a), doc.slice(a, b + 1), doc.slice(b + 1)];
+}
