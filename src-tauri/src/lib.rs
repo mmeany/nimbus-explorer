@@ -8,6 +8,7 @@ mod ecs;
 mod elasticache;
 mod elasticache_actions;
 mod elasticache_events;
+mod elasticache_params;
 mod elasticache_snapshots;
 mod ecs_actions;
 mod ecs_taskdefs;
@@ -209,6 +210,7 @@ pub fn run() {
             commands::elasticache::ec_delete_snapshot,
             commands::elasticache::ec_restore_snapshot,
             commands::elasticache::ec_events,
+            commands::elasticache::ec_parameters,
             commands::sfn::sfn_list,
             commands::sfn::sfn_details_many,
             commands::sfn::sfn_describe,

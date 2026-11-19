@@ -995,7 +995,12 @@ connections, no Redis client crate), metrics.
   `elasticache.events.minutes`; Events tab on groups and serverless caches)
   Events: DescribeEvents for the group and its member clusters, merged
   newest first, up to 14 days, paged on screen.
-- 15.6 Parameter group (read only): the group in use, option to show only
+- 15.6 ✅ (`src-tauri/src/elasticache_params.rs`, `services/elasticache/ParametersTab.tsx`;
+  the group comes from the member cluster settings (15.1); changed = Source
+  "user", filtered in the backend too because MiniStack ignores the Source
+  filter; node-type-specific parameters show this group's node type's value;
+  changed-only toggle remembered in localStorage `elasticache.params.changedOnly`)
+  Parameter group (read only): the group in use, option to show only
   values changed from the default.
 - 15.7 Service updates: pending updates per cache (severity, status,
   apply-by date); "Apply now" via BatchApplyUpdateAction (a write).

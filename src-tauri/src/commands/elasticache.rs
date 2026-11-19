@@ -4,6 +4,7 @@ use super::AppState;
 use crate::elasticache::{self as ec, Group, GroupDetails, Serverless};
 use crate::elasticache_actions as actions;
 use crate::elasticache_events::{self as events, Event};
+use crate::elasticache_params::{self as params, ParameterGroup};
 use crate::elasticache_snapshots::{
     self as snapshots, Kind, RestoreRequest, Restored, Snapshot, SnapshotList,
 };
@@ -119,4 +120,14 @@ pub async fn ec_events(
     minutes: i32,
 ) -> Result<Vec<Event>, AppError> {
     events::events(&*state.connection()?, kind, &id, minutes).await
+}
+
+/// A parameter group and its parameters (only changed ones when `changed_only`).
+#[tauri::command]
+pub async fn ec_parameters(
+    state: State<'_, AppState>,
+    name: String,
+    changed_only: bool,
+) -> Result<ParameterGroup, AppError> {
+    params::parameter_group(&*state.connection()?, &name, changed_only).await
 }

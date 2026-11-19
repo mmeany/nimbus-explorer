@@ -110,11 +110,38 @@ export const ecApi = {
   deleteSnapshot: (kind: SnapshotKind, name: string) => call<void>("ec_delete_snapshot", { kind, name }),
   /** Events of a group (and its nodes) or a serverless cache, newest first, for the last `minutes` (≤ 14 days). */
   events: (kind: SnapshotKind, id: string, minutes: number) => call<EcEvent[]>("ec_events", { kind, id, minutes }),
+  /** A parameter group and its parameters (only those changed from the defaults when `changedOnly`). */
+  parameters: (name: string, changedOnly: boolean) => call<ParameterGroup>("ec_parameters", { name, changedOnly }),
   restoreSnapshot: (request: { kind: SnapshotKind; snapshot: string; name: string; description: string | null; nodeType: string | null; replicas: number }) =>
     call<{ name: string; copiedFromSource: boolean }>("ec_restore_snapshot", { request }),
 };
 
 export type SnapshotKind = "group" | "serverless";
+
+export interface CacheParameter {
+  name: string;
+  value: string | null;
+  description: string | null;
+  /** "user" = changed from the default. */
+  source: string | null;
+  dataType: string | null;
+  allowedValues: string | null;
+  modifiable: boolean | null;
+  minimumEngineVersion: string | null;
+  /** immediate or requires-reboot. */
+  changeType: string | null;
+  /** [node type, value] for parameters that depend on the node type. */
+  perNodeType: [string, string][];
+}
+
+export interface ParameterGroup {
+  name: string;
+  family: string | null;
+  description: string | null;
+  arn: string | null;
+  isGlobal: boolean;
+  parameters: CacheParameter[];
+}
 
 export interface EcEvent {
   date: string | null;

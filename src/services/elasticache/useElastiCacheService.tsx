@@ -18,6 +18,7 @@ import { TREE_LIMIT, usePaging } from "../../state/paged";
 import { GroupView, ServerlessView, type GroupTab, type ServerlessTab } from "./CacheViews";
 import { ConnectTab } from "./ConnectTab";
 import { EventsTab } from "./EventsTab";
+import { ParametersTab } from "./ParametersTab";
 import { SnapshotList } from "./Snapshots";
 
 const COLUMNS: Column[] = [
@@ -252,6 +253,12 @@ export function useElastiCacheService(shell: Shell): ServiceUi {
     { id: "connect", label: "Connect", help: "elasticache.connect", render: (g) => <ConnectTab shell={shell} t={groupTarget(g)} /> },
     { id: "snapshots", label: "Snapshots", help: "elasticache.snapshots", render: (g) => <SnapshotList shell={shell} cache={{ kind: "group", id: g.id }} reloadToken={reloadToken} /> },
     { id: "events", label: "Events", help: "elasticache.events", render: (g) => <EventsTab shell={shell} kind="group" id={g.id} reloadToken={reloadToken} /> },
+    {
+      id: "parameters",
+      label: "Parameters",
+      help: "elasticache.parameters",
+      render: (g) => <ParametersTab shell={shell} group={g.settings?.parameterGroup ?? null} status={g.settings?.parameterStatus ?? null} nodeType={g.nodeType} />,
+    },
   ];
   const serverlessTabs: ServerlessTab[] = [
     { id: "connect", label: "Connect", help: "elasticache.connect", render: (s) => <ConnectTab shell={shell} t={serverlessTarget(s)} /> },

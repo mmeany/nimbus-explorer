@@ -63,3 +63,14 @@ describe("snapshot and cache names", () => {
     expect(cacheNameProblem("9lives")).not.toBeNull();
   });
 });
+
+describe("parameterValue", () => {
+  it("shows a node-type-specific value for this group's node type", async () => {
+    const { parameterValue } = await import("../services/elasticache/ParametersTab");
+    const base = { name: "maxmemory", value: null, description: null, source: "system", dataType: "integer", allowedValues: null, modifiable: false, minimumEngineVersion: null, changeType: null };
+    const p = { ...base, perNodeType: [["cache.t4g.micro", "460000000"], ["cache.r7g.large", "14000000000"]] as [string, string][] };
+    expect(parameterValue(p, "cache.t4g.micro")).toBe("460000000 (for cache.t4g.micro)");
+    expect(parameterValue(p, "cache.m5.large")).toBe("varies by node type");
+    expect(parameterValue({ ...base, value: "300", perNodeType: [] }, null)).toBe("300");
+  });
+});
