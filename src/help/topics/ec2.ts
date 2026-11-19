@@ -48,6 +48,16 @@ An *auto-assigned* public IP is released when the instance stops; an *Elastic IP
 - A source that is another security group means "any resource that has that group". Click it to open the group.
 - **open to the internet** marks inbound rules from 0.0.0.0/0 or ::/0.`,
   },
+  "ec2.instance.connect": {
+    title: "Connect",
+    body: `Commands for reaching the instance from your own machine, with this profile and region filled in. The app itself never connects; copy a command into a terminal.
+
+- **Session Manager** (shell, SSH, port forwarding, Remote Desktop): goes through AWS Systems Manager, so no inbound port has to be open and private instances work. Needs the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) for the AWS CLI, and the instance must be *managed*: running the SSM agent, with a role that allows Systems Manager. The top of the tab says whether it is.
+- **SSH / Remote Desktop over the internet**: needs a public address and the port (22 or 3389) open to your address in a security group.
+- **EC2 Instance Connect**: sends a one-time key, so no key pair is needed. Private instances go through an Instance Connect Endpoint in the VPC.
+
+The SSH user depends on the image (ec2-user, ubuntu, admin, …); the commands guess from the platform.`,
+  },
   "ec2.instance.status": {
     title: "Status checks",
     body: `AWS's health checks for a running instance, and maintenance it has scheduled.

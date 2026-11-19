@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allowedActions, instanceLabel, kindOfId, tagProblem, isOpenToWorld, matchesInstanceFilter, ruleSource, typeText, type Rule } from "./ec2";
+import { allowedActions, connectCommands, guessUser, instanceLabel, kindOfId, tagProblem, isOpenToWorld, matchesInstanceFilter, ruleSource, typeText, type Rule } from "./ec2";
 
 const inst = { id: "i-0abc123", name: "Web Server", tags: [["Name", "Web Server"], ["env", "Prod"]] as [string, string][] };
 
@@ -63,5 +63,28 @@ describe("tags", () => {
     expect(kindOfId("vol-1")).toBe("volumes");
     expect(kindOfId("eipalloc-1")).toBe("addresses");
     expect(kindOfId("weird")).toBeNull();
+  });
+});
+
+describe("connect", () => {
+  const linux = { id: "i-1", keyName: "dev", publicIp: "1.2.3.4", publicDns: "ec2-1.example", privateIp: "10.0.0.1", windows: false, platform: "Linux/UNIX" };
+  it("builds Linux commands", () => {
+    const c = connectCommands(linux, "dev", "eu-west-2");
+    expect(c.map((x) => x.id)).toEqual(["ssm-shell", "ssm-ssh", "ssm-forward", "ssh", "eic"]);
+    expect(c[0].command).toBe("aws ssm start-session --target i-1 --profile dev --region eu-west-2");
+    expect(c[3].command).toBe("ssh -i ~/.ssh/dev.pem ec2-user@ec2-1.example");
+    expect(c[1].command).toContain('ProxyCommand="aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p --profile dev --region eu-west-2" ec2-user@i-1');
+  });
+  it("drops internet commands for private instances and uses an endpoint for Instance Connect", () => {
+    const c = connectCommands({ ...linux, publicIp: null, publicDns: null, keyName: null }, null, "us-east-1");
+    expect(c.map((x) => x.id)).toEqual(["ssm-shell", "ssm-ssh", "ssm-forward", "eic"]);
+    expect(c[3].command).toBe("aws ec2-instance-connect ssh --instance-id i-1 --os-user ec2-user --connection-type eice --region us-east-1");
+    expect(c[1].command.startsWith("ssh -o ProxyCommand")).toBe(true);
+  });
+  it("builds Windows commands", () => {
+    const c = connectCommands({ ...linux, windows: true, platform: "Windows" }, "dev", "eu-west-2", "http://localhost:4566");
+    expect(c.map((x) => x.id)).toEqual(["ssm-shell", "ssm-rdp", "rdp"]);
+    expect(c[0].command).toContain("--endpoint-url http://localhost:4566");
+    expect(guessUser({ platform: "Ubuntu Pro", windows: false })).toBe("ubuntu");
   });
 });

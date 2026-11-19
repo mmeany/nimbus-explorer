@@ -17,6 +17,7 @@ import { formatDate } from "../../format";
 import { EC2_KIND_LABEL, EC2_ROOT, type Ec2Kind, type Place } from "../../shell/places";
 import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, usePaging } from "../../state/paged";
+import { ConnectTab } from "./ConnectTab";
 import { ChangeTypeDialog, ProtectionDialog, StopDialog } from "./InstanceDialogs";
 import { CreateImageDialog, SnapshotDialog, TagEditorDialog } from "./TagDialogs";
 import { ConsoleTab, StatusTab, UserDataTab } from "./InstanceExtras";
@@ -439,6 +440,7 @@ export function useEc2Service(shell: Shell): ServiceUi {
   ) : null;
 
   const instanceTabs: InstanceTab[] = [
+    { id: "connect", label: "Connect", help: "ec2.instance.connect", render: (i) => <ConnectTab shell={shell} i={i} /> },
     { id: "status", label: "Status checks", help: "ec2.instance.status", render: (i) => <StatusTab shell={shell} i={i} /> },
     { id: "console", label: "Console", help: "ec2.instance.console", render: (i) => <ConsoleTab shell={shell} i={i} /> },
     { id: "userdata", label: "User data", help: "ec2.instance.userdata", render: (i) => <UserDataTab key={i.id} shell={shell} i={i} /> },

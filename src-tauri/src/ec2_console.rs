@@ -242,6 +242,55 @@ pub async fn user_data(conn: &Connection, id: &str) -> Result<UserData, AppError
     decode_user_data(out.user_data().and_then(|v| v.value()))
 }
 
+/// What Systems Manager knows about an instance (its agent), for the Connect tab.
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SsmAgent {
+    /// false = Systems Manager doesn't manage the instance (no agent, no role, or no route to SSM).
+    pub managed: bool,
+    /// Online, ConnectionLost, Inactive.
+    pub ping_status: Option<String>,
+    pub last_ping: Option<String>,
+    pub agent_version: Option<String>,
+    pub latest_agent: Option<bool>,
+    pub platform: Option<String>,
+    /// Set when Systems Manager couldn't be asked (permissions, endpoint).
+    pub error: Option<String>,
+}
+
+pub async fn ssm_agent(conn: &Connection, id: &str) -> SsmAgent {
+    let c = crate::ssm::client(conn);
+    let res = c
+        .describe_instance_information()
+        .filters(
+            aws_sdk_ssm::types::InstanceInformationStringFilter::builder()
+                .key("InstanceIds")
+                .values(id)
+                .build()
+                .expect("key and values are set"),
+        )
+        .send()
+        .await;
+    match res {
+        Ok(o) => match o.instance_information_list().first() {
+            Some(i) => SsmAgent {
+                managed: true,
+                ping_status: i.ping_status().map(|p| p.as_str().to_string()),
+                last_ping: iso(i.last_ping_date_time()),
+                agent_version: i.agent_version().map(String::from),
+                latest_agent: i.is_latest_version(),
+                platform: i.platform_name().map(String::from),
+                error: None,
+            },
+            None => SsmAgent::default(),
+        },
+        Err(e) => SsmAgent {
+            error: Some(err(conn, e).message),
+            ..Default::default()
+        },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -280,6 +329,8 @@ mod emulator_tests {
         }
         let _ = console_output(&conn, &id, true).await;
         let _ = screenshot(&conn, &id).await;
+        let agent = ssm_agent(&conn, &id).await;
+        assert!(agent.managed || agent.error.is_some() || agent.ping_status.is_none());
         let u = user_data(&conn, &id).await.unwrap();
         assert!(!u.compressed);
     }

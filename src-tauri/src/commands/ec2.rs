@@ -4,7 +4,7 @@ use super::AppState;
 use crate::ec2::{self, Instance, InstanceDetails};
 use crate::ec2_actions::{self as actions, StateChange, TypeInfo};
 use crate::ec2_tags::{self as tags, CreatedSnapshot, ImageRequest};
-use crate::ec2_console::{self as console, ConsoleOutput, InstanceStatus, UserData};
+use crate::ec2_console::{self as console, ConsoleOutput, InstanceStatus, SsmAgent, UserData};
 use crate::error::AppError;
 use tauri::State;
 
@@ -147,4 +147,10 @@ pub async fn ec2_snapshot_instance(
 ) -> Result<Vec<CreatedSnapshot>, AppError> {
     state.ensure_writable()?;
     tags::snapshot_instance(&*state.connection()?, &instance_id, description.as_deref(), exclude_root).await
+}
+
+/// Whether Systems Manager manages the instance (for Session Manager).
+#[tauri::command]
+pub async fn ec2_ssm_agent(state: State<'_, AppState>, id: String) -> Result<SsmAgent, AppError> {
+    Ok(console::ssm_agent(&*state.connection()?, &id).await)
 }

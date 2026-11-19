@@ -1193,7 +1193,11 @@ write, "Add bookmark…" in row and tree menus, `storageKey` on every
   from each volume); MiniStack has no CreateImage, so the test accepts the
   refusal) Tags editor (instances and every EC2 resource view) and create AMI /
   create snapshot (from an instance or a volume).
-- 17.5 Connect tab: SSM Session Manager, SSM port forwarding (SSH / RDP),
+- 17.5 ✅ (`services/ec2/ConnectTab.tsx`; `connectCommands` / `guessUser` in
+  `api/ec2.ts`, tested; `ec2_ssm_agent` = ssm DescribeInstanceInformation,
+  best effort (an error becomes a note); the port 22 / 3389 line reads the
+  instance's inbound rules; `--endpoint-url` only for the app's own endpoint
+  override; Windows gets Session Manager, RDP tunnel and mstsc only) Connect tab: SSM Session Manager, SSM port forwarding (SSH / RDP),
   SSH, EC2 Instance Connect commands with profile and region filled in;
   reachability notes (public IP, SSM agent status via
   DescribeInstanceInformation where allowed).

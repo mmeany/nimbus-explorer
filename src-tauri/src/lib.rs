@@ -215,6 +215,7 @@ pub fn run() {
             commands::ec2::ec2_console_output,
             commands::ec2::ec2_screenshot,
             commands::ec2::ec2_user_data,
+            commands::ec2::ec2_ssm_agent,
             commands::ec2::ec2_start,
             commands::ec2::ec2_stop,
             commands::ec2::ec2_reboot,

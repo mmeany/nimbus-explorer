@@ -210,8 +210,102 @@ export const ec2Api = {
   setTags: (resource: string, current: [string, string][], desired: [string, string][]) => call<[number, number]>("ec2_set_tags", { resource, current, desired }),
   createImage: (request: { instanceId: string; name: string; description: string | null; noReboot: boolean; tags: [string, string][] }) => call<string>("ec2_create_image", { request }),
   snapshotVolume: (volumeId: string, description: string | null, tags: [string, string][]) => call<CreatedSnapshot>("ec2_snapshot_volume", { volumeId, description, tags }),
+  ssmAgent: (id: string) => call<SsmAgent>("ec2_ssm_agent", { id }),
   snapshotInstance: (instanceId: string, description: string | null, excludeRoot: boolean) => call<CreatedSnapshot[]>("ec2_snapshot_instance", { instanceId, description, excludeRoot }),
 };
+
+export interface SsmAgent {
+  managed: boolean;
+  pingStatus: string | null;
+  lastPing: string | null;
+  agentVersion: string | null;
+  latestAgent: boolean | null;
+  platform: string | null;
+  error: string | null;
+}
+
+export interface ConnectCommand {
+  id: string;
+  title: string;
+  command: string;
+  note: string;
+}
+
+/** The OS user to suggest for SSH: Windows has none; Linux images differ, ec2-user is Amazon Linux's. */
+export function guessUser(i: { platform: string | null; windows: boolean }): string | null {
+  if (i.windows) return null;
+  const p = (i.platform ?? "").toLowerCase();
+  if (p.includes("ubuntu")) return "ubuntu";
+  if (p.includes("red hat") || p.includes("suse")) return "ec2-user";
+  return "ec2-user";
+}
+
+/**
+ * Commands for reaching an instance from your own machine, with the profile
+ * and region filled in. Nothing here connects: the app only shows them.
+ */
+export function connectCommands(
+  i: { id: string; keyName: string | null; publicIp: string | null; publicDns: string | null; privateIp: string | null; windows: boolean; platform: string | null },
+  profile: string | null,
+  region: string,
+  endpointOverride: string | null = null,
+): ConnectCommand[] {
+  const tail = `${profile ? ` --profile ${profile}` : ""} --region ${region}${endpointOverride ? ` --endpoint-url ${endpointOverride}` : ""}`;
+  const key = i.keyName ? `~/.ssh/${i.keyName}.pem` : null;
+  const user = guessUser(i) ?? "ec2-user";
+  const host = i.publicDns ?? i.publicIp;
+  const out: ConnectCommand[] = [];
+  out.push({
+    id: "ssm-shell",
+    title: "Session Manager shell",
+    command: `aws ssm start-session --target ${i.id}${tail}`,
+    note: "A shell (PowerShell on Windows) through Systems Manager: no open ports, no key, works for private instances. Needs the Session Manager plugin for the AWS CLI.",
+  });
+  if (i.windows) {
+    out.push({
+      id: "ssm-rdp",
+      title: "Remote Desktop through Session Manager",
+      command: `aws ssm start-session --target ${i.id} --document-name AWS-StartPortForwardingSession --parameters portNumber=3389,localPortNumber=13389${tail}`,
+      note: "Keep it running, then connect Remote Desktop to localhost:13389 (mstsc /v:localhost:13389). Port 3389 doesn't need to be open.",
+    });
+    if (host)
+      out.push({
+        id: "rdp",
+        title: "Remote Desktop over the internet",
+        command: `mstsc /v:${host}`,
+        note: "Needs inbound TCP 3389 from your address in a security group. Get the Administrator password from the EC2 console with the key pair's private key.",
+      });
+    return out;
+  }
+  out.push({
+    id: "ssm-ssh",
+    title: "SSH through Session Manager",
+    command: `ssh ${key ? `-i ${key} ` : ""}-o ProxyCommand="aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p${tail}" ${user}@${i.id}`,
+    note: `Real SSH (scp, port forwarding, VS Code Remote) without opening port 22. ${key ? "Uses the key pair's private key." : "The instance has no key pair: its authorized_keys must already hold your key."}`,
+  });
+  out.push({
+    id: "ssm-forward",
+    title: "Port forwarding through Session Manager",
+    command: `aws ssm start-session --target ${i.id} --document-name AWS-StartPortForwardingSession --parameters portNumber=22,localPortNumber=2222${tail}`,
+    note: "Forwards local port 2222 to the instance's port 22 while it runs (change the ports for other services, e.g. 5432).",
+  });
+  if (host)
+    out.push({
+      id: "ssh",
+      title: "SSH over the internet",
+      command: `ssh ${key ? `-i ${key} ` : ""}${user}@${host}`,
+      note: "Needs inbound TCP 22 from your address in a security group. The user depends on the image: ec2-user (Amazon Linux, RHEL), ubuntu (Ubuntu), admin (Debian).",
+    });
+  out.push({
+    id: "eic",
+    title: "EC2 Instance Connect",
+    command: `aws ec2-instance-connect ssh --instance-id ${i.id} --os-user ${user}${host ? "" : " --connection-type eice"}${tail}`,
+    note: host
+      ? "Pushes a one-time key for 60 seconds and connects; no key pair needed. Needs the Instance Connect package on the instance (preinstalled on Amazon Linux and Ubuntu) and port 22 open to you."
+      : "The instance has no public address, so this goes through an EC2 Instance Connect Endpoint in its VPC (which must exist). No key pair needed.",
+  });
+  return out;
+}
 
 export interface CreatedSnapshot {
   snapshotId: string;
