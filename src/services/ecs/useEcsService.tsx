@@ -157,7 +157,7 @@ export function useEcsService(shell: Shell): ServiceUi {
   function clusterMenu(key: string | null, x: number, y: number) {
     const items: MenuItem[] = [];
     const k = key ? byName.get(key) : undefined;
-    if (k) items.push({ label: "Open", bold: true, shortcut: "Enter", onClick: () => go(k.name) }, "separator", { label: "Copy name", onClick: () => void shell.copyText(k.name) }, { label: "Copy ARN", onClick: () => void shell.copyText(k.arn) }, "separator");
+    if (k) items.push({ label: "Open", bold: true, shortcut: "Enter", onClick: () => go(k.name) }, "separator", { label: "Copy name", onClick: () => void shell.copyText(k.name) }, { label: "Copy ARN", onClick: () => void shell.copyText(k.arn) }, { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "ecs", cluster: k.name, view: null, id: null }, null, null) }, "separator");
     items.push({ label: "Refresh", shortcut: "F5", onClick: refresh });
     shell.openMenu(x, y, items);
   }
@@ -242,6 +242,7 @@ export function useEcsService(shell: Shell): ServiceUi {
       { label: "Change task definition…", disabled: ro, onClick: () => void changeRevision(c, name) },
       "separator",
       { label: "Copy name", onClick: () => void shell.copyText(name) },
+      { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "ecs", cluster: c, view: "service", id: name }, null, null) },
     );
     if (s) items.push({ label: "Copy ARN", onClick: () => void shell.copyText(s.arn) });
     items.push("separator", { label: "Refresh", shortcut: "F5", onClick: refresh });
@@ -380,6 +381,7 @@ export function useEcsService(shell: Shell): ServiceUi {
           <ErrorPanel error={listing.error} profile={profile} onRetry={refresh} />
         ) : (
           <FileList
+            storageKey="ecs.clusters"
             columns={CLUSTER_COLUMNS}
             rows={rows}
             selected={selected}
@@ -416,7 +418,7 @@ export function useEcsService(shell: Shell): ServiceUi {
         <ServiceView key={`${cluster}/${id}`} shell={shell} cluster={cluster} name={id} reloadToken={reloadToken} onLoaded={setViewService}
           onOpenTask={(t) => go(cluster, "task", t)}
           taskActions={taskActions(cluster)}
-          extraTabs={[{ id: "logs", label: "Logs", render: (s) => <ContainerLogs key={s.taskDefinition} shell={shell} taskDefinition={s.taskDefinition} taskId={null} reloadToken={reloadToken} /> }]}
+          extraTabs={[{ id: "logs", label: "Logs", fill: true, render: (s) => <ContainerLogs key={s.taskDefinition} shell={shell} taskDefinition={s.taskDefinition} taskId={null} reloadToken={reloadToken} /> }]}
         />
       </div>
     );
@@ -433,7 +435,7 @@ export function useEcsService(shell: Shell): ServiceUi {
           onLoaded={setViewTask}
           onOpenService={(s) => go(cluster, "service", s)}
           extraTabs={[
-            { id: "logs", label: "Logs", render: (t) => <ContainerLogs key={t.id} shell={shell} taskDefinition={t.taskDefinition} taskId={t.id} reloadToken={reloadToken} /> },
+            { id: "logs", label: "Logs", fill: true, render: (t) => <ContainerLogs key={t.id} shell={shell} taskDefinition={t.taskDefinition} taskId={t.id} reloadToken={reloadToken} /> },
             {
               id: "exec",
               label: "Shell (ECS Exec)",

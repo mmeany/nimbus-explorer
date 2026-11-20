@@ -6,6 +6,12 @@ export interface NameStatus {
   status: string | null;
 }
 
+export interface AssociatedRole {
+  arn: string;
+  feature: string | null;
+  status: string | null;
+}
+
 export interface DbInstance {
   id: string;
   arn: string;
@@ -44,6 +50,9 @@ export interface DbInstance {
   performanceInsights: boolean;
   latestRestorableTime: string | null;
   pendingChanges: string[];
+  /** Enhanced Monitoring's role. */
+  monitoringRole: string | null;
+  associatedRoles: AssociatedRole[];
   readReplicaOf: string | null;
   readReplicas: string[];
 }
@@ -82,6 +91,8 @@ export interface DbCluster {
   created: string | null;
   latestRestorableTime: string | null;
   pendingChanges: string[];
+  monitoringRole: string | null;
+  associatedRoles: AssociatedRole[];
 }
 
 export interface PendingAction {

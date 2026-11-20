@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/s3";
 import { DataTree } from "./DataTree";
+import { NumberedText, splitLines } from "./NumberedText";
+import { useLineNumbers } from "../state/lineNumbers";
 
 export type ValueFormat = "json" | "yaml" | "text";
 
@@ -32,6 +34,7 @@ export function ValueView({ value, initial = "auto" }: Props) {
   const format = detectFormat(value);
   const [mode, setMode] = useState<"tree" | "text">(initial === "auto" && format !== "text" ? "tree" : "text");
   const [parsed, setParsed] = useState<{ ok: true; value: unknown } | { ok: false; error: string } | null>(null);
+  const [lineNumbers, setLineNumbers] = useLineNumbers();
 
   useEffect(() => {
     setParsed(null);
@@ -50,16 +53,28 @@ export function ValueView({ value, initial = "auto" }: Props) {
     };
   }, [value, format, mode]);
 
+  const showsText = mode === "text" || format === "text" || (parsed !== null && !parsed.ok);
+  const multiline = useMemo(() => splitLines(value).length > 1, [value]);
+
   return (
     <div className="value-view">
-      {format !== "text" && (
-        <div className="segmented small">
-          <button className={mode === "tree" ? "active" : ""} onClick={() => setMode("tree")}>
-            Tree
-          </button>
-          <button className={mode === "text" ? "active" : ""} onClick={() => setMode("text")}>
-            Text
-          </button>
+      {(format !== "text" || (showsText && multiline)) && (
+        <div className="row value-view-bar">
+          {format !== "text" && (
+            <div className="segmented small">
+              <button className={mode === "tree" ? "active" : ""} onClick={() => setMode("tree")}>
+                Tree
+              </button>
+              <button className={mode === "text" ? "active" : ""} onClick={() => setMode("text")}>
+                Text
+              </button>
+            </div>
+          )}
+          {showsText && multiline && (
+            <label className="check">
+              <input type="checkbox" checked={lineNumbers} onChange={(e) => setLineNumbers(e.target.checked)} /> Line numbers
+            </label>
+          )}
         </div>
       )}
       {mode === "tree" && format !== "text" ? (
@@ -68,10 +83,10 @@ export function ValueView({ value, initial = "auto" }: Props) {
         ) : parsed.ok ? (
           <DataTree value={parsed.value} rootName={format.toUpperCase()} />
         ) : (
-          <pre className="value-text">{value}</pre>
+          <NumberedText className="value-text" wrap text={value} />
         )
       ) : (
-        <pre className="value-text">{value}</pre>
+        <NumberedText className="value-text" wrap text={value} />
       )}
     </div>
   );

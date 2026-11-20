@@ -394,6 +394,7 @@ export function ItemsTab({ table, shell, renderActions, onOpenItem, onContextMen
           {items ? (
             items.length ? (
               <ResultsGrid
+                storageKey={`ddb|${table.name}`}
                 items={items}
                 keyAttrs={keyAttrs}
                 selected={selected}

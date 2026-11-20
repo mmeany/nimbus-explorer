@@ -1,3 +1,5 @@
+mod autoscaling;
+mod bookmarks;
 mod commands;
 mod ddb_io;
 mod ddb_items;
@@ -6,7 +8,28 @@ mod dynamo;
 mod ecs;
 mod ecs_actions;
 mod ecs_taskdefs;
+mod ec2;
+mod ec2_actions;
+mod ec2_console;
+mod ec2_network;
+mod ec2_storage;
+mod ec2_tags;
+mod ec2_templates;
+mod ec2_unused;
+mod elasticache;
+mod elb;
+mod elasticache_actions;
+mod elasticache_events;
+mod elasticache_params;
+mod elasticache_snapshots;
+mod elasticache_updates;
+mod elasticache_users;
 mod error;
+mod history;
+mod iam;
+mod iam_account;
+mod iam_simulate;
+mod accessanalyzer;
 mod lambda;
 mod lambda_admin;
 mod lambda_code;
@@ -20,6 +43,13 @@ mod rds_snapshots;
 mod s3;
 mod secrets;
 mod settings;
+mod sfn;
+mod sfn_activities;
+mod sfn_admin;
+mod sfn_export;
+mod sfn_map;
+mod sfn_run;
+mod sfn_versions;
 mod sns;
 mod sns_publish;
 mod sns_watch;
@@ -61,6 +91,18 @@ pub fn run() {
             commands::set_read_only,
             commands::remember_filter,
             commands::forget_filter,
+            commands::bookmarks::bookmarks_load,
+            commands::bookmarks::bookmarks_save,
+            commands::bookmarks::bookmarks_export,
+            commands::bookmarks::bookmarks_read_import,
+            commands::bookmarks::set_bookmarks_bar,
+            commands::history::history_record,
+            commands::history::history_page,
+            commands::history::history_profiles,
+            commands::history::history_export,
+            commands::history::history_clear,
+            commands::history::history_open_folder,
+            commands::history::set_history_settings,
             commands::ssm::ssm_list_path,
             commands::ssm::ssm_list_prefix,
             commands::ssm::ssm_values,
@@ -172,6 +214,121 @@ pub fn run() {
             commands::logs::logs_list_streams,
             commands::logs::logs_latest,
             commands::logs::logs_download,
+            commands::ec2::ec2_instances,
+            commands::ec2::ec2_instance,
+            commands::ec2::ec2_status,
+            commands::ec2::ec2_console_output,
+            commands::ec2::ec2_screenshot,
+            commands::ec2::ec2_user_data,
+            commands::ec2::ec2_ssm_agent,
+            commands::ec2::ec2_start,
+            commands::ec2::ec2_stop,
+            commands::ec2::ec2_reboot,
+            commands::ec2::ec2_terminate,
+            commands::ec2::ec2_set_type,
+            commands::ec2::ec2_set_protection,
+            commands::ec2::ec2_instance_types,
+            commands::ec2::ec2_set_tags,
+            commands::ec2::ec2_create_image,
+            commands::ec2::ec2_snapshot_volume,
+            commands::ec2::ec2_snapshot_instance,
+            commands::ec2::ec2_images,
+            commands::ec2::ec2_image,
+            commands::ec2::ec2_volumes,
+            commands::ec2::ec2_volume,
+            commands::ec2::ec2_snapshots,
+            commands::ec2::ec2_snapshot,
+            commands::ec2::ec2_security_groups,
+            commands::ec2::ec2_security_group,
+            commands::ec2::ec2_vpcs,
+            commands::ec2::ec2_vpc,
+            commands::ec2::ec2_subnets,
+            commands::ec2::ec2_subnet,
+            commands::ec2::ec2_interfaces,
+            commands::ec2::ec2_interface,
+            commands::ec2::ec2_addresses,
+            commands::ec2::ec2_key_pairs,
+            commands::ec2::ec2_launch_templates,
+            commands::ec2::ec2_launch_template,
+            commands::ec2::ec2_load_balancers,
+            commands::ec2::ec2_load_balancer,
+            commands::ec2::ec2_target_groups,
+            commands::ec2::ec2_target_group,
+            commands::ec2::ec2_register_targets,
+            commands::ec2::ec2_deregister_targets,
+            commands::ec2::ec2_asgs,
+            commands::ec2::ec2_asg,
+            commands::ec2::ec2_asg_capacity,
+            commands::ec2::ec2_asg_processes,
+            commands::ec2::ec2_asg_start_refresh,
+            commands::ec2::ec2_asg_cancel_refresh,
+            commands::ec2::ec2_unused,
+            commands::ec2::ec2_export_unused,
+            commands::elasticache::ec_list_groups,
+            commands::elasticache::ec_list_serverless,
+            commands::elasticache::ec_group,
+            commands::elasticache::ec_serverless,
+            commands::elasticache::ec_reboot_nodes,
+            commands::elasticache::ec_test_failover,
+            commands::elasticache::ec_snapshots,
+            commands::elasticache::ec_create_snapshot,
+            commands::elasticache::ec_copy_snapshot,
+            commands::elasticache::ec_delete_snapshot,
+            commands::elasticache::ec_restore_snapshot,
+            commands::elasticache::ec_events,
+            commands::elasticache::ec_parameters,
+            commands::elasticache::ec_updates,
+            commands::elasticache::ec_apply_update,
+            commands::elasticache::ec_users,
+            commands::iam::iam_users,
+            commands::iam::iam_groups,
+            commands::iam::iam_roles,
+            commands::iam::iam_user_extras,
+            commands::iam::iam_role_extras,
+            commands::iam::iam_user,
+            commands::iam::iam_group,
+            commands::iam::iam_role,
+            commands::iam::iam_policies,
+            commands::iam::iam_policy,
+            commands::iam::iam_policy_version,
+            commands::iam::iam_account,
+            commands::iam::iam_credential_report,
+            commands::iam::iam_export_credential_report,
+            commands::iam::iam_simulate,
+            commands::iam::iam_validate_policy,
+            commands::sfn::sfn_list,
+            commands::sfn::sfn_details_many,
+            commands::sfn::sfn_describe,
+            commands::sfn::sfn_executions,
+            commands::sfn::sfn_execution,
+            commands::sfn::sfn_history,
+            commands::sfn::sfn_versions,
+            commands::sfn::sfn_history_all,
+            commands::sfn::sfn_execution_definition,
+            commands::sfn::sfn_export_svg,
+            commands::sfn::sfn_export_executions,
+            commands::sfn::sfn_export_history,
+            commands::sfn::sfn_start,
+            commands::sfn::sfn_stop,
+            commands::sfn::sfn_redrive,
+            commands::sfn::sfn_inputs,
+            commands::sfn::sfn_save_input,
+            commands::sfn::sfn_delete_input,
+            commands::sfn::sfn_map_runs,
+            commands::sfn::sfn_map_run,
+            commands::sfn::sfn_update_map_run,
+            commands::sfn::sfn_validate,
+            commands::sfn::sfn_update,
+            commands::sfn::sfn_create,
+            commands::sfn::sfn_delete,
+            commands::sfn::sfn_activities,
+            commands::sfn::sfn_activity,
+            commands::sfn::sfn_create_activity,
+            commands::sfn::sfn_delete_activity,
+            commands::sfn::sfn_publish_version,
+            commands::sfn::sfn_save_alias,
+            commands::sfn::sfn_delete_alias,
+            commands::sfn::sfn_delete_version,
             commands::lambda::lambda_list,
             commands::lambda::lambda_get,
             commands::lambda::lambda_env_values,
@@ -255,6 +412,8 @@ pub fn run() {
             commands::s3::share_link,
             commands::s3::object_properties,
             commands::parse_yaml,
+            commands::about_info,
+            commands::open_project_page,
             commands::s3::plan_sync,
             commands::s3::run_sync,
             commands::s3::export_listing,

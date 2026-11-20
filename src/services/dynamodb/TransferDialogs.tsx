@@ -5,6 +5,7 @@ import { ddbApi, newJobId, tableKeyAttrs, type ExportFormat, type ImportPreview,
 import { api } from "../../api/s3";
 import type { Shell } from "../../shell/shell";
 import type { DdbItem } from "../../util/ddbJson";
+import { DialogHelp } from "../../components/HelpDialog";
 
 const FORMATS: { id: ExportFormat; label: string; ext: string; hint: string }[] = [
   { id: "dynamoJsonl", label: "DynamoDB JSON lines", ext: "jsonl", hint: "Exact types; can be imported again" },
@@ -71,6 +72,7 @@ export function ExportDialog({ table, results, shell, onClose }: { table: TableI
     <div className="modal-backdrop">
       <div className="dialog param-dialog io-dialog" role="dialog" aria-modal onKeyDown={(e) => e.key === "Escape" && !running && onClose()}>
         <div className="dialog-title">
+          <DialogHelp topic="dynamodb.export" />
           Export · <span className="mono">{table.name}</span>
         </div>
         <div className="dialog-body">
@@ -177,6 +179,7 @@ export function ImportDialog({ table, shell, onClose, onImported }: { table: Tab
     <div className="modal-backdrop">
       <div className="dialog param-dialog io-dialog import-dialog" role="dialog" aria-modal onKeyDown={(e) => e.key === "Escape" && !running && onClose()}>
         <div className="dialog-title">
+          <DialogHelp topic="dynamodb.import" />
           Import into <span className="mono">{table.name}</span>
         </div>
         <div className="dialog-body">

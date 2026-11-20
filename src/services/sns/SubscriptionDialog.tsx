@@ -5,6 +5,7 @@ import type { AppError } from "../../api/core";
 import { PROTOCOLS, endpointProblem, snsWriteApi, topicNameFromArn, type SubscriptionInfo } from "../../api/sns";
 import { sqsApi, type QueueRef } from "../../api/sqs";
 import { ValueEditor, jsonProblem } from "../../components/ValueEditor";
+import { DialogHelp } from "../../components/HelpDialog";
 
 export interface SubForm {
   topicArn: string;
@@ -207,7 +208,7 @@ export function SubscriptionDialog(props: Props) {
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.key === "Escape" && props.onClose()}
       >
-        <div className="dialog-title">{creating ? "New subscription" : `Edit subscription · ${topicNameFromArn(props.sub.topicArn)}`}</div>
+        <div className="dialog-title"><DialogHelp topic="sns.subscription" />{creating ? "New subscription" : `Edit subscription · ${topicNameFromArn(props.sub.topicArn)}`}</div>
         <div className="dialog-body">
           {!f ? (
             <div className="hint">{error ? "" : "Loading…"}</div>

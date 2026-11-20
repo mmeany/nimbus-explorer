@@ -1,8 +1,8 @@
 # Nimbus Explorer
 
 A classic Explorer-style desktop app that works with Amazon Web Services, using your AWS
-profiles: Amazon S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ECS, Lambda, CloudWatch Logs and Secrets Manager. Works with emulators such
-as LocalStack.
+profiles: Amazon S3, Parameter Store, SQS, SNS, DynamoDB, RDS, ElastiCache, EC2, ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager and IAM. Works with emulators such
+as LocalStack and MiniStack.
 
 Built with Tauri 2 (Rust backend), React and TypeScript. See `CLAUDE.md` for
 the design decisions and roadmap.
@@ -78,18 +78,41 @@ GitHub Release. Each version is then submitted to winget by hand. See
 | Parameter Store | [docs/parameter-store.md](docs/parameter-store.md): folders, prefix filter with history, create/edit/delete, SecureString reveal, history/diff/labels/restore, tags/tier/policies, copy/move/rename, export/import                                                                                                                                                                                               |
 | DynamoDB        | [docs/dynamodb.md](docs/dynamodb.md): tables with filter history, scan & query (filters, projection, paging), results grid, item editor (JSON / DynamoDB JSON), PartiQL, export / import, create / delete tables, indexes, settings, backups                                                                                                                                                                     |
 | RDS             | [docs/rds.md](docs/rds.md): instances and Aurora / Multi-AZ clusters with filter history, start / stop / reboot / fail over, modify (class, backups, deletion protection), delete with final snapshot, snapshots (create, copy, delete, restore, point in time), events, log files (tail, download), connection details and client commands, SQL on Aurora via the Data API (read-only runs rolled back, export) |
+| ElastiCache     | [docs/elasticache.md](docs/elasticache.md): Valkey and Redis OSS replication groups (shards and nodes in the tree) and serverless caches, details, connect commands and URIs, reboot / test failover, snapshots (create, copy, delete, restore), events, parameters, service updates, users and groups                                                                                                           |
+| EC2             | [docs/ec2.md](docs/ec2.md): instances (state filter, start / stop / hibernate / reboot / terminate, change type, protection, status checks, console output and screenshot, masked user data, connect commands), AMIs, volumes, snapshots (create images and snapshots), security groups with "used by", VPCs, subnets, interfaces, Elastic IPs, key pairs, launch templates (compare versions), load balancers and rules, target groups (register / deregister), Auto Scaling (capacity, processes, instance refresh), tags on everything, unused resources report |
 | ECS             | [docs/ecs.md](docs/ecs.md): clusters, services (counts, deployments and events, load balancing, network), tasks (containers, stop reasons), scale / redeploy / change revision / roll back, stop and run tasks with overrides, task definitions (details, JSON, compare, new revision from JSON, deregister), container logs, ECS Exec command                                                                   |
 | Lambda          | [docs/lambda.md](docs/lambda.md): functions (paged, filter history), details (environment variables revealed on demand, function URL, async settings, layers, VPC), invoke with saved test events and templates, logs, triggers (event sources on / off, resource-policy invokers), versions and aliases with traffic splits, settings (memory, timeout, env vars, concurrency), code download / upload, delete  |
+| Step Functions  | [docs/step-functions.md](docs/step-functions.md): state machines (paged, filter history), graph (collapsible Parallel / Map, SVG export), executions coloured on the graph, event history, start / stop / redrive / re-run with saved inputs, Distributed Map runs, edit with live graph and validation, create / delete, versions and aliases, activities, export                                               |
 | CloudWatch Logs | [docs/cloudwatch-logs.md](docs/cloudwatch-logs.md): log groups (paged, prefix filter with history), streams, events newest first for a time range with filter patterns, load older, follow live, full message view (JSON tree), download (read only)                                                                                                                                                             |
 | Secrets Manager | [docs/secrets-manager.md](docs/secrets-manager.md): folders, filter history, masked values with Reveal / Copy (key/value view), create / edit / delete / restore, versions and labels (compare, roll back), rotation, tags and resource policy                                                                                                                                                                   |
+| IAM             | [docs/iam.md](docs/iam.md): view only, global: users (credentials, MFA, keys), user groups, roles (trust in plain words), managed policies (versions with compare, where attached), account overview (quotas, password policy, credential report, unused credentials), policy simulator, Access Analyzer validation, role picker and role links in other services |
 | SQS             | [docs/sqs.md](docs/sqs.md): queues with live counts and filter history, create/edit/delete, purge, send (single or from a file), peek / receive & hold, delete/release/export messages, dead-letter redrive                                                                                                                                                                                                      |
 | SNS             | [docs/sns.md](docs/sns.md): topics and all subscriptions with filter history, create/edit/delete topics (FIFO, encryption, policies, tags), subscribe (any protocol, filter policies, DLQ, queue-policy helper), confirm/unsubscribe, publish (per-protocol messages, attributes, from a file), watch messages live via a temporary queue                                                                        |
 
 Each service is a node in the tree under the profile. Shared controls:
 
+- **Help**: the **?** button at the end of the toolbar, or **F1**, explains the
+  view and tab on screen. Larger dialogs have their own **?** in the title bar,
+  and F1 works there too.
+- **About**: the button before the theme list shows the version and a link
+  to this repository, where bugs and feature requests should be raised as
+  [issues](https://github.com/mmeany/nimbus-explorer/issues).
+- **Bookmarks**: a bar under the address bar (Ctrl+Shift+B) with pinned
+  bookmarks, a folder per service and your own folders, which can mix services
+  and have descriptions. Add with the ☆ / **Ctrl+D** or **Add bookmark…** in
+  right-click menus; clicking one goes there like a history entry. Manage,
+  export and import with **Ctrl+Shift+O**. See [docs/bookmarks.md](docs/bookmarks.md).
+- **History**: the clock button in the toolbar, or **Ctrl+H**, lists what you
+  did per profile (changes, downloads, exports, connecting, the read-only lock),
+  newest first, with filters. Double-click an entry to go back to where it
+  happened; nothing is run again. Only names and locations are recorded, never
+  values. Kept on this computer as JSON Lines files, a new file every day /
+  week / month / year (your choice) or at a size limit. See
+  [docs/history.md](docs/history.md).
 - **Region** list in the toolbar for the regional services (Parameter Store,
-  SQS, SNS, DynamoDB, RDS, ECS, Lambda, CloudWatch Logs, Secrets Manager); remembered per profile. S3 always
-  uses each bucket's own region.
+  SQS, SNS, DynamoDB, RDS, ElastiCache, EC2, ECS, Lambda, Step Functions, CloudWatch Logs, Secrets Manager); remembered per profile. S3 always
+  uses each bucket's own region, and IAM is global (only its policy validation
+  uses the selected region).
 - **Read-only lock** in the toolbar: on, nothing that changes AWS is allowed
   (enforced in the app's backend, not just hidden in the UI). The app always
   starts read-only, and so does every connection, including switching
@@ -97,10 +120,15 @@ Each service is a node in the tree under the profile. Shared controls:
   whose names contain `prod` or `prd`) and lasts until you lock it again or
   connect to a profile.
 - **Paging**: long lists (queues, topics, tables, parameters, secrets,
-  functions, log groups, ECS services and tasks, snapshots, events) are shown 100, 500 or 1,000 at a time with a pager under
+  functions, log groups, ECS services and tasks, snapshots, events, IAM users,
+  groups, roles and policies, EC2 instances and the other EC2 lists) are shown 100, 500 or 1,000 at a time with a pager under
   the list (Ctrl+PgUp / Ctrl+PgDn). Where each row costs an AWS call
   (queue counts, topic and table details, parameter values), only the page
   on screen is fetched.
+- **Columns**: drag the edge of a column heading to widen or narrow it, or
+  double-click the edge to fit what's on screen. Widths are remembered per
+  list; right-click a heading for **Reset column widths**. A list wider than
+  the window scrolls sideways.
 
 ## S3 features
 
@@ -124,7 +152,9 @@ Each service is a node in the tree under the profile. Shared controls:
   and they stay set as you browse until you click **Clear filters**. Folders
   are hidden while a type, size, date or class filter is set
 - Preview text, images and rendered Markdown; JSON, YAML and CSV as
-  collapsible trees (CSV also as a table); ←/→ steps through the folder
+  collapsible trees (CSV also as a table); ←/→ steps through the folder.
+  Text views have line numbers (on by default, with a toggle that applies to
+  every text view in the app) and optional line wrapping
 - Download files or whole folders; upload files or folders (dialog or
   drag-and-drop from Explorer onto the list, a folder or a tree node)
 - New folder, delete (folders recursively, with object count), rename,
@@ -149,6 +179,11 @@ Shortcuts for the other services are in their guides.
 | Backspace, Alt+↑         | Up one level              |
 | Alt+← / Alt+→            | Back / forward            |
 | F5                       | Refresh                   |
+| F1                       | Help for this view        |
+| Ctrl+H                   | History                   |
+| Ctrl+D                   | Bookmark this location    |
+| Ctrl+Shift+B             | Show / hide bookmarks bar |
+| Ctrl+Shift+O             | Manage bookmarks          |
 | Ctrl+A                   | Select all (on this page) |
 | Ctrl+PgDn / Ctrl+PgUp    | Next / previous page      |
 | Ctrl+F                   | Search                    |

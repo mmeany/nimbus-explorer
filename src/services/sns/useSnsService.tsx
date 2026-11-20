@@ -18,6 +18,7 @@ import { SubscriptionDialog } from "./SubscriptionDialog";
 import { TopicSettingsDialog } from "./TopicSettingsDialog";
 import { TopicView } from "./TopicView";
 import { WatchPanel } from "./WatchPanel";
+import { HelpTopic } from "../../components/HelpDialog";
 
 const TOPIC_COLUMNS: Column[] = [
   { id: "name", label: "Name", width: 260 },
@@ -388,7 +389,11 @@ export function useSnsService(shell: Shell): ServiceUi {
     const items: MenuItem[] = [];
     const s = key ? subFor(key) : undefined;
     if (s) {
-      items.push({ label: "Open topic", bold: true, shortcut: "Enter", onClick: () => go(topicNameFromArn(s.topicArn)) }, "separator");
+      items.push(
+        { label: "Open topic", bold: true, shortcut: "Enter", onClick: () => go(topicNameFromArn(s.topicArn)) },
+        { label: "Bookmark the topic…", onClick: () => shell.addBookmark({ service: "sns", topic: topicNameFromArn(s.topicArn) }, null, null) },
+        "separator",
+      );
       if (s.pending) items.push({ label: "Confirm with token…", disabled: readOnly, onClick: () => void confirmWithToken(s.topicArn) });
       else
         items.push(
@@ -418,6 +423,7 @@ export function useSnsService(shell: Shell): ServiceUi {
         "separator",
         { label: "Copy ARN", onClick: () => void shell.copyText(t.arn) },
         { label: "Copy name", onClick: () => void shell.copyText(t.name) },
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "sns", topic: t.name }, null, null) },
         "separator",
       );
     } else {
@@ -477,6 +483,7 @@ export function useSnsService(shell: Shell): ServiceUi {
       <div className="service-pane">
         <div className="filter-bar sns-bar">
           <div className="segmented small">
+            {subsView && <HelpTopic id="sns.subscriptions" />}
             <button className={!subsView ? "active" : ""} onClick={() => setRootView("topics")}>
               Topics
             </button>
@@ -503,6 +510,7 @@ export function useSnsService(shell: Shell): ServiceUi {
           ) : (
             <>
             <FileList
+              storageKey="sns.subscriptions"
               key="subs"
               columns={SUB_COLUMNS}
               rows={pageSubRows}
@@ -522,6 +530,7 @@ export function useSnsService(shell: Shell): ServiceUi {
           <>
             {paged.error && <div className="warn-note list-note">Couldn't load topic details: {paged.error.message}</div>}
             <FileList
+              storageKey="sns.topics"
               key="topics"
               columns={TOPIC_COLUMNS}
               rows={topicRows}

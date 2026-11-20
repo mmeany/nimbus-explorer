@@ -364,6 +364,7 @@ export function useSqsService(shell: Shell): ServiceUi {
         { label: "Copy URL", onClick: () => void shell.copyText(q.url) },
         ...(q.arn ? [{ label: "Copy ARN", onClick: () => void shell.copyText(q.arn!) } as MenuItem] : []),
         { label: "Copy name", onClick: () => void shell.copyText(q.name) },
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "sqs", queue: q.name }, null, null) },
       );
       const dlqName = queueNameFromArn(q.dlqArn);
       if (dlqName) items.push({ label: `Open dead-letter queue (${dlqName})`, onClick: () => go(dlqName) });
@@ -455,6 +456,7 @@ export function useSqsService(shell: Shell): ServiceUi {
           <>
             {paged.error && <div className="warn-note list-note">Couldn't load queue details: {paged.error.message}</div>}
             <FileList
+              storageKey="sqs.queues"
               columns={COLUMNS}
               rows={rows}
               selected={selected}

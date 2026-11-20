@@ -243,6 +243,7 @@ export function useSecretsService(shell: Shell): ServiceUi {
       items.push(
         { label: "Open", bold: true, onClick: () => go(key) },
         { label: "Filter by this folder", onClick: () => void applyFilter(key) },
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "secrets", path: key }, null, null) },
         { label: "New secret here…", disabled: readOnly, onClick: () => newSecret(key) },
         "separator",
       );
@@ -274,6 +275,7 @@ export function useSecretsService(shell: Shell): ServiceUi {
         },
         "separator",
         { label: "Copy name", onClick: () => void shell.copyText(s.name) },
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "secrets", path: folderOf(s.name) }, s.name, s.name.slice(folderOf(s.name).length) || s.name) },
         ...(s.arn ? [{ label: "Copy ARN", onClick: () => void shell.copyText(s.arn!) } as MenuItem] : []),
         ...(filter ? [{ label: "Open containing folder", onClick: () => (setFilter(""), go(folderOf(s.name))) } as MenuItem] : []),
         "separator",
@@ -379,6 +381,7 @@ export function useSecretsService(shell: Shell): ServiceUi {
           <ErrorPanel error={listing.error} profile={profile} onRetry={refresh} />
         ) : (
           <FileList
+            storageKey="secrets.list"
             key={filter ? `f:${filter}` : `p:${path}`}
             columns={filter ? FILTER_COLUMNS : COLUMNS}
             rows={rows}

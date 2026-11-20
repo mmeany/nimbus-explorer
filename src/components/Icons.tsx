@@ -10,6 +10,31 @@ export function BucketIcon({ size = 16 }: P) {
   );
 }
 
+/** Bookmark star: outline, or filled (colour from CSS, e.g. .star-on). */
+export function StarIcon({ size = 16, filled = false }: P & { filled?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path
+        d="M8 1.8 L9.8 5.7 L14 6.1 L10.8 8.9 L11.8 13.1 L8 10.9 L4.2 13.1 L5.2 8.9 L2 6.1 L6.2 5.7 Z"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function HelpIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M6 6.2 a2 2 0 1 1 3.1 1.7 C8.3 8.4 8 8.8 8 9.6" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="8" cy="11.6" r="0.85" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function FolderIcon({ size = 16, open = false }: P & { open?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
@@ -419,6 +444,315 @@ export function StopIcon({ size = 16 }: P) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
       <rect x="3.5" y="3.5" width="9" height="9" rx="1.2" fill="#d1453b" stroke="#a1281f" strokeWidth="0.8" />
+    </svg>
+  );
+}
+
+/** Step Functions: three steps joined in a flow. */
+export function StepFunctionsIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="1.5" y="1.5" width="13" height="13" rx="2" fill="#e7457b" stroke="#b02a58" strokeWidth="0.8" />
+      <rect x="5.5" y="3" width="5" height="2.6" rx="0.6" fill="#fff" />
+      <rect x="3" y="10.4" width="4" height="2.6" rx="0.6" fill="#fff" />
+      <rect x="9" y="10.4" width="4" height="2.6" rx="0.6" fill="#fff" />
+      <path d="M8 5.6 V8 M5 8 H11 M5 8 V10.4 M11 8 V10.4" fill="none" stroke="#fff" strokeWidth="1" />
+    </svg>
+  );
+}
+
+/** One state machine (Express ones get a small bolt). */
+export function StateMachineIcon({ size = 16, express = false }: P & { express?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="5" y="1.5" width="6" height="3.2" rx="0.8" fill="#fbdbe6" stroke="#c43a69" strokeWidth="0.9" />
+      <rect x="1.5" y="11.3" width="5" height="3.2" rx="0.8" fill="#fbdbe6" stroke="#c43a69" strokeWidth="0.9" />
+      <rect x="9.5" y="11.3" width="5" height="3.2" rx="0.8" fill="#fbdbe6" stroke="#c43a69" strokeWidth="0.9" />
+      <path d="M8 4.7 V8 M4 8 H12 M4 8 V11.3 M12 8 V11.3" fill="none" stroke="#c43a69" strokeWidth="0.9" />
+      {express && <path d="M13 1 L10.8 4.4 H12.6 L11.4 7.2 L14.2 3.6 H12.4 Z" fill="#f0a020" />}
+    </svg>
+  );
+}
+
+/** One execution of a state machine. */
+export function ExecutionIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy="8" r="6.2" fill="#fbdbe6" stroke="#c43a69" strokeWidth="0.9" />
+      <path d="M6.5 5 L11 8 L6.5 11 Z" fill="#c43a69" />
+    </svg>
+  );
+}
+
+/** A Step Functions activity: a worker's gear on a task card. */
+export function ActivityIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="1.5" y="3" width="13" height="10" rx="1.5" fill="#fbdbe6" stroke="#c43a69" strokeWidth="0.9" />
+      <circle cx="8" cy="8" r="2.4" fill="none" stroke="#c43a69" strokeWidth="1.2" />
+      <path d="M8 4.6 V5.6 M8 10.4 V11.4 M4.6 8 H5.6 M10.4 8 H11.4" stroke="#c43a69" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+/** ElastiCache: a lightning bolt on a memory chip. */
+export function ElastiCacheIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="2" y="2" width="12" height="12" rx="2" fill="#3e6fd8" stroke="#24479a" strokeWidth="0.8" />
+      <path d="M2 5 H0.8 M2 8 H0.8 M2 11 H0.8 M14 5 H15.2 M14 8 H15.2 M14 11 H15.2" stroke="#24479a" strokeWidth="1" />
+      <path d="M8.8 3.6 L5.6 8.6 H7.8 L7 12.4 L10.4 7.2 H8.2 Z" fill="#fff" />
+    </svg>
+  );
+}
+
+/** A replication group (several nodes). */
+export function CacheGroupIcon({ size = 16, cluster = false }: P & { cluster?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="1.5" y="2.5" width="6" height="5" rx="1" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" />
+      <rect x="8.5" y="2.5" width="6" height="5" rx="1" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" />
+      <rect x="5" y="8.5" width="6" height="5" rx="1" fill={cluster ? "#3e6fd8" : "#dbe6fb"} stroke="#3e6fd8" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** One cache node (a member cluster); the primary is filled. */
+export function CacheNodeIcon({ size = 16, primary = false }: P & { primary?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="3" y="3" width="10" height="10" rx="1.5" fill={primary ? "#3e6fd8" : "#dbe6fb"} stroke="#3e6fd8" strokeWidth="0.9" />
+      <path d="M5.5 6 H10.5 M5.5 8 H10.5 M5.5 10 H8.5" stroke={primary ? "#fff" : "#3e6fd8"} strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** A shard (node group) of a cluster-mode group. */
+export function CacheShardIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M2 4.5 L8 2 L14 4.5 L8 7 Z" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.8" />
+      <path d="M2 8 L8 10.5 L14 8 M2 11.5 L8 14 L14 11.5" fill="none" stroke="#3e6fd8" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** A serverless cache: a cloud with a bolt. */
+export function ServerlessCacheIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M4.2 12.5 H12 A2.6 2.6 0 0 0 11.6 7.3 A3.6 3.6 0 0 0 4.7 6.5 A3 3 0 0 0 4.2 12.5 Z" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" />
+      <path d="M8.6 6.4 L6.8 9.4 H8.1 L7.6 11.6 L9.6 8.6 H8.3 Z" fill="#3e6fd8" />
+    </svg>
+  );
+}
+
+/** A snapshot: a camera. */
+export function SnapshotIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M2 5 H5 L6.2 3.5 H9.8 L11 5 H14 V13 H2 Z" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" strokeLinejoin="round" />
+      <circle cx="8" cy="8.8" r="2.4" fill="none" stroke="#3e6fd8" strokeWidth="1" />
+    </svg>
+  );
+}
+
+/** ElastiCache users and groups: two people. */
+export function CacheUsersIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="6" cy="5.5" r="2.3" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" />
+      <path d="M1.8 13.5 C2.2 10.2 9.8 10.2 10.2 13.5 Z" fill="#dbe6fb" stroke="#3e6fd8" strokeWidth="0.9" />
+      <circle cx="11" cy="5" r="1.9" fill="none" stroke="#3e6fd8" strokeWidth="0.9" />
+      <path d="M10.6 9.4 C12.8 9.3 14.4 10.6 14.4 12.8" fill="none" stroke="#3e6fd8" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** IAM: a badge with a person and lines of text. */
+export function IamIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="2" y="2.5" width="12" height="11" rx="1.6" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+      <circle cx="6" cy="6.6" r="1.7" fill="#c0392b" />
+      <path d="M3.4 11.4 C3.8 9.2 8.2 9.2 8.6 11.4 Z" fill="#c0392b" />
+      <path d="M10 6 H12.4 M10 8.2 H12.4 M10 10.4 H11.6" stroke="#c0392b" strokeWidth="0.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** An IAM user: one person. */
+export function IamUserIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy="5.4" r="2.6" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+      <path d="M3 14 C3.4 9.9 12.6 9.9 13 14 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** An IAM user group: three people. */
+export function IamGroupIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="4.2" cy="6" r="1.7" fill="none" stroke="#c0392b" strokeWidth="0.8" />
+      <circle cx="11.8" cy="6" r="1.7" fill="none" stroke="#c0392b" strokeWidth="0.8" />
+      <circle cx="8" cy="5.2" r="2.1" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+      <path d="M3.6 13.8 C4 10.2 12 10.2 12.4 13.8 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+      <path d="M1.2 12.4 C1.4 10.4 3 9.6 4.6 9.7 M14.8 12.4 C14.6 10.4 13 9.6 11.4 9.7" fill="none" stroke="#c0392b" strokeWidth="0.8" />
+    </svg>
+  );
+}
+
+/** An IAM role: a hard hat (a role is worn, not owned). */
+export function IamRoleIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M3 10.5 C3 6.4 5.2 4 8 4 C10.8 4 13 6.4 13 10.5 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" />
+      <path d="M8 4 V7.4" stroke="#c0392b" strokeWidth="0.9" />
+      <rect x="1.5" y="10.5" width="13" height="2" rx="0.8" fill="#c0392b" />
+    </svg>
+  );
+}
+
+/** An IAM managed policy: a document with a check mark. */
+export function IamPolicyIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M3.5 1.5 H9.5 L12.5 4.5 V14.5 H3.5 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" strokeLinejoin="round" />
+      <path d="M9.5 1.5 V4.5 H12.5" fill="none" stroke="#c0392b" strokeWidth="0.9" />
+      <path d="M5.5 9.4 L7.3 11.2 L10.6 7.4" fill="none" stroke="#c0392b" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** The IAM account overview: a gauge. */
+export function IamAccountIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M2 12 A6 6 0 0 1 14 12 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" strokeLinejoin="round" />
+      <path d="M8 12 L10.8 7.6" stroke="#c0392b" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="8" cy="12" r="1.1" fill="#c0392b" />
+    </svg>
+  );
+}
+
+/** EC2: an orange chip. */
+export function Ec2Icon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="3" y="3" width="10" height="10" rx="1.4" fill="#f7b267" stroke="#c26a08" strokeWidth="0.9" />
+      <rect x="5.6" y="5.6" width="4.8" height="4.8" rx="0.6" fill="#fff" stroke="#c26a08" strokeWidth="0.8" />
+      <path d="M5.5 3 V1.4 M8 3 V1.4 M10.5 3 V1.4 M5.5 13 V14.6 M8 13 V14.6 M10.5 13 V14.6 M3 5.5 H1.4 M3 8 H1.4 M3 10.5 H1.4 M13 5.5 H14.6 M13 8 H14.6 M13 10.5 H14.6" stroke="#c26a08" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** An instance: a small server with a state light. */
+export function InstanceIcon({ size = 16, state }: P & { state?: string | null }) {
+  const light = state === "running" ? "#3aa655" : state === "stopped" || state === "terminated" || !state ? "#9aa3ab" : "#e0a020";
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="2" y="3" width="12" height="10" rx="1.2" fill="#fde7cf" stroke="#c26a08" strokeWidth="0.9" />
+      <path d="M4 6 H9 M4 8.5 H9 M4 11 H7.5" stroke="#c26a08" strokeWidth="0.8" />
+      <circle cx="11.5" cy="10.6" r="1.3" fill={light} />
+    </svg>
+  );
+}
+
+/** An AMI: a disc. */
+export function ImageIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy="8" r="6" fill="#fde7cf" stroke="#c26a08" strokeWidth="0.9" />
+      <circle cx="8" cy="8" r="1.6" fill="#fff" stroke="#c26a08" strokeWidth="0.8" />
+    </svg>
+  );
+}
+
+/** An EBS volume: a cylinder. */
+export function VolumeIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M3 4 V12 C3 13.4 13 13.4 13 12 V4" fill="#e3ecdc" stroke="#4e7a36" strokeWidth="0.9" />
+      <ellipse cx="8" cy="4" rx="5" ry="1.6" fill="#f2f7ee" stroke="#4e7a36" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** A security group: a shield. */
+export function ShieldIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M8 1.6 L13.4 3.6 V8 C13.4 11.2 11 13.4 8 14.6 C5 13.4 2.6 11.2 2.6 8 V3.6 Z" fill="#fbe3e3" stroke="#c0392b" strokeWidth="0.9" strokeLinejoin="round" />
+      <path d="M5.6 8 L7.4 9.8 L10.6 6.4" fill="none" stroke="#c0392b" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Networking (VPCs, subnets, interfaces, addresses): linked nodes. */
+export function NetworkIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M8 4 L3.5 11.5 M8 4 L12.5 11.5 M3.5 11.5 H12.5" stroke="#7a4fb0" strokeWidth="0.9" />
+      <circle cx="8" cy="4" r="2" fill="#ece3f7" stroke="#7a4fb0" strokeWidth="0.9" />
+      <circle cx="3.5" cy="11.5" r="2" fill="#ece3f7" stroke="#7a4fb0" strokeWidth="0.9" />
+      <circle cx="12.5" cy="11.5" r="2" fill="#ece3f7" stroke="#7a4fb0" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** A launch template: a document with a chip. */
+export function TemplateIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M3 1.8 H10 L13 4.8 V14.2 H3 Z" fill="#fff" stroke="#c26a08" strokeWidth="0.9" strokeLinejoin="round" />
+      <rect x="5.4" y="7.4" width="5.2" height="4.4" rx="0.6" fill="#fde7cf" stroke="#c26a08" strokeWidth="0.8" />
+    </svg>
+  );
+}
+
+/** A load balancer: one line splitting into three. */
+export function LoadBalancerIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="4" cy="8" r="2.4" fill="#e1d8f5" stroke="#5b3fa8" strokeWidth="0.9" />
+      <path d="M6.4 8 H9 M9 8 L12 3.5 M9 8 H12.6 M9 8 L12 12.5" stroke="#5b3fa8" strokeWidth="0.9" fill="none" />
+      <circle cx="12.6" cy="3.5" r="1.2" fill="#5b3fa8" />
+      <circle cx="13.2" cy="8" r="1.2" fill="#5b3fa8" />
+      <circle cx="12.6" cy="12.5" r="1.2" fill="#5b3fa8" />
+    </svg>
+  );
+}
+
+/** A target group: a bullseye. */
+export function TargetIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy="8" r="6" fill="#e1d8f5" stroke="#5b3fa8" strokeWidth="0.9" />
+      <circle cx="8" cy="8" r="3.4" fill="#fff" stroke="#5b3fa8" strokeWidth="0.9" />
+      <circle cx="8" cy="8" r="1.2" fill="#5b3fa8" />
+    </svg>
+  );
+}
+
+/** An Auto Scaling group: an instance with arrows out. */
+export function AutoScalingIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect x="4.5" y="4.5" width="7" height="7" rx="1" fill="#fde7cf" stroke="#c26a08" strokeWidth="0.9" />
+      <path d="M1.5 8 H3.5 M12.5 8 H14.5 M8 1.5 V3.5 M8 12.5 V14.5" stroke="#c26a08" strokeWidth="1" />
+      <path d="M1.5 8 L2.6 6.9 M1.5 8 L2.6 9.1 M14.5 8 L13.4 6.9 M14.5 8 L13.4 9.1" stroke="#c26a08" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+/** Unused resources: a bin. */
+export function UnusedIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path d="M3.5 4.5 H12.5 L11.6 14 H4.4 Z" fill="#eef0f2" stroke="#56636f" strokeWidth="0.9" strokeLinejoin="round" />
+      <path d="M2.5 4.5 H13.5 M6 4.5 V2.6 H10 V4.5 M6.6 7 V11.6 M9.4 7 V11.6" stroke="#56636f" strokeWidth="0.9" fill="none" />
     </svg>
   );
 }

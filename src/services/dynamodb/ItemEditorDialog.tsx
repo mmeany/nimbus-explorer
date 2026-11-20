@@ -6,6 +6,7 @@ import { ddbApi, keyString, tableKeyAttrs, type TableInfo } from "../../api/dyna
 import { ValueEditor } from "../../components/ValueEditor";
 import type { Shell } from "../../shell/shell";
 import { ddbType, itemFromPlain, itemToPlain, type DdbItem } from "../../util/ddbJson";
+import { DialogHelp } from "../../components/HelpDialog";
 
 export type EditorMode = "create" | "edit" | "duplicate";
 
@@ -141,6 +142,7 @@ export function ItemEditorDialog({ table, mode, item, shell, onClose, onSaved }:
         }}
       >
         <div className="dialog-title">
+          <DialogHelp topic="dynamodb.itemEditor" />
           {title} · <span className="mono">{table.name}</span>
         </div>
         <div className="dialog-body">

@@ -7,6 +7,7 @@ import { MaskedValue } from "../../components/MaskedValue";
 import { ValueView } from "../../components/ValueView";
 import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
+import { DialogHelp } from "../../components/HelpDialog";
 
 interface Props {
   name: string;
@@ -160,6 +161,7 @@ export function ParamHistoryDialog({ name, shell, onClose, onChanged }: Props) {
         onKeyDown={(e) => e.key === "Escape" && e.target === e.currentTarget && onClose()}
       >
         <div className="dialog-title" id="ph-title">
+          <DialogHelp topic="ssm.history" />
           History · <span className="mono">{name}</span>
         </div>
         <div className="dialog-body">

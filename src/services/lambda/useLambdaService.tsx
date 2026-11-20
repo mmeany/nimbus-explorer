@@ -206,6 +206,7 @@ export function useLambdaService(shell: Shell): ServiceUi {
         "separator",
         { label: "Copy name", onClick: () => void shell.copyText(f.name) },
         { label: "Copy ARN", onClick: () => void shell.copyText(f.arn) },
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "lambda", fn: f.name }, null, null) },
         "separator",
       );
     }
@@ -258,6 +259,7 @@ export function useLambdaService(shell: Shell): ServiceUi {
     {
       id: "logs",
       label: "Logs",
+      fill: true,
       render: (f) => (
         <div className="lambda-logs">
           <LogViewer key={f.logGroup} shell={shell} group={f.logGroup} defaultMinutes={60} reloadToken={reloadToken} />
@@ -286,6 +288,7 @@ export function useLambdaService(shell: Shell): ServiceUi {
         ) : (
           <>
             <FileList
+              storageKey="lambda.functions"
               columns={COLUMNS}
               rows={rows}
               selected={selected}

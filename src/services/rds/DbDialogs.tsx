@@ -3,7 +3,9 @@
 import { useState } from "react";
 import type { AppError } from "../../api/core";
 import { identifierProblem, rdsApi, snapshotName } from "../../api/rds";
+import type { HelpTopicId } from "../../help";
 import type { Db } from "./DbView";
+import { DialogHelp } from "../../components/HelpDialog";
 
 /** Common instance classes, offered as suggestions (any class can be typed). */
 const CLASSES = [
@@ -13,11 +15,11 @@ const CLASSES = [
   "db.r7g.large", "db.r7g.xlarge", "db.r7g.2xlarge", "db.r6g.large", "db.r6g.xlarge", "db.r6i.large",
 ];
 
-function Frame({ title, children, buttons, onClose }: { title: string; children: React.ReactNode; buttons: React.ReactNode; onClose: () => void }) {
+function Frame({ title, help, children, buttons, onClose }: { title: string; help: HelpTopicId; children: React.ReactNode; buttons: React.ReactNode; onClose: () => void }) {
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">{title}</div>
+        <div className="dialog-title"><DialogHelp topic={help} />{title}</div>
         <div className="dialog-body">{children}</div>
         <div className="dialog-buttons">
           <div className="spacer" />
@@ -69,6 +71,7 @@ export function ModifyDbDialog({ db, onClose, onDone }: { db: Db; onClose: () =>
   return (
     <Frame
       title={`Modify ${d.id}`}
+      help="rds.modify"
       onClose={onClose}
       buttons={
         <>
@@ -169,6 +172,7 @@ export function DeleteDbDialog({ db, onClose, onDone }: { db: Db; onClose: () =>
   return (
     <Frame
       title={`Delete ${db.kind === "cluster" ? "cluster" : "database"}`}
+      help="rds.delete"
       onClose={onClose}
       buttons={
         <>
@@ -241,6 +245,7 @@ export function FailoverDialog({ db, onClose, onDone }: { db: Db & { kind: "clus
   return (
     <Frame
       title={`Fail over ${db.db.id}`}
+      help="rds.failover"
       onClose={onClose}
       buttons={
         <>

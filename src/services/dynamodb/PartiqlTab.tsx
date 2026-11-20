@@ -148,6 +148,7 @@ export function PartiqlTab({ table, shell }: Props) {
           {items ? (
             items.length ? (
               <ResultsGrid
+                storageKey={`ddb|${table.name}`}
                 items={items}
                 keyAttrs={tableKeyAttrs(table)}
                 selected={selected}

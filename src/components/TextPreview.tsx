@@ -4,6 +4,8 @@ import { formatSize } from "../format";
 import { Markdown } from "../viewers/markdown";
 import { CsvView } from "./CsvView";
 import { DataTree } from "./DataTree";
+import { NumberedText } from "./NumberedText";
+import { useLineNumbers } from "../state/lineNumbers";
 
 type Viewer = "markdown" | "csv" | "json" | "jsonl" | "yaml" | "text";
 type Mode = "rendered" | "source" | "table" | "tree" | "formatted" | "raw" | "text";
@@ -90,6 +92,7 @@ export function TextPreview({ objectKey, text, truncated, size, contentType }: P
   })();
   const [mode, setMode] = useState<Mode>(initial);
   const [wrap, setWrap] = useState(false);
+  const [lineNumbers, setLineNumbers] = useLineNumbers();
   const [parsed, setParsed] = useState<Parsed>(null);
 
   // Parse structured data when a mode needs it.
@@ -169,9 +172,9 @@ export function TextPreview({ objectKey, text, truncated, size, contentType }: P
           rootItemLabel={parsed.docs && parsed.docs > 1 ? (i) => `Document ${i + 1}` : viewer === "jsonl" ? (i) => `Line ${i + 1}` : undefined}
         />
       );
-    else content = <pre className={`pv-text ${wrap ? "wrap" : ""}`}>{formatted}</pre>;
+    else content = <NumberedText className={`pv-text ${wrap ? "wrap" : ""}`} wrap={wrap} text={formatted ?? ""} />;
   } else {
-    content = <pre className={`pv-text ${wrap ? "wrap" : ""}`}>{text}</pre>;
+    content = <NumberedText className={`pv-text ${wrap ? "wrap" : ""}`} wrap={wrap} text={text} />;
   }
 
   return (
@@ -202,9 +205,14 @@ export function TextPreview({ objectKey, text, truncated, size, contentType }: P
           )}
           <div className="spacer" />
           {isTextMode && (
-            <label className="check">
-              <input type="checkbox" checked={wrap} onChange={(e) => setWrap(e.target.checked)} /> Wrap lines
-            </label>
+            <>
+              <label className="check">
+                <input type="checkbox" checked={lineNumbers} onChange={(e) => setLineNumbers(e.target.checked)} /> Line numbers
+              </label>
+              <label className="check">
+                <input type="checkbox" checked={wrap} onChange={(e) => setWrap(e.target.checked)} /> Wrap lines
+              </label>
+            </>
           )}
         </div>
       )}

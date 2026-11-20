@@ -3,10 +3,13 @@
 // are passed in by the controller.
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { AppError } from "../../api/core";
+import type { HelpTopicId } from "../../help";
 import { engineLabel, rdsApi, statusTone, type DbCluster, type DbInstance, type DbKind, type NameStatus, type PendingAction } from "../../api/rds";
 import { ErrorPanel } from "../../components/ErrorPanel";
 import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
+import { HelpTopic } from "../../components/HelpDialog";
+import { RoleLink } from "../../components/RoleLink";
 
 export type Db = { kind: "cluster"; db: DbCluster } | { kind: "instance"; db: DbInstance };
 
@@ -37,6 +40,8 @@ export function StatusPill({ status }: { status: string | null }) {
 
 const yes = (b: boolean) => (b ? "Yes" : "No");
 const groups = (g: NameStatus[]) => g.map((x) => (x.status && x.status !== "active" && x.status !== "in-sync" ? `${x.name} (${x.status})` : x.name)).join(", ");
+
+const TAB_HELP: Record<string, HelpTopicId> = { connect: "rds.connect", sql: "rds.sql", snapshots: "rds.snapshots", events: "rds.events" };
 
 export function DbView({ kind, id, shell, reloadToken, onLoaded, onOpenInstance, onOpenCluster, actions, tabs = [] }: Props) {
   const [data, setData] = useState<Db | null>(null);
@@ -103,6 +108,7 @@ export function DbView({ kind, id, shell, reloadToken, onLoaded, onOpenInstance,
           Copy ARN
         </button>
       </div>
+      <HelpTopic id={(current && TAB_HELP[current.id]) ?? "rds.details"} />
       {actions && <div className="row db-actions">{actions(data)}</div>}
 
       {visibleTabs.length > 0 && (
@@ -121,12 +127,34 @@ export function DbView({ kind, id, shell, reloadToken, onLoaded, onOpenInstance,
       {current ? (
         current.render(data)
       ) : data.kind === "cluster" ? (
-        <ClusterDetails c={data.db} members={members} pending={pending} tags={tags} onOpenInstance={onOpenInstance} />
+        <ClusterDetails c={data.db} members={members} pending={pending} tags={tags} onOpenInstance={onOpenInstance} shell={shell} />
       ) : (
-        <InstanceDetails i={data.db} pending={pending} tags={tags} onOpenInstance={onOpenInstance} />
+        <InstanceDetails i={data.db} pending={pending} tags={tags} onOpenInstance={onOpenInstance} shell={shell} />
       )}
     </div>
   );
+}
+
+/** Enhanced Monitoring's role and the roles associated for features (S3 import, Lambda…). */
+function roleRows(shell: Shell, db: DbInstance | DbCluster): [string, ReactNode][] {
+  return [
+    ["Enhanced Monitoring role", db.monitoringRole ? <RoleLink shell={shell} arn={db.monitoringRole} owner={db.arn} /> : ""],
+    [
+      "IAM roles",
+      db.associatedRoles.length ? (
+        <>
+          {db.associatedRoles.map((r) => (
+            <div key={r.arn + (r.feature ?? "")}>
+              <RoleLink shell={shell} arn={r.arn} owner={db.arn} />
+              {r.feature || r.status ? <span className="hint"> ({[r.feature, r.status?.toLowerCase()].filter(Boolean).join(", ")})</span> : null}
+            </div>
+          ))}
+        </>
+      ) : (
+        ""
+      ),
+    ],
+  ];
 }
 
 function PropRows({ rows }: { rows: [string, ReactNode][] }) {
@@ -212,11 +240,13 @@ function InstanceDetails({
   pending,
   tags,
   onOpenInstance,
+  shell,
 }: {
   i: DbInstance;
   pending: PendingAction[] | null;
   tags: [string, string][] | null;
   onOpenInstance: (id: string) => void;
+  shell: Shell;
 }) {
   const standalone = !i.clusterId;
   return (
@@ -256,6 +286,7 @@ function InstanceDetails({
           ["Security groups", groups(i.securityGroups)],
           ["CA certificate", i.caCertificate ?? ""],
           ["IAM database authentication", yes(i.iamAuth)],
+          ...roleRows(shell, i),
         ]}
       />
 
@@ -321,12 +352,14 @@ function ClusterDetails({
   pending,
   tags,
   onOpenInstance,
+  shell,
 }: {
   c: DbCluster;
   members: DbInstance[] | null;
   pending: PendingAction[] | null;
   tags: [string, string][] | null;
   onOpenInstance: (id: string) => void;
+  shell: Shell;
 }) {
   const serverless = c.serverlessMinAcu !== null;
   return (
@@ -394,6 +427,7 @@ function ClusterDetails({
           ["Subnet group", c.subnetGroup ?? ""],
           ["Security groups", groups(c.securityGroups)],
           ["IAM database authentication", yes(c.iamAuth)],
+          ...roleRows(shell, c),
           ["Data API", c.dataApi ? "On" : "Off (turn it on in the AWS console to run SQL here)"],
         ]}
       />

@@ -199,6 +199,10 @@ export const api = {
   objectProperties: (bucket: string, key: string) => call<ObjectProperties>("object_properties", { bucket, key }),
   /** Parses YAML into one JSON value per document (the browser has no YAML parser). */
   parseYaml: (text: string) => call<unknown[]>("parse_yaml", { text }),
+  /** Name, version and project address for the About dialog. */
+  aboutInfo: () => call<{ name: string; version: string; projectUrl: string }>("about_info"),
+  /** Opens the project page (a fixed address) in the default browser. */
+  openProjectPage: () => call<void>("open_project_page"),
 
   /** Saves a recursive listing of a folder to a text file (aws s3 ls format). */
   exportListing: (bucket: string, prefix: string, dest: string) =>

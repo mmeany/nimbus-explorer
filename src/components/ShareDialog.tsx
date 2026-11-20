@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, toAppError, type AppError, type ConnectionInfo, type ShareLink } from "../api/s3";
 import { baseName } from "../state/navigation";
+import { DialogHelp } from "./HelpDialog";
 
 interface Props {
   bucket: string;
@@ -59,6 +60,7 @@ export function ShareDialog({ bucket, objectKey, connection, onClose }: Props) {
         onKeyDown={(e) => e.key === "Escape" && onClose()}
       >
         <div className="dialog-title" id="share-title">
+          <DialogHelp topic="s3.share" />
           Share link: {baseName(objectKey)}
         </div>
         <div className="dialog-body">

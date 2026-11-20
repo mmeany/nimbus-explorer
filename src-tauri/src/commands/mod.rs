@@ -2,13 +2,19 @@
 //! the service modules. App-level commands are here; each service has its own
 //! submodule (s3, …).
 
+pub mod bookmarks;
 pub mod dynamo;
 pub mod ecs;
+pub mod ec2;
+pub mod elasticache;
+pub mod iam;
+pub mod history;
 pub mod lambda;
 pub mod logs;
 pub mod rds;
 pub mod s3;
 pub mod secrets;
+pub mod sfn;
 pub mod sns;
 pub mod sqs;
 pub mod ssm;
@@ -349,4 +355,46 @@ pub fn cancel_all_transfers(state: State<'_, AppState>) {
 #[tauri::command]
 pub fn parse_yaml(text: String) -> Result<Vec<serde_json::Value>, AppError> {
     crate::yaml::parse(&text).map_err(|e| AppError::new(crate::error::ErrorKind::Other, e))
+}
+
+// ---------------------------------------------------------------------------
+// About
+
+/// The project's home: source, releases, bug reports and feature requests.
+/// Fixed here so the UI can only ever open this one address.
+pub const PROJECT_URL: &str = "https://github.com/mmeany/nimbus-explorer";
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AboutInfo {
+    name: String,
+    version: String,
+    project_url: &'static str,
+}
+
+/// Name and version (from tauri.conf.json) and the project address, for the About dialog.
+#[tauri::command]
+pub fn about_info(app: AppHandle) -> AboutInfo {
+    let info = app.package_info();
+    AboutInfo {
+        name: app.config().product_name.clone().unwrap_or_else(|| info.name.clone()),
+        version: info.version.to_string(),
+        project_url: PROJECT_URL,
+    }
+}
+
+/// Opens the project page in the default browser.
+#[tauri::command]
+pub fn open_project_page() -> Result<(), AppError> {
+    #[cfg(windows)]
+    let program = "explorer";
+    #[cfg(target_os = "macos")]
+    let program = "open";
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let program = "xdg-open";
+    std::process::Command::new(program)
+        .arg(PROJECT_URL)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| AppError::new(crate::error::ErrorKind::Other, format!("Couldn't open {PROJECT_URL}: {e}")))
 }

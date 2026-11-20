@@ -22,6 +22,7 @@ import { ExportDialog, ImportDialog } from "./TransferDialogs";
 import { BackupsTab } from "./BackupsTab";
 import { AddIndexDialog, CreateTableDialog, TableSettingsDialog } from "./TableDialogs";
 import { TableDetails } from "./TableDetails";
+import { HelpTopic } from "../../components/HelpDialog";
 
 const COLUMNS: Column[] = [
   { id: "name", label: "Name", width: 240 },
@@ -330,6 +331,7 @@ export function useDynamoService(shell: Shell): ServiceUi {
         "separator",
         { label: "Copy name", onClick: () => void shell.copyText(t.name) },
         ...(t.arn ? [{ label: "Copy ARN", onClick: () => void shell.copyText(t.arn!) } as MenuItem] : []),
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "dynamodb", table: t.name }, null, null) },
         "separator",
         { label: "Delete table…", shortcut: "Del", disabled: readOnly, onClick: () => void deleteTable(t.name) },
         "separator",
@@ -404,6 +406,7 @@ export function useDynamoService(shell: Shell): ServiceUi {
           <>
             {paged.error && <div className="warn-note list-note">Couldn't load table details: {paged.error.message}</div>}
             <FileList
+              storageKey="dynamodb.tables"
               columns={COLUMNS}
               rows={rows}
               selected={selected}
@@ -428,6 +431,7 @@ export function useDynamoService(shell: Shell): ServiceUi {
       <div className="empty-note">Loading…</div>
     ) : (
       <div className="service-pane">
+        <HelpTopic id={`dynamodb.${tab}`} />
         <div className="table-tabs">
           <span className="tt-name">{t.name}</span>
           <div className="segmented small">

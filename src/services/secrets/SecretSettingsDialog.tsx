@@ -5,6 +5,7 @@ import { smApi, type SecretInfo } from "../../api/secrets";
 import { ValueEditor } from "../../components/ValueEditor";
 import type { Shell } from "../../shell/shell";
 import { TagRows } from "../sqs/QueueSettingsDialog";
+import { DialogHelp } from "../../components/HelpDialog";
 
 const TEMPLATE = `{
   "Version": "2012-10-17",
@@ -137,6 +138,7 @@ export function SecretSettingsDialog({ secret, shell, initialTab, onClose, onCha
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog settings-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
         <div className="dialog-title">
+          <DialogHelp topic="secrets.settings" />
           Settings · <span className="mono">{secret.name}</span>
         </div>
         <div className="dialog-body">

@@ -4,6 +4,7 @@ import type { AppError } from "../../api/core";
 import { api } from "../../api/s3";
 import { ssmApi, type ExportFormat, type ImportPreview } from "../../api/ssm";
 import type { Shell } from "../../shell/shell";
+import { DialogHelp } from "../../components/HelpDialog";
 
 /** "/app/dev/" → "app-dev-parameters.json". */
 function defaultFileName(folder: string, format: ExportFormat): string {
@@ -41,7 +42,7 @@ export function ParamExportDialog({ folder: initial, shell, onClose }: { folder:
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog io-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">Export parameters</div>
+        <div className="dialog-title"><DialogHelp topic="ssm.export" />Export parameters</div>
         <div className="dialog-body">
           <label className="form-label" htmlFor="ex-folder">
             Folder (everything below it is included)
@@ -163,7 +164,7 @@ export function ParamImportDialog({
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog io-dialog import-dialog" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">Import parameters</div>
+        <div className="dialog-title"><DialogHelp topic="ssm.import" />Import parameters</div>
         <div className="dialog-body">
           <div className="row">
             <button className="btn" onClick={() => void browse()}>

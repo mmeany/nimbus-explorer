@@ -35,6 +35,15 @@ pub struct NameStatus {
     pub status: Option<String>,
 }
 
+/// An IAM role associated with a database for a feature (S3 import, Lambda…).
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct AssociatedRole {
+    pub arn: String,
+    pub feature: Option<String>,
+    pub status: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DbInstance {
@@ -80,6 +89,9 @@ pub struct DbInstance {
     pub pending_changes: Vec<String>,
     pub read_replica_of: Option<String>,
     pub read_replicas: Vec<String>,
+    /// Enhanced Monitoring's role.
+    pub monitoring_role: Option<String>,
+    pub associated_roles: Vec<AssociatedRole>,
 }
 
 #[derive(Debug, Clone, Serialize, Default)]
@@ -129,6 +141,8 @@ pub struct DbCluster {
     pub created: Option<String>,
     pub latest_restorable_time: Option<String>,
     pub pending_changes: Vec<String>,
+    pub monitoring_role: Option<String>,
+    pub associated_roles: Vec<AssociatedRole>,
 }
 
 #[derive(Debug, Clone, Serialize, Default)]
@@ -257,6 +271,16 @@ pub fn to_instance(d: &aws_sdk_rds::types::DbInstance) -> DbInstance {
             .read_replica_source_db_instance_identifier()
             .map(String::from),
         read_replicas: d.read_replica_db_instance_identifiers().to_vec(),
+        monitoring_role: d.monitoring_role_arn().map(String::from),
+        associated_roles: d
+            .associated_roles()
+            .iter()
+            .map(|r| AssociatedRole {
+                arn: r.role_arn().unwrap_or_default().to_string(),
+                feature: r.feature_name().map(String::from),
+                status: r.status().map(String::from),
+            })
+            .collect(),
     }
 }
 
@@ -324,6 +348,16 @@ pub fn to_cluster(c: &aws_sdk_rds::types::DbCluster) -> DbCluster {
         created: iso(c.cluster_create_time()),
         latest_restorable_time: iso(c.latest_restorable_time()),
         pending_changes: pending,
+        monitoring_role: c.monitoring_role_arn().map(String::from),
+        associated_roles: c
+            .associated_roles()
+            .iter()
+            .map(|r| AssociatedRole {
+                arn: r.role_arn().unwrap_or_default().to_string(),
+                feature: r.feature_name().map(String::from),
+                status: r.status().map(String::from),
+            })
+            .collect(),
     }
 }
 

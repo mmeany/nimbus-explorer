@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { ContextMenu } from "./ContextMenu";
+import { useColumnWidths, widestCell } from "../state/columnWidths";
+import { takeReveal } from "../state/reveal";
+import { reportSelection } from "../state/selection";
 
 export interface Column {
   id: string;
@@ -30,6 +34,8 @@ interface Props {
   emptyText: string;
   /** Starting sort (default: first column, ascending). */
   initialSort?: { col: string; dir: 1 | -1 };
+  /** Remembers column widths the user sets (localStorage `fl-cols|<storageKey>`). */
+  storageKey?: string;
 }
 
 type Sort = { col: string; dir: 1 | -1 };
@@ -40,18 +46,29 @@ const ROW_H = 22;
 const OVERSCAN = 12;
 
 /** Details-view list with sortable columns and Explorer-style selection. */
-export function FileList({ columns, rows, selected, onSelectionChange, onOpen, onContextMenu, onOrderChange, emptyText, initialSort }: Props) {
+export function FileList({ columns, rows, selected, onSelectionChange, onOpen, onContextMenu, onOrderChange, emptyText, initialSort, storageKey }: Props) {
   const [sort, setSort] = useState<Sort>(initialSort ?? { col: columns[0].id, dir: 1 });
   const anchor = useRef<string | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   // Virtualisation: only rows near the viewport are in the DOM.
   const [scrollTop, setScrollTop] = useState(0);
   const [viewH, setViewH] = useState(600);
+  // Vertical scrollbar width, so the header can scroll as far as the body.
+  const [scrollbarW, setScrollbarW] = useState(0);
+  const headerRef = useRef<HTMLDivElement>(null);
+  // Header scrolls horizontally with the body (its own scrollbar hidden).
+  const headWrapRef = useRef<HTMLDivElement>(null);
+  // Column widths the user set (by column id); others use Column.width.
+  const cw = useColumnWidths(storageKey);
+  const [headMenu, setHeadMenu] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const el = bodyRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setViewH(el.clientHeight));
+    const ro = new ResizeObserver(() => {
+      setViewH(el.clientHeight);
+      setScrollbarW(el.offsetWidth - el.clientWidth);
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -77,6 +94,34 @@ export function FileList({ columns, rows, selected, onSelectionChange, onOpen, o
   useEffect(() => {
     anchor.current = null;
   }, [rows]);
+
+  // A row asked for by the History dialog ("go to location"): select it once it's listed.
+  useEffect(() => {
+    if (rows.length === 0) return;
+    const key = takeReveal((k) => rows.some((r) => r.key === k));
+    if (key === null) return;
+    anchor.current = key;
+    onSelectionChange(new Set([key]));
+    const i = sorted.findIndex((r) => r.key === key);
+    const el = bodyRef.current;
+    if (el && i >= 0) el.scrollTop = Math.max(0, i * ROW_H - el.clientHeight / 3);
+    // Only when the rows change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows]);
+
+  // Tell "Add bookmark" which single row of the main view is selected.
+  const owner = useRef({});
+  useEffect(() => {
+    if (!bodyRef.current?.closest(".pane-main")) return;
+    const key = selected.size === 1 ? [...selected][0] : null;
+    const row = key !== null ? rows.find((r) => r.key === key) : undefined;
+    const first = columns[0]?.id;
+    reportSelection(owner.current, row ? { key: row.key, label: (first && row.cells[first]?.text) || row.key } : null);
+  }, [selected, rows, columns]);
+  useEffect(() => {
+    const me = owner.current;
+    return () => reportSelection(me, null);
+  }, []);
 
   /** Scrolls so row `index` is fully visible. */
   function ensureVisible(index: number) {
@@ -139,15 +184,37 @@ export function FileList({ columns, rows, selected, onSelectionChange, onOpen, o
     setSort((s) => (s.col === col ? { col, dir: (s.dir * -1) as 1 | -1 } : { col, dir: 1 }));
   }
 
-  const template = columns.map((c) => `${c.width}px`).join(" ") + " 1fr";
+  const widths = columns.map((c) => cw.custom[c.id] ?? c.width);
+  const template = widths.map((w) => `${w}px`).join(" ") + " minmax(0, 1fr)";
+  // Rows have a 2px margin each side (.fl-row).
+  const contentW = widths.reduce((a, b) => a + b, 0) + 4;
+
+  /** Double-click on a header cell's edge: as wide as its widest visible cell. */
+  function fitColumn(index: number) {
+    const nth = `:scope > :nth-child(${index + 1})`;
+    const head = [...(headerRef.current?.querySelectorAll(nth) ?? [])];
+    const cells = [...(bodyRef.current?.querySelectorAll(`.fl-row > :nth-child(${index + 1})`) ?? [])];
+    const w = widestCell([...head, ...cells]);
+    if (w > 0) cw.setWidth(columns[index].id, w + 2);
+  }
+
   const first = Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN);
   const last = Math.min(sorted.length, Math.ceil((scrollTop + viewH) / ROW_H) + OVERSCAN);
   const visible = sorted.slice(first, last);
 
   return (
     <div className="file-list" tabIndex={0} onKeyDown={onKeyDown}>
-      <div className="fl-header" style={{ gridTemplateColumns: template }}>
-        {columns.map((c) => (
+      <div className="fl-header-wrap" ref={headWrapRef}>
+      <div
+        className="fl-header"
+        ref={headerRef}
+        style={{ gridTemplateColumns: template, minWidth: contentW + scrollbarW }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setHeadMenu({ x: e.clientX, y: e.clientY });
+        }}
+      >
+        {columns.map((c, i) => (
           <button
             key={c.id}
             className={`fl-head-cell ${c.align === "right" ? "right" : ""}`}
@@ -155,14 +222,36 @@ export function FileList({ columns, rows, selected, onSelectionChange, onOpen, o
           >
             {c.label}
             {sort.col === c.id && <span className="sort-arrow">{sort.dir === 1 ? "▲" : "▼"}</span>}
+            <span
+              className="fl-resizer"
+              title="Drag to resize, double-click to fit"
+              onPointerDown={(e) => cw.startResize(e, c.id, widths[i])}
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                fitColumn(i);
+              }}
+            />
           </button>
         ))}
         <span className="fl-head-cell filler" />
       </div>
+      </div>
+      {headMenu && (
+        <ContextMenu
+          x={headMenu.x}
+          y={headMenu.y}
+          items={[{ label: "Reset column widths", onClick: cw.reset, disabled: !cw.hasCustom }]}
+          onClose={() => setHeadMenu(null)}
+        />
+      )}
       <div
         className="fl-body"
         ref={bodyRef}
-        onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+        onScroll={(e) => {
+          setScrollTop(e.currentTarget.scrollTop);
+          if (headWrapRef.current) headWrapRef.current.scrollLeft = e.currentTarget.scrollLeft;
+        }}
         onContextMenu={(e) => {
           e.preventDefault();
           const row = (e.target as HTMLElement).closest<HTMLElement>(".fl-row");
@@ -181,7 +270,7 @@ export function FileList({ columns, rows, selected, onSelectionChange, onOpen, o
         }}
       >
         {sorted.length === 0 && <div className="empty-note">{emptyText}</div>}
-        <div className="fl-canvas" style={{ height: sorted.length * ROW_H, position: "relative" }}>
+        <div className="fl-canvas" style={{ height: sorted.length * ROW_H, minWidth: contentW, position: "relative" }}>
         {visible.map((r, i) => (
           <div
             key={r.key}

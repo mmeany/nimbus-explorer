@@ -4,6 +4,7 @@ import type { AppError } from "../../api/core";
 import { ssmApi, type ParamInfo, type ParamType } from "../../api/ssm";
 import { ValueEditor } from "../../components/ValueEditor";
 import type { Shell } from "../../shell/shell";
+import { DialogHelp } from "../../components/HelpDialog";
 
 export type EditorTarget = { mode: "create"; folder: string } | { mode: "edit"; param: ParamInfo };
 
@@ -177,6 +178,7 @@ export function ParamEditorDialog({ target, shell, onClose, onSaved }: Props) {
         }}
       >
         <div className="dialog-title" id="pe-title">
+          <DialogHelp topic="ssm.editor" />
           {editing ? "Edit parameter" : "New parameter"}
         </div>
         <div className="dialog-body">

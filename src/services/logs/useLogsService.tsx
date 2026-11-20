@@ -16,6 +16,7 @@ import { formatDate, formatSize } from "../../format";
 import type { ServiceUi, Shell } from "../../shell/shell";
 import { TREE_LIMIT, useTokenPages } from "../../state/paged";
 import { LogViewer } from "./LogViewer";
+import { HelpTopic } from "../../components/HelpDialog";
 
 const GROUP_COLUMNS: Column[] = [
   { id: "name", label: "Log group", width: 380 },
@@ -137,6 +138,7 @@ export function useLogsService(shell: Shell): ServiceUi {
         "separator",
         { label: "Copy name", onClick: () => void shell.copyText(key) },
         ...(g?.arn ? [{ label: "Copy ARN", onClick: () => void shell.copyText(g.arn!) } as MenuItem] : []),
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "logs", group: key }, null, null) },
         "separator",
       );
     }
@@ -208,6 +210,7 @@ export function useLogsService(shell: Shell): ServiceUi {
         ) : (
           <>
             <FileList
+              storageKey="logs.groups"
               columns={GROUP_COLUMNS}
               rows={groupRows}
               selected={selected}
@@ -250,6 +253,7 @@ export function useLogsService(shell: Shell): ServiceUi {
             </button>
           )}
         </div>
+        <HelpTopic id={`logs.${tab}`} />
         <div className="segmented small db-tabs">
           <button className={tab === "events" ? "active" : ""} onClick={() => setTab("events")}>
             Events
@@ -356,6 +360,7 @@ function StreamList({ shell, group, listKey, onShow }: { shell: Shell; group: st
       ) : (
         <>
           <FileList
+            storageKey="logs.streams"
             columns={STREAM_COLUMNS}
             rows={rows}
             selected={selected}

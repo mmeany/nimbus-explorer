@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ConnectionOverride, ProfileInfo } from "../api/s3";
+import { DialogHelp } from "./HelpDialog";
 
 interface Props {
   profile: ProfileInfo;
@@ -53,6 +54,7 @@ export function ConnectionDialog({ profile, current, onSave, onCancel }: Props) 
         }}
       >
         <div className="dialog-title" id="conn-title">
+          <DialogHelp topic="connection.settings" />
           Connection settings: {profile.name}
         </div>
         <div className="dialog-body">

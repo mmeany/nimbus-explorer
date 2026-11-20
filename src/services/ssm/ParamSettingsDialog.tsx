@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { AppError } from "../../api/core";
 import { ssmApi, type ParamInfo, type Tag } from "../../api/ssm";
 import type { Shell } from "../../shell/shell";
+import { DialogHelp } from "../../components/HelpDialog";
 
 interface Props {
   param: ParamInfo;
@@ -197,6 +198,7 @@ export function ParamSettingsDialog({ param, shell, initialTab = "tags", onClose
         onKeyDown={(e) => e.key === "Escape" && onClose()}
       >
         <div className="dialog-title" id="ps-title">
+          <DialogHelp topic="ssm.settings" />
           Settings · <span className="mono">{param.name}</span>
         </div>
         <div className="dialog-body">

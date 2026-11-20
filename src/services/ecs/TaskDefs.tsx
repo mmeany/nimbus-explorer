@@ -15,6 +15,8 @@ import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
 import { usePaging } from "../../state/paged";
 import { PropRows } from "./EcsViews";
+import { DialogHelp, HelpTopic } from "../../components/HelpDialog";
+import { RoleLink } from "../../components/RoleLink";
 
 const COLUMNS: Column[] = [{ id: "name", label: "Family", width: 420 }];
 
@@ -54,7 +56,7 @@ export function FamilyList({ shell, filter, reloadToken, onOpen }: { shell: Shel
         <ErrorPanel error={current.error} profile={shell.profile} onRetry={() => setData(null)} />
       ) : (
         <>
-          <FileList columns={COLUMNS} rows={rows} selected={selected} onSelectionChange={setSelected} onOpen={onOpen} emptyText={!current ? "Loading…" : filter ? `No task definition families begin with "${filter}".` : "No task definitions."} />
+          <FileList storageKey="ecs.taskdefs" columns={COLUMNS} rows={rows} selected={selected} onSelectionChange={setSelected} onOpen={onOpen} emptyText={!current ? "Loading…" : filter ? `No task definition families begin with "${filter}".` : "No task definitions."} />
           {list.length > paging.pageSize && <PageBar {...paging.bar} loading={false} />}
         </>
       )}
@@ -134,7 +136,7 @@ function ContainerDetails({ c }: { c: Container }) {
   );
 }
 
-function Details({ td }: { td: TaskDefJson }) {
+function Details({ td, shell }: { td: TaskDefJson; shell: Shell }) {
   const d = useMemo(() => JSON.parse(td.json) as Def, [td.json]);
   const rp = (d.runtimePlatform ?? null) as Record<string, string> | null;
   return (
@@ -146,8 +148,8 @@ function Details({ td }: { td: TaskDefJson }) {
           ["CPU / memory", d.cpu || d.memory ? `${str(d.cpu) || "?"} CPU units · ${str(d.memory) || "?"} MB` : null],
           ["Network mode", str(d.networkMode)],
           ["Platform", rp ? [rp.operatingSystemFamily, rp.cpuArchitecture].filter(Boolean).join(", ") : null],
-          ["Task role", d.taskRoleArn ? <span className="mono">{str(d.taskRoleArn)}</span> : null],
-          ["Execution role", d.executionRoleArn ? <span className="mono">{str(d.executionRoleArn)}</span> : null],
+          ["Task role", d.taskRoleArn ? <RoleLink shell={shell} arn={str(d.taskRoleArn)} owner={td.arn} /> : null],
+          ["Execution role", d.executionRoleArn ? <RoleLink shell={shell} arn={str(d.executionRoleArn)} owner={td.arn} /> : null],
           ["Volumes", arr(d.volumes).map((v) => str(v.name)).join(", ")],
           ["Ephemeral storage", d.ephemeralStorage ? `${str((d.ephemeralStorage as Record<string, unknown>).sizeInGiB)} GiB` : null],
           ["Registered", d.registeredAt ? formatDate(typeof d.registeredAt === "number" ? new Date((d.registeredAt as number) * 1000).toISOString() : str(d.registeredAt)) : null],
@@ -226,7 +228,7 @@ function NewRevisionDialog({ td, onClose, onDone }: { td: TaskDefJson; onClose: 
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog dialog-wide" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">New revision of {td.name.slice(0, td.name.lastIndexOf(":"))}</div>
+        <div className="dialog-title"><DialogHelp topic="ecs.newRevision" />New revision of {td.name.slice(0, td.name.lastIndexOf(":"))}</div>
         <div className="dialog-body">
           <p className="hint">
             Starts from {td.name}. Edit the JSON (for example the image tag, CPU / memory, environment) and register it as a new revision. Services keep running their current
@@ -318,7 +320,7 @@ export function FamilyView({ shell, family, reloadToken, onChanged }: { shell: S
   const active = data?.status === "ACTIVE";
   let body: ReactNode = <div className="empty-note">Loading…</div>;
   if (current?.error) body = <ErrorPanel error={current.error} profile={shell.profile} onRetry={() => setTick((t) => t + 1)} />;
-  else if (data) body = tab === "json" ? <ValueView key={data.name} value={data.json} /> : tab === "compare" ? <Compare key={data.name} td={data} revisions={all} /> : <Details td={data} />;
+  else if (data) body = tab === "json" ? <ValueView key={data.name} value={data.json} /> : tab === "compare" ? <Compare key={data.name} td={data} revisions={all} /> : <Details td={data} shell={shell} />;
   return (
     <div className="queue-view db-view">
       <div className="qv-head">
@@ -355,6 +357,7 @@ export function FamilyView({ shell, family, reloadToken, onChanged }: { shell: S
           {revs.active.length} active, {revs.inactive.length} deregistered revision{revs.inactive.length === 1 ? "" : "s"}
         </span>
       </div>
+      <HelpTopic id={`ecs.family.${tab}`} />
       <div className="segmented small db-tabs">
         <button className={tab === "details" ? "active" : ""} onClick={() => setTab("details")}>
           Details

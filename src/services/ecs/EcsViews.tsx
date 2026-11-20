@@ -2,6 +2,7 @@
 // and events, tasks) and a task (containers and details).
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppError } from "../../api/core";
+import type { HelpTopicId } from "../../help";
 import { ecsApi, ecsTone, launchLabel, shortArn, type ClusterInfo, type ServiceInfo, type TaskInfo } from "../../api/ecs";
 import type { MenuItem } from "../../components/ContextMenu";
 import { ErrorPanel } from "../../components/ErrorPanel";
@@ -11,6 +12,7 @@ import { PageBar } from "../../components/PageBar";
 import { formatDate } from "../../format";
 import type { Shell } from "../../shell/shell";
 import { usePagedDetails, usePaging } from "../../state/paged";
+import { HelpTopic } from "../../components/HelpDialog";
 
 export function Pill({ status, prefix = "" }: { status: string | null; prefix?: string }) {
   return <span className={`status-pill ${ecsTone(status)}`}>{prefix}{(status ?? "unknown").toLowerCase().replace(/_/g, " ")}</span>;
@@ -110,7 +112,7 @@ export function TaskList({ shell, cluster, service, reloadToken, onOpen, actions
   function menu(key: string | null, x: number, y: number) {
     const t = key ? byId.get(key) : undefined;
     const items: MenuItem[] = [];
-    if (t) items.push({ label: "Open", bold: true, shortcut: "Enter", onClick: () => onOpen(t.id) }, { label: "Copy task id", onClick: () => void shell.copyText(t.id) }, { label: "Copy ARN", onClick: () => void shell.copyText(t.arn) }, ...(actions ? ["separator" as const, ...actions(t)] : []), "separator");
+    if (t) items.push({ label: "Open", bold: true, shortcut: "Enter", onClick: () => onOpen(t.id) }, { label: "Copy task id", onClick: () => void shell.copyText(t.id) }, { label: "Copy ARN", onClick: () => void shell.copyText(t.arn) }, { label: "Add bookmark…", onClick: () => shell.addBookmark(shell.place, t.id, `task ${t.id.slice(0, 12)}`) }, ...(actions ? ["separator" as const, ...actions(t)] : []), "separator");
     items.push({ label: "Refresh", onClick: retry });
     shell.openMenu(x, y, items);
   }
@@ -132,6 +134,7 @@ export function TaskList({ shell, cluster, service, reloadToken, onOpen, actions
       ) : (
         <>
           <FileList
+            storageKey="ecs.tasks"
             columns={stopped ? TASK_COLUMNS : TASK_COLUMNS.filter((c) => c.id !== "reason")}
             rows={rows}
             selected={selected}
@@ -150,6 +153,9 @@ export function TaskList({ shell, cluster, service, reloadToken, onOpen, actions
 
 // ---------------------------------------------------------------------------
 // Cluster view
+
+const SERVICE_HELP: Record<string, HelpTopicId> = { deployments: "ecs.service.deployments", tasks: "ecs.service.tasks", logs: "ecs.service.logs" };
+const TASK_HELP: Record<string, HelpTopicId> = { logs: "ecs.task.logs", exec: "ecs.task.exec" };
 
 const SERVICE_COLUMNS: Column[] = [
   { id: "name", label: "Service", width: 240 },
@@ -241,6 +247,7 @@ export function ClusterView({
           </button>
         )}
       </div>
+      <HelpTopic id={`ecs.cluster.${tab}`} />
       <div className="segmented small db-tabs">
         <button className={tab === "services" ? "active" : ""} onClick={() => onTab("services")}>
           Services
@@ -257,6 +264,7 @@ export function ClusterView({
         <div className="ecs-list">
           {paged.error && <div className="warn-note list-note">Couldn't load service details: {paged.error.message}</div>}
           <FileList
+            storageKey="ecs.services"
             columns={SERVICE_COLUMNS}
             rows={rows}
             selected={selected}
@@ -291,7 +299,8 @@ export function ServiceView({
   reloadToken: number;
   onLoaded: (s: ServiceInfo | null) => void;
   onOpenTask: (id: string) => void;
-  extraTabs?: { id: string; label: string; render: (s: ServiceInfo) => ReactNode }[];
+  /** `fill`: the tab fills the pane's height and width (see FunctionTab). */
+  extraTabs?: { id: string; label: string; render: (s: ServiceInfo) => ReactNode; fill?: boolean }[];
   taskActions?: (t: TaskInfo) => MenuItem[];
 }) {
   const [tab, setTab] = useState("details");
@@ -303,7 +312,7 @@ export function ServiceView({
   const primary = s.deployments.find((d) => d.status === "PRIMARY");
   const current = extraTabs.find((t) => t.id === tab);
   return (
-    <div className="queue-view db-view">
+    <div className={`queue-view db-view${current?.fill ? " fill" : ""}`}>
       <div className="qv-head">
         <span className="qv-name">{s.name}</span>
         <Pill status={s.status} />
@@ -333,6 +342,7 @@ export function ServiceView({
         </div>
       </div>
       {primary?.rolloutState === "FAILED" && primary.rolloutReason && <div className="warn-note">{primary.rolloutReason}</div>}
+      <HelpTopic id={SERVICE_HELP[tab] ?? "ecs.service.details"} />
       <div className="segmented small db-tabs">
         {[{ id: "details", label: "Details" }, { id: "deployments", label: "Deployments and events" }, { id: "tasks", label: "Tasks" }, ...extraTabs].map((t) => (
           <button key={t.id} className={tab === t.id ? "active" : ""} onClick={() => setTab(t.id)}>
@@ -499,7 +509,7 @@ export function TaskView({
   reloadToken: number;
   onLoaded: (t: TaskInfo | null) => void;
   onOpenService: (name: string) => void;
-  extraTabs?: { id: string; label: string; render: (t: TaskInfo) => ReactNode }[];
+  extraTabs?: { id: string; label: string; render: (t: TaskInfo) => ReactNode; fill?: boolean }[];
 }) {
   const [tab, setTab] = useState("details");
   const { data: t, error, retry } = useLoad(() => ecsApi.task(cluster, id), [cluster, id, reloadToken], (d) => (d && d.lastStatus !== d.desiredStatus ? 5000 : null));
@@ -509,7 +519,7 @@ export function TaskView({
   const service = t.group?.startsWith("service:") ? t.group.slice(8) : null;
   const current = extraTabs.find((x) => x.id === tab);
   return (
-    <div className="queue-view db-view">
+    <div className={`queue-view db-view${current?.fill ? " fill" : ""}`}>
       <div className="qv-head">
         <span className="qv-name mono">{t.id}</span>
         <Pill status={t.lastStatus} />
@@ -522,6 +532,7 @@ export function TaskView({
         </button>
       </div>
       {t.stoppedReason && <div className="warn-note">Stopped: {t.stoppedReason}</div>}
+      <HelpTopic id={TASK_HELP[tab] ?? "ecs.task.details"} />
       {extraTabs.length > 0 && (
         <div className="segmented small db-tabs">
           {[{ id: "details", label: "Details" }, ...extraTabs].map((x) => (

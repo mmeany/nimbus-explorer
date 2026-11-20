@@ -18,6 +18,7 @@ import { ConnectTab } from "./ConnectTab";
 import { EventsLogs } from "./EventsLogs";
 import { SqlTab } from "./SqlTab";
 import { RestoreDialog, SnapshotList, type RestoreTarget } from "./Snapshots";
+import { HelpTopic } from "../../components/HelpDialog";
 
 const COLUMNS: Column[] = [
   { id: "name", label: "Name", width: 240 },
@@ -337,6 +338,7 @@ export function useRdsService(shell: Shell): ServiceUi {
       items.push(
         { label: "Copy name", onClick: () => void shell.copyText(id) },
         ...(arn ? [{ label: "Copy ARN", onClick: () => void shell.copyText(arn) } as MenuItem] : []),
+        { label: "Add bookmark…", onClick: () => shell.addBookmark({ service: "rds", kind, id }, null, null) },
         "separator",
       );
     }
@@ -420,6 +422,7 @@ export function useRdsService(shell: Shell): ServiceUi {
   const viewToggle = (
     <div className="filter-bar sns-bar">
       <div className="segmented small">
+        {rootView === "snapshots" && <HelpTopic id="rds.snapshots" />}
         <button className={rootView === "databases" ? "active" : ""} onClick={() => setRootView("databases")}>
           Databases
         </button>
@@ -479,6 +482,7 @@ export function useRdsService(shell: Shell): ServiceUi {
           <ErrorPanel error={listing.error} profile={profile} onRetry={refresh} />
         ) : (
           <FileList
+            storageKey="rds.databases"
             columns={COLUMNS}
             rows={rows}
             selected={selected}

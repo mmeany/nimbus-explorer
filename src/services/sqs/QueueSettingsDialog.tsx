@@ -5,6 +5,7 @@ import type { AppError } from "../../api/core";
 import { formatSeconds, queueNameFromArn, sqsApi, type QueueInfo } from "../../api/sqs";
 import { ValueEditor, jsonProblem } from "../../components/ValueEditor";
 import { formatSize } from "../../format";
+import { DialogHelp } from "../../components/HelpDialog";
 
 export interface QueueForm {
   name: string;
@@ -226,7 +227,7 @@ export function QueueSettingsDialog({ queue, queues, onClose, onSaved }: Props) 
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div className="dialog param-dialog queue-settings" role="dialog" aria-modal onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-        <div className="dialog-title">{creating ? "New queue" : `Edit queue · ${queue!.name}`}</div>
+        <div className="dialog-title"><DialogHelp topic="sqs.settings" />{creating ? "New queue" : `Edit queue · ${queue!.name}`}</div>
         <div className="dialog-body">
           {creating && (
             <>
